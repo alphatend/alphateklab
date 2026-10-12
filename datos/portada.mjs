@@ -50,24 +50,24 @@ export const PRODUCTOS = [
     },
   },
   {
-    // Food reúne los pedidos por QR (Sobremesa) y la tarjeta de lealtad (Vuelve); aquí no se nombran: los explica su
-    // página (Edwin, 8-oct).
+    // Food reúne los pedidos por QR (Sobremesa) y el sistema a la medida; aquí no se nombran: los explica su página
+    // (Edwin, 8-oct). La tarjeta de lealtad (Vuelve) está oculta desde el 11-oct: ver datos/food.mjs.
     id: 'food',
     glifo: 'fork-knife',
     mini: 'food',
     sector: 'Cafeterías, bares y restaurantes',
-    resumen: 'Pedidos por QR y clientes que vuelven.',
+    resumen: 'Pedidos por QR, directo a la barra.',
     nombre: 'Food',
     firma: 'by alphateklab',
-    frase: 'Tus mesas piden por QR y tus clientes vuelven por más.',
+    frase: 'Tus mesas piden por QR y la barra lo ve al instante.',
     puntos: [
       'Cada mesa tiene su QR: el cliente ve el menú en su celular y envía el pedido. La barra lo recibe al instante, con timbre.',
-      'Tarjeta de lealtad en Apple Wallet y Google Wallet: un sello en cada visita y un premio al completarla.',
+      'Lo que se agota se apaga con un toque, y si la cocina va a tope pausas los pedidos sin esconder el menú.',
       '¿Necesitas un sistema de comandas, facturación e inventario? Te lo hacemos a la medida.',
     ],
     acciones: [
       { texto: 'Conocer Food', href: 'food/', tipo: 'principal' },
-      // «Probar gratis» lleva al formulario de Food: Sobremesa y Vuelve no tienen alta propia (Edwin, 10-oct).
+      // «Probar gratis» lleva al formulario de Food: Sobremesa no tiene alta propia (Edwin, 10-oct).
       { texto: 'Probar gratis', href: '{contacto}', tipo: 'secundaria' },
     ],
     ejemplo: { tipo: 'food', pie: 'Pantallas de ejemplo, con negocios ficticios.' },

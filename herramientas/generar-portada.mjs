@@ -1,6 +1,7 @@
 // Portada de alphateklab con todas las categorías (Med, Food y alphatend) y la página de Food (Sobremesa, Vuelve, el
 // sistema a la medida y el formulario de contacto), desde datos/portada.mjs y datos/food.mjs. Med vive en med/ (la
-// escribe herramientas/generar-citas.mjs).
+// escribe herramientas/generar-citas.mjs). Un servicio de Food con `publicado: false` no sale en ninguna de las dos:
+// así está Vuelve desde el 11-oct (Edwin: de momento no se ofrece).
 //
 //   node herramientas/generar-portada.mjs          → vista previa en portada-nueva/ (no se indexa ni se publica)
 //   node herramientas/generar-portada.mjs --raiz   → index.html (la portada del sitio) y food/, en la raíz
@@ -27,6 +28,10 @@ if (raiz && !destino) {
   throw new Error('Falta el destino del formulario (FOOD.formulario.destino en datos/food.mjs): sin él los mensajes no llegan y no se publica.');
 }
 
+// Los servicios de Food que salen en la web; Vuelve, solo si está publicada.
+const SERVICIOS = FOOD.servicios.filter((s) => s.publicado !== false);
+const CON_VUELVE = SERVICIOS.some((s) => s.id === 'vuelve');
+
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const version = (archivo) => createHash('sha256').update(readFileSync(join(RAIZ_REPO, archivo))).digest('hex').slice(0, 10);
 
@@ -37,8 +42,8 @@ const USADOS = [
   'moon', 'sun', 'list', 'x', 'check', 'arrow-right', 'envelope-simple', 'microphone',
   ...new Set([
     ...PRODUCTOS.map((p) => p.glifo),
-    ...FOOD.servicios.map((s) => s.glifo),
-    ...[...FOOD.sobremesa.pasos, ...FOOD.vuelve.pasos].map((x) => x.icono),
+    ...SERVICIOS.map((s) => s.glifo),
+    ...[...FOOD.sobremesa.pasos, ...(CON_VUELVE ? FOOD.vuelve.pasos : [])].map((x) => x.icono),
   ]),
 ];
 for (const n of USADOS) if (!SIMBOLOS.has(n)) throw new Error(`Falta el ícono «${n}» en assets/iconos.svg`);
@@ -163,8 +168,12 @@ function pie(R) {
 const MINIS = {
   // El dictado: la onda de la voz y las líneas que se van escribiendo.
   med: `<span class="mini mini--med" aria-hidden="true"><span class="mini__fila">${ico('microphone')}<span class="mini__onda">${'<i></i>'.repeat(14)}</span></span><span class="mini__linea"></span><span class="mini__linea mini__linea--corta"></span></span>`,
-  // La mesa que pide y la tarjeta de sellos.
-  food: `<span class="mini mini--food" aria-hidden="true"><span class="mini__fila"><span class="mini__pastilla">Mesa 8</span><span class="mini__pastilla mini__pastilla--nuevo">Nuevo</span></span><span class="mini__sellos">${Array.from({ length: 8 }, (_, i) => `<i class="${i < 5 ? 'lleno' : ''}"></i>`).join('')}</span></span>`,
+  // La mesa que pide y, con Vuelve, la tarjeta de sellos; sin ella, las líneas del pedido.
+  food: `<span class="mini mini--food" aria-hidden="true"><span class="mini__fila"><span class="mini__pastilla">Mesa 8</span><span class="mini__pastilla mini__pastilla--nuevo">Nuevo</span></span>${
+    CON_VUELVE
+      ? `<span class="mini__sellos">${Array.from({ length: 8 }, (_, i) => `<i class="${i < 5 ? 'lleno' : ''}"></i>`).join('')}</span>`
+      : '<span class="mini__linea"></span><span class="mini__linea mini__linea--corta"></span>'
+  }</span>`,
   // Las compras abiertas por rubro, en barras (sin cifras: cambian cada día).
   alphatend: `<span class="mini mini--alphatend" aria-hidden="true"><span class="mini__barra" style="--l:100%"></span><span class="mini__barra" style="--l:62%"></span><span class="mini__barra" style="--l:44%"></span><span class="mini__barra" style="--l:24%"></span></span>`,
 };
@@ -217,8 +226,14 @@ const tarjetaVuelve = (chica = false) => `<div class="ej-vuelve${chica ? ' ej-vu
             ${chica ? '' : '<p class="ej-vuelve__premio">Al completar: un café gratis</p>'}
           </div>`;
 
-/** Food en la portada: la mesa que pide, la barra que recibe y la tarjeta de sellos, en mosaico. */
+/** Food en la portada: la mesa que pide, la barra que recibe y, con Vuelve, la tarjeta de sellos, en mosaico. */
 function ejemploFood() {
+  if (!CON_VUELVE) {
+    return `<div class="ej ej--food ej--solo-pedidos" role="img" aria-label="Ejemplo: desde el celular de la mesa 8 envían 2 hamburguesas y 4 cervezas, y la barra recibe el pedido">
+          ${celular()}
+          ${barra()}
+        </div>`;
+  }
   return `<div class="ej ej--food" role="img" aria-label="Ejemplo: desde el celular de la mesa 8 envían 2 hamburguesas y 4 cervezas, la barra recibe el pedido y al lado está la tarjeta de lealtad de un café, con 7 de 10 sellos">
           ${celular()}
           ${barra()}
@@ -321,30 +336,45 @@ ${pie(R)}`;
 
 /**
  * Arriba, como en med/: «Iniciar sesión» (con borde) y «Probar gratis» (lleno). Cada uno abre la lista de servicios
- * para elegir (Edwin, 10-oct). Solo van los que tienen a dónde llevar (`entrar` y `probar` en FOOD.servicios). Es un
- * <details>: sin JavaScript también abre; js/portada.js cierra uno al abrir el otro, al tocar fuera y con Escape.
+ * para elegir (Edwin, 10-oct): así se sabe a cuál se entra. Solo van los publicados que tienen a dónde llevar (`entrar`
+ * y `probar` en FOOD.servicios); sin ninguno, el botón no va, y si el único destino está en esta misma página (el
+ * formulario, #contacto), es un enlace directo. La lista es un <details>: sin JavaScript también abre; js/portada.js
+ * cierra uno al abrir el otro, al tocar fuera y con Escape.
  */
+const ACCESOS = {
+  entrar: { boton: 'boton boton--linea cab__entrar', texto: '<span class="cab__entrar-largo">Iniciar sesión</span><span class="cab__entrar-corto">Entrar</span>', titulo: '¿A qué servicio entras?' },
+  probar: { boton: 'boton boton--senal', texto: 'Probar gratis', titulo: '¿Qué quieres probar?' },
+};
+const conAcceso = (campo) => SERVICIOS.filter((s) => s[campo]);
+/** El único destino, si está en esta misma página; si no, null. */
+const directo = (campo) => {
+  const S = conAcceso(campo);
+  return S.length === 1 && S[0][campo].startsWith('#') ? S[0][campo] : null;
+};
+
 function accesosFood() {
-  const lista = (campo) =>
-    FOOD.servicios
-      .filter((s) => s[campo])
-      .map((s) => `<a class="elegir__opcion" href="${esc(s[campo])}">${app(s.id, s.glifo, 'chica')}<span><strong>${esc(s.nombre)}</strong><small>${esc(s.resumen)}</small></span></a>`)
-      .join('');
-  const menu = (clase, boton, campo, titulo) => `<details class="elegir elegir--${clase}" data-elegir>
-        <summary class="${boton}">${clase === 'entrar' ? '<span class="cab__entrar-largo">Iniciar sesión</span><span class="cab__entrar-corto">Entrar</span>' : 'Probar gratis'}</summary>
-        <div class="elegir__menu"><p class="elegir__titulo">${esc(titulo)}</p>${lista(campo)}</div>
+  return Object.entries(ACCESOS)
+    .map(([campo, a]) => {
+      const S = conAcceso(campo);
+      if (!S.length) return '';
+      // Como «Probar gratis» de med/ (cab__cta): bajo 420 px pasa al menú.
+      if (directo(campo)) return `<a class="${a.boton} cab__cta" href="${esc(directo(campo))}">${a.texto}</a>`;
+      const lista = S.map((s) => `<a class="elegir__opcion" href="${esc(s[campo])}">${app(s.id, s.glifo, 'chica')}<span><strong>${esc(s.nombre)}</strong><small>${esc(s.resumen)}</small></span></a>`).join('');
+      return `<details class="elegir elegir--${campo}" data-elegir>
+        <summary class="${a.boton}">${a.texto}</summary>
+        <div class="elegir__menu"><p class="elegir__titulo">${esc(a.titulo)}</p>${lista}</div>
       </details>`;
-  return `${menu('entrar', 'boton boton--linea cab__entrar', 'entrar', '¿A qué servicio entras?')}
-      ${menu('probar', 'boton boton--senal', 'probar', '¿Qué quieres probar?')}`;
+    })
+    .filter(Boolean)
+    .join('\n      ');
 }
 
 /** En el menú del teléfono, los mismos destinos con su nombre (ahí «Probar gratis» de arriba no cabe). */
 function accesosFoodMovil() {
-  const S = FOOD.servicios;
-  return [
-    ...S.filter((s) => s.entrar).map((s) => `<li><a href="${esc(s.entrar)}">Iniciar sesión en ${esc(s.nombre)}</a></li>`),
-    ...S.filter((s) => s.probar).map((s) => `<li><a href="${esc(s.probar)}">Probar ${esc(s.nombre)} gratis</a></li>`),
-  ].join('');
+  const probar = directo('probar')
+    ? [`<li><a class="boton boton--senal" href="${esc(directo('probar'))}">Probar gratis</a></li>`]
+    : conAcceso('probar').map((s) => `<li><a href="${esc(s.probar)}">Probar ${esc(s.nombre)} gratis</a></li>`);
+  return [...conAcceso('entrar').map((s) => `<li><a href="${esc(s.entrar)}">Iniciar sesión en ${esc(s.nombre)}</a></li>`), ...probar].join('');
 }
 
 function paginaFood() {
@@ -355,12 +385,12 @@ function paginaFood() {
   const pasos = (lista) =>
     `<ol class="sm-pasos">${lista.map((x) => `<li><span class="sm-pasos__icono">${ico(x.icono)}</span><h3>${esc(x.titulo)}</h3><p>${esc(x.texto)}</p></li>`).join('')}</ol>`;
   const funciones = F.sobremesa.funciones.map(([fuerte, resto]) => `<li>${ico('check')}<span><strong>${esc(fuerte)}:</strong> ${esc(resto)}</span></li>`).join('\n            ');
-  const servicio = (id) => F.servicios.find((s) => s.id === id);
+  const servicio = (id) => SERVICIOS.find((s) => s.id === id);
   const cabezaServicio = (id) => {
     const s = servicio(id);
     return `<div class="producto__cabeza">${app(s.id, s.glifo, 'grande')}<p class="producto__sector">${esc(s.nombre)}</p></div>`;
   };
-  const vidrios = F.servicios
+  const vidrios = SERVICIOS
     .map(
       (s) =>
         `<li><a class="vidrio vidrio--${s.id}" href="#${s.id}"><span class="vidrio__brillo" aria-hidden="true"></span><span class="vidrio__cabeza">${app(s.id, s.glifo)}<span class="vidrio__nombre">${esc(s.nombre)}</span></span><span class="vidrio__resumen">${esc(s.resumen)}</span><span class="vidrio__ir">Ver más ${ico('arrow-right')}</span></a></li>`,
@@ -368,10 +398,29 @@ function paginaFood() {
     .join('\n        ');
   const menu = [
     ['Sobremesa', '#sobremesa'],
-    ['Vuelve', '#vuelve'],
+    ...(CON_VUELVE ? [['Vuelve', '#vuelve']] : []),
     ['A la medida', '#medida'],
     ['Preguntas', '#preguntas'],
   ];
+  const preguntas = [...F.preguntas, ...(CON_VUELVE ? F.vuelve.preguntas : [])];
+  const seccionVuelve = CON_VUELVE
+    ? `
+  <section class="sm-seccion sm-seccion--vuelve" id="vuelve" aria-labelledby="t-vuelve">
+    <div class="envoltura">
+      ${cabezaServicio('vuelve')}
+      <h2 class="sm-seccion__titulo" id="t-vuelve">${esc(F.vuelve.titulo)}</h2>
+      <p class="sm-seccion__bajada">${esc(F.vuelve.bajada)}</p>
+      <div class="sm-seccion__fila">
+        <div>${pasos(F.vuelve.pasos)}</div>
+        <figure class="vitrina vitrina--vuelve">
+          ${ejemploVuelve()}
+          <figcaption>Tarjeta de ejemplo, con un café ficticio.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+`
+    : '';
   const html = `${cabeza({ R, titulo: F.titulo, descripcion: F.descripcion, canonica: `${SITIO}food/` })}
 ${cabecera({ R, menu, accion: accesosFood(), movil: accesosFoodMovil() })}
 <main id="contenido">
@@ -382,7 +431,7 @@ ${cabecera({ R, menu, accion: accesosFood(), movil: accesosFoodMovil() })}
       <h1 class="portada-heroe__titulo" id="titulo">${esc(F.heroe.titulo[0])} <span class="portada-heroe__resalte">${esc(F.heroe.titulo[1])}</span></h1>
       <p class="portada-heroe__bajada">${esc(F.heroe.bajada)}</p>
       <p class="portada-heroe__acciones">${enlaceContacto('accion--principal', 'Contactar')} <a class="accion accion--vidrio" href="#sobremesa"><span>Cómo funciona</span></a></p>
-      <ul class="portada-heroe__vidrios portada-heroe__vidrios--tres" aria-label="Servicios de Food">
+      <ul class="portada-heroe__vidrios${SERVICIOS.length === 3 ? ' portada-heroe__vidrios--tres' : ''}" aria-label="Servicios de Food">
         ${vidrios}
       </ul>
     </div>
@@ -400,22 +449,7 @@ ${cabecera({ R, menu, accion: accesosFood(), movil: accesosFoodMovil() })}
       </ul>
     </div>
   </section>
-
-  <section class="sm-seccion sm-seccion--vuelve" id="vuelve" aria-labelledby="t-vuelve">
-    <div class="envoltura">
-      ${cabezaServicio('vuelve')}
-      <h2 class="sm-seccion__titulo" id="t-vuelve">${esc(F.vuelve.titulo)}</h2>
-      <p class="sm-seccion__bajada">${esc(F.vuelve.bajada)}</p>
-      <div class="sm-seccion__fila">
-        <div>${pasos(F.vuelve.pasos)}</div>
-        <figure class="vitrina vitrina--vuelve">
-          ${ejemploVuelve()}
-          <figcaption>Tarjeta de ejemplo, con un café ficticio.</figcaption>
-        </figure>
-      </div>
-    </div>
-  </section>
-
+${seccionVuelve}
   <section class="sm-seccion" id="medida" aria-labelledby="t-medida">
     <div class="envoltura">
       <div class="sm-medida">
@@ -447,7 +481,7 @@ ${cabecera({ R, menu, accion: accesosFood(), movil: accesosFoodMovil() })}
     <div class="envoltura">
       <h2 class="sm-seccion__titulo" id="t-preguntas">Preguntas</h2>
       <div class="sm-preguntas">
-        ${F.preguntas.map(([q, r]) => `<details><summary>${esc(q)}</summary><p>${esc(r)}</p></details>`).join('\n        ')}
+        ${preguntas.map(([q, r]) => `<details><summary>${esc(q)}</summary><p>${esc(r)}</p></details>`).join('\n        ')}
       </div>
     </div>
   </section>

@@ -41,4 +41,4 @@ Una clínica crea su cuenta sola en https://alphateklab.com/registro/ y su siste
 
 ## También de alphateklab
 
-- [Food, para cafeterías, bares y restaurantes](https://alphateklab.com/food/): Sobremesa: tus mesas piden por QR y la barra lo ve al instante. Vuelve: tarjeta de lealtad en el Wallet. Y comandas, facturación e inventario a la medida.
+- [Food, para cafeterías, bares y restaurantes](https://alphateklab.com/food/): Sobremesa: tus mesas piden por QR y la barra lo ve al instante. Y comandas, facturación e inventario a la medida.

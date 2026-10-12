@@ -705,6 +705,16 @@ button.accion {
     grid-template-areas: "cel" "barra" "vuelve";
   }
 }
+/* Sin Vuelve (oculta desde el 11-oct): la mesa y la barra, lado a lado, sin el hueco de la tarjeta. */
+.ej--solo-pedidos {
+  grid-template-areas: "cel barra";
+  align-items: center;
+}
+@media (max-width: 559px) {
+  .ej--solo-pedidos {
+    grid-template-areas: "cel" "barra";
+  }
+}
 .ej-cel,
 .ej-barra {
   border-radius: 16px;

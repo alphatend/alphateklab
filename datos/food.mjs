@@ -1,25 +1,30 @@
-// Página de Food (cafeterías, bares y restaurantes): Sobremesa (pedidos por QR desde la mesa), Vuelve (tarjeta de
-// lealtad, en vuelve.alphateklab.com; del 8 al 10-oct se llamó Racha aquí, Edwin volvió al nombre de su sitio)
-// y el sistema a la medida (Edwin, 8-oct-2026). La genera herramientas/generar-portada.mjs. Todo lo que dice
-// está en el sistema de pedidos por QR y en el de Vuelve: si el sistema cambia, se cambia aquí. Sin precios: no hay
-// decididos.
+// Página de Food (cafeterías, bares y restaurantes): Sobremesa (pedidos por QR desde la mesa) y el sistema a la medida
+// (Edwin, 8-oct-2026). La genera herramientas/generar-portada.mjs. Todo lo que dice está en el sistema de pedidos por
+// QR: si el sistema cambia, se cambia aquí. Sin precios: no hay decididos.
+//
+// Vuelve (la tarjeta de lealtad, en vuelve.alphateklab.com; del 8 al 10-oct se llamó Racha aquí) está oculta desde el
+// 11-oct: Edwin, «de momento no ofreceremos ese servicio». Sus datos se guardan aquí (su servicio, `vuelve` y sus
+// preguntas). Para volver a ponerla: `publicado: true` en su servicio y, en los textos generales de aquí y de
+// datos/portada.mjs (Food), lo que decían de ella en el commit 11c67ae.
 
 export const FOOD = {
-  titulo: 'Food: pedidos por QR y tarjeta de lealtad para restaurantes y bares', // sin «Panamá» (Edwin, 10-oct)
+  titulo: 'Food: pedidos por QR para cafeterías, bares y restaurantes', // sin «Panamá» (Edwin, 10-oct)
   descripcion:
-    'Sobremesa: tus mesas piden por QR y la barra lo ve al instante. Vuelve: tarjeta de lealtad en el Wallet. Y comandas, facturación e inventario a la medida.',
+    'Sobremesa: tus mesas piden por QR y la barra lo ve al instante. Y comandas, facturación e inventario a la medida.',
   heroe: {
-    titulo: ['Pedidos desde la mesa.', 'Clientes que vuelven.'],
+    titulo: ['Pedidos desde la mesa.', 'Directo a la barra.'],
     bajada:
-      'Dos servicios para cafeterías, bares y restaurantes: Sobremesa lleva los pedidos de tus mesas a la barra y Vuelve hace que tus clientes regresen. Y si necesitas un sistema de comandas, facturación e inventario, te lo hacemos a la medida.',
+      'Para cafeterías, bares y restaurantes: con Sobremesa, tus mesas piden desde el celular y en la barra suena el timbre. Y si necesitas un sistema de comandas, facturación e inventario, te lo hacemos a la medida.',
   },
   // Las tarjetas de vidrio del héroe: llevan a cada sección.
   servicios: [
     // `entrar` y `probar`: a dónde llevan «Iniciar sesión» y «Probar gratis» de arriba (Edwin, 10-oct). Sobremesa no
     // tiene panel en línea todavía: solo «Probar gratis», a su formulario; cuando lo tenga, su `entrar`.
+    // `publicado: false`: no sale en la página (ni su tarjeta, ni su sección, ni sus accesos, ni sus preguntas).
     { id: 'sobremesa', glifo: 'qr-code', nombre: 'Sobremesa', resumen: 'Pedidos por QR desde la mesa, con timbre en la barra.', entrar: null, probar: '#contacto' },
     {
       id: 'vuelve',
+      publicado: false, // oculta desde el 11-oct (Edwin: de momento no se ofrece); se guarda para volver a ponerla
       glifo: 'sparkle',
       nombre: 'Vuelve',
       resumen: 'Tarjeta de lealtad en el celular de tus clientes.',
@@ -69,6 +74,8 @@ export const FOOD = {
       { icono: 'device-mobile', titulo: 'Suman los sellos', texto: 'El personal escanea la tarjeta con su celular y suma el sello. Al completarla, el premio.' },
       { icono: 'envelope-simple', titulo: 'Los vuelves a invitar', texto: 'Con tus clientes inscritos mandas promociones por correo y avisos que les llegan al Wallet.' },
     ],
+    // Se suman a las de abajo cuando Vuelve está publicada.
+    preguntas: [['¿Puedo tener solo Vuelve, sin los pedidos por QR?', 'Sí. Son dos servicios aparte: puedes tener uno, el otro o los dos.']],
   },
   medida: {
     antetitulo: 'Software a la medida',
@@ -82,8 +89,8 @@ export const FOOD = {
   // Sin destino no se publica.
   formulario: {
     titulo: 'Cuéntanos de tu negocio',
-    bajada: 'Déjanos tu nombre, tu correo y lo que necesitas. Te escribimos para mostrarte Sobremesa y Vuelve funcionando y decirte cuánto cuesta.',
-    ejemplo: 'Ej.: tengo un bar con 12 mesas y quiero los pedidos por QR y la tarjeta de lealtad.',
+    bajada: 'Déjanos tu nombre, tu correo y lo que necesitas. Te escribimos para mostrarte Sobremesa funcionando y decirte cuánto cuesta.',
+    ejemplo: 'Ej.: tengo un bar con 12 mesas y quiero que pidan por QR desde la mesa.',
     asunto: 'Food: mensaje desde alphateklab.com',
     destino: '3a73a4e7fca71a1aba1ccc3921334bad', // la cadena de FormSubmit (activada el 10-oct), no el correo
     gracias: 'Recibimos tu mensaje. Te escribimos pronto a tu correo.',
@@ -97,6 +104,5 @@ export const FOOD = {
       'No. Sobremesa lleva el pedido de la mesa a la barra. La cuenta la sigues haciendo en tu sistema; si quieres uno nuevo de comandas, facturación e inventario, te lo hacemos a la medida.',
     ],
     ['¿Qué pasa si alguien se lleva o fotografía un QR?', 'Desde el panel le das un código nuevo a esa mesa: el QR viejo deja de servir y se imprime el nuevo.'],
-    ['¿Puedo tener solo Vuelve, sin los pedidos por QR?', 'Sí. Son dos servicios aparte: puedes tener uno, el otro o los dos.'],
   ],
 };

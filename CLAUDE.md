@@ -1,7 +1,7 @@
 # alphateklab · portada de productos y sitio de Citas Médicas
 
 **Desde el 8-oct-2026** (Edwin) la raíz de alphateklab.com es la **portada de alphateklab**, con sus productos: **Med**
-(en `med/`; se llamó Citas Médicas hasta el 10-oct, `PRODUCTO` en `datos/producto.mjs`), **Food** (cafeterías, bares y restaurantes: pedidos por QR y tarjeta de lealtad, en `food/`)
+(en `med/`; se llamó Citas Médicas hasta el 10-oct, `PRODUCTO` en `datos/producto.mjs`), **Food** (cafeterías, bares y restaurantes: pedidos por QR y software a la medida, en `food/`; la tarjeta de lealtad, Vuelve, está oculta desde el 11-oct)
 y **alphatend** (su propio dominio). La genera `herramientas/generar-portada.mjs` desde `datos/portada.mjs` y
 `datos/food.mjs`; ver «Portada y Food» abajo.
 
@@ -66,6 +66,12 @@ en la rama **`sitio-agencia`**; para volver a él: `git checkout sitio-agencia -
     Food), la consola, el menú, los paquetes, la calculadora, el formulario, las animaciones, el modo oscuro y los
     títulos.
 - **Portada y Food (8-oct):**
+  - **Vuelve oculta (Edwin, 11-oct: «de momento no ofreceremos ese servicio»; no se borra):** su servicio lleva
+    `publicado: false` en `datos/food.mjs` y no sale nada de ella en la portada, food/ ni llms.txt (ni tarjeta, ni
+    sección, ni accesos de arriba, ni preguntas); sus datos siguen ahí. Sin ella, «Probar gratis» de food/ va directo
+    a #contacto y no hay «Iniciar sesión». Para volver a ponerla: `publicado: true` y devolver los textos generales de
+    Food (título, descripción, héroe, formulario y su tarjeta de la portada en `datos/portada.mjs`) a los del commit
+    11c67ae; `pruebas/portada.test.mjs` exige hoy que no aparezca, así que esa prueba cambia también.
   - La vista previa sin publicar: `node herramientas/generar-portada.mjs` escribe `portada-nueva/` (noindex). No se
     versiona.
   - Food no tiene WhatsApp: «Contactar» lleva a su formulario (nombre, correo y lo que necesitan), que manda

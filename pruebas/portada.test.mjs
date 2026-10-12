@@ -49,13 +49,22 @@ test('Food se contacta por su formulario, que llega a FormSubmit; sin WhatsApp',
   assert.match(leer('privacidad/index.html'), /formsubmit\.co/, 'la privacidad dice a dónde va el formulario');
 });
 
-test('Food arriba: «Iniciar sesión» lleva a entrar en Vuelve y «Probar gratis» deja elegir Sobremesa o Vuelve (sin Racha)', () => {
-  const html = leer('food/index.html');
-  const menu = (clase) => html.match(new RegExp(`<details class="elegir elegir--${clase}"[\\s\\S]*?</details>`))?.[0] ?? '';
-  const destinos = (m) => [...m.matchAll(/class="elegir__opcion" href="([^"]+)"/g)].map((x) => x[1]);
-  assert.deepEqual(destinos(menu('entrar')), ['https://vuelve.alphateklab.com/entrar'], 'Iniciar sesión: solo Vuelve (Sobremesa no tiene panel en línea)');
-  assert.deepEqual(destinos(menu('probar')), ['#contacto', 'https://vuelve.alphateklab.com/registro'], 'Probar gratis: Sobremesa a su formulario y Vuelve a su registro');
-  for (const r of PAGINAS) assert.doesNotMatch(leer(r), /racha/i, `${r}: la tarjeta de lealtad se llama Vuelve (Edwin, 10-oct)`);
+test('Vuelve, la tarjeta de lealtad, no sale en la web mientras no se ofrezca (Edwin, 11-oct); sus datos se guardan', () => {
+  const vuelve = FOOD.servicios.find((s) => s.id === 'vuelve');
+  assert.ok(vuelve && FOOD.vuelve.pasos.length, 'los datos de Vuelve siguen en datos/food.mjs');
+  assert.equal(vuelve.publicado, false, 'Vuelve está oculta: `publicado: false` en su servicio');
+  for (const r of PAGINAS) assert.doesNotMatch(leer(r), /vuelve|lealtad|wallet|racha/i, `${r}: nada de Vuelve`);
+  // llms.txt también lleva la portada de Med, donde «no se te vuelve a cobrar»: aquí, el nombre y su sitio.
+  const llms = leer('llms.txt');
+  assert.doesNotMatch(llms, /\bVuelve\b/, 'llms.txt: sin el nombre');
+  assert.doesNotMatch(llms, /vuelve\.alphateklab|lealtad|wallet/i, 'llms.txt: ni su sitio, ni la lealtad, ni el Wallet');
+});
+
+test('Food arriba: «Probar gratis» lleva directo a su formulario y no hay «Iniciar sesión» sin servicios', () => {
+  const cab = leer('food/index.html').match(/<header[\s\S]*?<\/header>/)?.[0] ?? '';
+  assert.match(cab, /<a class="boton boton--senal cab__cta" href="#contacto">Probar gratis<\/a>/, 'Probar gratis → #contacto, como en med/');
+  assert.match(cab, /<nav class="cab__movil"[\s\S]*?href="#contacto">Probar gratis<\/a>/, 'también en el menú del teléfono');
+  assert.doesNotMatch(cab, /Iniciar sesión|data-elegir/, 'Sobremesa no tiene panel en línea: ni «Iniciar sesión» ni listas vacías');
 });
 
 test('un solo H1 por página y cada imagen con texto alternativo y medidas', () => {
