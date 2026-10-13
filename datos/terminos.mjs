@@ -3,7 +3,9 @@
 // Decisiones marcadas para Edwin: cuánto se guardan los datos después de la pausa (90 días), que no hay reembolsos
 // por partes de un mes y el aviso de 30 días antes de cambiar precios.
 
-export const VIGENTE = '7 de octubre de 2026';
+// 13-oct-2026: la prueba es con el plan que se elija y se alarga mientras no haya pago con tarjeta; la agenda ya no
+// se cobra según los mensajes (los paquetes salieron de la venta).
+export const VIGENTE = '13 de octubre de 2026';
 
 export const SECCIONES = [
   ['Quiénes somos', [
@@ -14,11 +16,11 @@ export const SECCIONES = [
     'Tú decides quién de tu equipo entra y qué puede hacer cada persona. Cada persona es responsable de cuidar su usuario y su contraseña.',
   ]],
   ['La prueba gratis', [
-    'Cada cuenta nueva tiene 7 días de prueba con todo incluido, sin tarjeta. Te avisamos por correo dos días antes de que termine.',
-    'Si al terminar no pagas, tu sistema queda en pausa: nadie puede entrar, pero tus datos siguen guardados como se explica más abajo.',
+    'Cada cuenta nueva tiene 7 días de prueba con el plan que elijas, sin tarjeta. Los últimos días te lo recordamos dentro del sistema.',
+    'Mientras el pago con tarjeta no esté disponible, la prueba se alarga sin costo. Cuando lo esté, si al terminar la prueba no pagas, tu sistema queda en pausa: nadie puede entrar, pero tus datos siguen guardados como se explica más abajo.',
   ]],
   ['Precios y pagos', [
-    'Los precios son los que muestra alphateklab.com al contratar: el expediente, por cada profesional que lo usa; la agenda, por clínica, según los mensajes de WhatsApp al mes. Son netos y en dólares.',
+    'Los precios son los que muestra alphateklab.com al contratar: el expediente, por cada profesional que lo usa; la agenda, por clínica. Son netos y en dólares.',
     'Se paga mes a mes con tarjeta, a través de Tilopay. Al primer pago la tarjeta queda guardada en Tilopay (nosotros no vemos su número) y cada mes se cobra sola en la misma fecha. Te llega el recibo por correo.',
     'Si un cobro no pasa, lo volvemos a intentar dos veces más, cada dos días, y te avisamos. Si los tres fallan, tu sistema queda en pausa hasta que pagues.',
     'Si cambiamos los precios, te avisamos por correo al menos 30 días antes de que el cambio se aplique a tu cuenta.',

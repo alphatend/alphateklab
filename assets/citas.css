@@ -1542,7 +1542,8 @@ body.citas {
   color: var(--tinta-2);
   font-size: var(--t-s);
 }
-.plan__suma:first-of-type {
+.plan__suma:first-of-type,
+.plan__suma--sola {
   display: block;
 }
 .plan__suma strong {

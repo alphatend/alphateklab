@@ -28,17 +28,25 @@ export const PRECIOS = {
   // mensajes no llevan tachado. No se cobra ni se suma: solo se muestra.
   antes: { expediente: 49.99, agenda: 34.99 },
   // Los mensajes de WhatsApp van aparte de la agenda, por paquete al mes. Sin paquete (0) los recordatorios salen igual
-  // a su hora, y la recepción manda cada uno con un toque desde el WhatsApp de la clínica; con paquete salen solos.
-  mensajes: [
-    { mensajes: 0, precio: 0 },
-    { mensajes: 200, precio: 15 },
-    { mensajes: 500, precio: 25 },
-    { mensajes: 1000, precio: 35 },
-  ],
+  // a su hora, y la recepción manda cada uno con un toque desde el WhatsApp de la clínica. Los paquetes (con los que
+  // saldrían solos) solo se ofrecen con PAQUETES_A_LA_VENTA.
+  mensajes: [{ mensajes: 0, precio: 0 }],
 };
+
+// Los paquetes de mensajes automáticos de WhatsApp: fuera de la venta desde el 13-oct-2026. El sistema todavía no manda
+// nada solo («Piloto: nada sale solo», citas-piloto): los recordatorios los manda la recepción con un toque, y vender
+// «salen solos» era prometer algo que no existe (QA del 13-oct). Cuando salgan solos de verdad, true aquí y
+// PAQUETES_MENSAJES=1 en el servicio de cuentas.
+export const PAQUETES_A_LA_VENTA = false;
+const PAQUETES_PRECIOS = [
+  { mensajes: 200, precio: 15 },
+  { mensajes: 500, precio: 25 },
+  { mensajes: 1000, precio: 35 },
+];
+if (PAQUETES_A_LA_VENTA) PRECIOS.mensajes.push(...PAQUETES_PRECIOS);
 export const DESDE = Math.min(PRECIOS.expediente, PRECIOS.agenda);
-/** El paquete más barato con mensajes automáticos. */
-export const MENSAJES_DESDE = Math.min(...PRECIOS.mensajes.filter((m) => m.mensajes > 0).map((m) => m.precio));
+/** El paquete más barato con mensajes automáticos (null sin paquetes a la venta). */
+export const MENSAJES_DESDE = PAQUETES_A_LA_VENTA ? Math.min(...PRECIOS.mensajes.filter((m) => m.mensajes > 0).map((m) => m.precio)) : null;
 
 /** Un monto en dólares, con centavos solo si los tiene: «$15», «$14.99», «$89.97». Las sumas, en centavos. */
 export function dolares(n) {
@@ -55,7 +63,7 @@ export const HEROE = {
   // la parte entre [] va resaltada
   titulo: 'El expediente de tu paciente, [sin escribir a mano ni teclear]',
   bajada:
-    'Durante la consulta hablas y el sistema escribe la nota con IA, sección por sección. Tú la revisas y queda guardada; si trabajas con folder, la recepción la imprime. Y si quieres, también la agenda, con recordatorios automáticos por WhatsApp.',
+    'Durante la consulta hablas y el sistema escribe la nota con IA, sección por sección. Tú la revisas y queda guardada; si trabajas con folder, la recepción la imprime. Y si quieres, también la agenda, con los recordatorios por WhatsApp listos para mandar con un toque.',
   puntos: [`${PRUEBA_DIAS} días gratis, sin tarjeta`, 'Sin instalar nada', `Desde ${dolares(DESDE)} al mes`],
   // Las tarjetas que flotan sobre las pantallas del héroe (nombres inventados).
   avisos: [
@@ -89,7 +97,7 @@ export const PARTES = [
       'Quién no ha confirmado hoy y mañana',
       'Registro del paciente por QR desde su teléfono',
       'Lista de espera y sala de espera',
-      `Confirmaciones automáticas por WhatsApp, desde ${dolares(MENSAJES_DESDE)} al mes aparte`,
+      PAQUETES_A_LA_VENTA ? `Confirmaciones automáticas por WhatsApp, desde ${dolares(MENSAJES_DESDE)} al mes aparte` : 'Recordatorios por WhatsApp que la recepción manda con un toque',
     ],
     unidad: 'al mes por clínica',
   },
@@ -126,7 +134,7 @@ export const FILAS = {
   },
   agenda: {
     titulo: 'Que tus pacientes lleguen a su cita',
-    bajada: 'Para la recepción: citas sin choques y confirmaciones automáticas por WhatsApp, sin llamar paciente por paciente.',
+    bajada: 'Para la recepción: citas sin choques y recordatorios por WhatsApp con un toque, sin llamar paciente por paciente.',
     filas: [
       {
         titulo: 'La agenda del día, de un vistazo',
@@ -135,13 +143,13 @@ export const FILAS = {
         visual: { tipo: 'portatil', imagen: 'citas-agenda', alt: 'La agenda de un consultorio de ejemplo: las citas del día de la Dra. Ríos y del Dr. Herrera, con las confirmadas, las atendidas y quién está en la sala.' },
       },
       {
-        titulo: 'Recordatorios automáticos por WhatsApp',
-        texto: 'Tu secretaria ya no tiene que pasar la mañana llamando paciente por paciente para confirmar. Uno o dos días antes, el sistema le escribe a cada paciente por WhatsApp con la fecha, la hora y el médico, y el paciente confirma respondiendo.',
+        titulo: 'Recordatorios por WhatsApp',
+        texto: 'Tu secretaria ya no tiene que pasar la mañana llamando paciente por paciente para confirmar. Uno o dos días antes, el sistema deja listo el mensaje de cada paciente con la fecha, la hora y el médico; la recepción lo manda con un toque desde el WhatsApp de la clínica y el paciente confirma respondiendo.',
         puntos: [
-          `Salen solos con un paquete de mensajes aparte: ${PAQUETES} al mes`,
-          'Sin paquete, la recepción manda cada uno con un toque desde el WhatsApp de la clínica',
+          ...(PAQUETES_A_LA_VENTA ? [`Salen solos con un paquete de mensajes aparte: ${PAQUETES} al mes`] : []),
+          'Cada recordatorio sale con un toque desde el WhatsApp de la clínica',
           'Quién ya confirmó y quién no, de un vistazo',
-          'Si no responde, el sistema le vuelve a escribir',
+          'Si no responde, el sistema deja listo un segundo recordatorio',
         ],
         visual: { tipo: 'chat' },
       },
@@ -205,7 +213,7 @@ export const ACCESOS = {
 export const PASOS = [
   { titulo: 'Pides tu prueba', texto: 'Nos escribes y nos dices cuántos médicos son y si quieres el expediente, la agenda o los dos.' },
   { titulo: 'Te lo dejamos listo', texto: 'Configuramos a tus médicos, sus horarios y las secciones de su nota, y creamos el usuario de cada persona.' },
-  { titulo: `Lo usas ${PRUEBA_DIAS} días gratis`, texto: 'Con todo incluido. Si te sirve, sigues mes a mes; si no, no pagas nada.' },
+  { titulo: `Lo usas ${PRUEBA_DIAS} días gratis`, texto: 'Con el plan que elijas. Si te sirve, sigues mes a mes; si no, no pagas nada.' },
 ];
 
 export const PRUEBA = {
@@ -220,7 +228,7 @@ export const PRUEBA = {
 export const PASOS_REGISTRO = [
   { titulo: 'Creas tu cuenta', texto: 'En unos minutos: el nombre de tu clínica, la dirección de tu sistema y tu plan. Sin tarjeta.' },
   { titulo: 'Tu sistema queda listo', texto: 'Al momento, en tu propia dirección (tuclinica.alphateklab.com). Agregas a tu equipo y le das a cada quien sus accesos.' },
-  { titulo: `Lo usas ${PRUEBA_DIAS} días gratis`, texto: 'Con todo incluido. Si te sirve, pagas con tarjeta y sigues mes a mes; si no, no pagas nada.' },
+  { titulo: `Lo usas ${PRUEBA_DIAS} días gratis`, texto: 'Con el plan que elijas. Si te sirve, pagas con tarjeta y sigues mes a mes; si no, no pagas nada.' },
 ];
 export const PRUEBA_REGISTRO = {
   titulo: 'Pruébalo en tu consultorio',
@@ -242,12 +250,14 @@ export const PREGUNTAS = [
   ['¿Puedo contratar solo la agenda?', 'Sí. Tienes las citas, los recordatorios por WhatsApp, el registro de pacientes y la lista de espera, sin el expediente.'],
   [
     '¿Los mensajes de WhatsApp están incluidos en la agenda?',
-    `No. La agenda cuesta ${dolares(PRECIOS.agenda)} al mes por clínica y con ella los recordatorios los manda la recepción con un toque desde el WhatsApp de la clínica. Para que salgan solos, se suma un paquete de mensajes: ${PAQUETES} al mes.`,
+    PAQUETES_A_LA_VENTA
+      ? `No. La agenda cuesta ${dolares(PRECIOS.agenda)} al mes por clínica y con ella los recordatorios los manda la recepción con un toque desde el WhatsApp de la clínica. Para que salgan solos, se suma un paquete de mensajes: ${PAQUETES} al mes.`
+      : `Sí. Con la agenda (${dolares(PRECIOS.agenda)} al mes por clínica), el sistema deja listo cada recordatorio a su hora y la recepción lo manda con un toque desde el WhatsApp de la clínica, sin costo aparte. Hoy cada mensaje necesita ese toque.`,
   ],
   ['¿Qué cuenta como profesional?', 'Cada médico que hace expedientes. La recepción, enfermería y administración tienen su propio usuario sin costo.'],
-  ['¿Qué pasa si se me acaban los mensajes del mes?', 'Te avisamos para pasar al paquete siguiente. Mientras tanto, los recordatorios que falten se mandan con un toque desde el WhatsApp del consultorio.'],
+  ...(PAQUETES_A_LA_VENTA ? [['¿Qué pasa si se me acaban los mensajes del mes?', 'Te avisamos para pasar al paquete siguiente. Mientras tanto, los recordatorios que falten se mandan con un toque desde el WhatsApp del consultorio.']] : []),
   ['¿Puedo pasar mis pacientes desde Excel?', 'Sí. El sistema importa tus pacientes desde un Excel o un CSV: nombre, cédula o pasaporte, celular, correo, fecha de nacimiento, alergias, enfermedades, medicamentos y seguro.'],
   ['¿Quién puede ver los expedientes?', 'Solo las personas a las que les das ese acceso. La recepción puede agendar sin ver el expediente; si le das «Imprimir expedientes», lo puede ver e imprimir, pero no cambiar.'],
-  [`¿Cómo es la prueba de ${PRUEBA_DIAS} días?`, 'Te dejamos el sistema listo y lo usas una semana con todo incluido. No pedimos tarjeta.'],
+  [`¿Cómo es la prueba de ${PRUEBA_DIAS} días?`, 'Te dejamos el sistema listo y lo usas una semana con el plan que elijas. No pedimos tarjeta.'],
   ['¿Hay contrato o plan anual?', 'No. Después de la prueba pagas mes a mes.'],
 ];

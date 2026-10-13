@@ -3,9 +3,9 @@
 // verdad (citas-piloto y citas-servidor, 8-oct-2026): si el sistema cambia, se cambia aquí. Sin cifras sin fuente y sin
 // prometer lo que el sistema todavía no hace.
 //
-// La de la agenda espera: la portada vende paquetes de mensajes que «salen solos», y el sistema todavía no manda nada
-// solo (citas-piloto web/js/app/bandeja.mjs: «nada sale solo todavía; cada mensaje se manda con su botón»). Hasta que
-// los socios decidan, no se escribe una página que lo repita ni una que lo contradiga.
+// La de la agenda espera. Desde el 13-oct la portada ya no vende paquetes de mensajes que «salen solos»
+// (PAQUETES_A_LA_VENTA en producto.mjs): el sistema todavía no manda nada solo (citas-piloto web/js/app/bandeja.mjs:
+// «nada sale solo todavía; cada mensaje se manda con su botón»). Una página de la agenda tiene que decir lo mismo.
 
 import { PRECIOS, PRUEBA_DIAS, FILAS, ACCESOS, PREGUNTAS, dolares } from './producto.mjs';
 

@@ -91,7 +91,7 @@ const destinoEntrar = (prefijo) => `${prefijo === '/' ? '/' : prefijo || './'}en
 const DOMINIO_CLINICAS = REGISTRO ? new URL(REGISTRO).hostname.replace(/^cuentas\./, '') : '';
 const enlaceRegistro = REGISTRO ? ' data-registro' : '';
 const PREGUNTAS = REGISTRO
-  ? [...P.PREGUNTAS.map(([q, a]) => (q.startsWith('¿Cómo es la prueba') ? [q, 'Creas tu cuenta y tu sistema queda listo al momento; lo usas una semana con todo incluido. No pedimos tarjeta.'] : [q, a])), ...P.PREGUNTAS_REGISTRO]
+  ? [...P.PREGUNTAS.map(([q, a]) => (q.startsWith('¿Cómo es la prueba') ? [q, 'Creas tu cuenta y tu sistema queda listo al momento; lo usas una semana con el plan que elijas. No pedimos tarjeta.'] : [q, a])), ...P.PREGUNTAS_REGISTRO]
   : P.PREGUNTAS;
 
 function cabecera(prefijo, inicio) {
@@ -364,11 +364,11 @@ function precios() {
         <p class="plan__precio">${tachado('agenda')}<span class="plan__cifra plan__cifra--fija"><strong class="num">${dolares(P.PRECIOS.agenda)}</strong></span><span class="plan__unidad">${esc(agenda.unidad)}</span></p>
         ${destacado(agenda)}
         <ul class="lista-check" role="list">${agenda.incluye.map((x) => `<li>${icono('check')}${esc(x)}</li>`).join('')}</ul>
-        <fieldset class="plan__mensajes">
+        ${paquetes.length < 2 ? `<p class="plan__suma plan__suma--sola">La recepción manda cada recordatorio con un toque desde el WhatsApp de la clínica. <strong>Total: <span class="num">${dolares(conAgenda(paquetes[0]))}</span> al mes</strong></p>` : `<fieldset class="plan__mensajes">
           <legend>Mensajes automáticos de WhatsApp, aparte</legend>
           <div class="segmentos segmentos--paquetes">${paquetes.map((t, i) => `<label><input type="radio" name="plan-mensajes" value="${t.mensajes}"${i === 0 ? ' checked' : ''} /><span>${t.mensajes ? `${t.mensajes}<small class="num">+${dolares(t.precio)}</small>` : `Sin paquete<small class="num">${dolares(0)}</small>`}</span></label>`).join('')}</div>
           ${paquetes.map((t) => `<p class="plan__suma" data-mensajes="${t.mensajes}">${t.mensajes ? `Hasta ${t.mensajes} mensajes al mes salen solos.` : 'La recepción manda cada recordatorio con un toque desde el WhatsApp de la clínica.'} <strong>Total: <span class="num">${dolares(conAgenda(t))}</span> al mes</strong></p>`).join('\n          ')}
-        </fieldset>
+        </fieldset>`}
         <a class="boton boton--linea plan__boton" href="${registroCon({ expediente: 0, agenda: 1, mensajes: paquetes[0].mensajes })}" data-elegir="agenda"${enlaceRegistro}>Probar la agenda</a>
       </article>
     </div>
@@ -381,7 +381,7 @@ function precios() {
       </div>
       <div class="calculadora__fila">
         <label class="interruptor"><input type="checkbox" name="calc-agenda" checked /><span>${esc(agenda.nombre)}</span></label>
-        <label class="calculadora__dato"><span class="sr">Mensajes automáticos de WhatsApp al mes</span><select name="calc-mensajes">${paquetes.map((t) => `<option value="${t.mensajes}">${t.mensajes ? `+ ${t.mensajes} mensajes (${dolares(t.precio)})` : 'Sin paquete de mensajes'}</option>`).join('')}</select></label>
+        <label class="calculadora__dato"${paquetes.length < 2 ? ' hidden' : ''}><span class="sr">${paquetes.length < 2 ? 'Recordatorios de WhatsApp' : 'Mensajes automáticos de WhatsApp al mes'}</span><select name="calc-mensajes">${paquetes.map((t) => `<option value="${t.mensajes}">${t.mensajes ? `+ ${t.mensajes} mensajes (${dolares(t.precio)})` : 'Sin paquete de mensajes'}</option>`).join('')}</select></label>
         <output class="calculadora__sub num" data-sub="agenda"></output>
       </div>
       <div class="calculadora__total"><span>Total al mes</span><output class="num" data-total aria-live="polite"></output></div>
@@ -886,7 +886,7 @@ ${GUIAS.map((g) => `- [${g.h1}](${URL_BASE}${g.ruta}): guía con la norma y el a
 En dólares, al mes y netos (sin sumar ITBMS):
 
 - ${exp.nombre}: ${dolares(P.PRECIOS.expediente)} ${exp.unidad}. Profesional es cada médico que hace expedientes; la recepción, enfermería y administración tienen su usuario sin costo. El dictado con IA va incluido.
-- ${agenda.nombre}: ${dolares(P.PRECIOS.agenda)} ${agenda.unidad}. Los mensajes de WhatsApp van aparte, por paquete: ${paquetes} al mes.
+- ${agenda.nombre}: ${dolares(P.PRECIOS.agenda)} ${agenda.unidad}. ${paquetes ? `Los mensajes de WhatsApp van aparte, por paquete: ${paquetes} al mes.` : 'Los recordatorios por WhatsApp los manda la recepción con un toque, sin costo aparte.'}
 - Prueba gratis de ${P.PRUEBA_DIAS} días, sin tarjeta. Después, mes a mes, sin plan anual. Se paga con tarjeta de crédito o débito.
 
 ## Preguntas frecuentes

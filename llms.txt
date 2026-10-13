@@ -16,7 +16,7 @@
 En dólares, al mes y netos (sin sumar ITBMS):
 
 - Expediente clínico con IA: $29.99 al mes por profesional. Profesional es cada médico que hace expedientes; la recepción, enfermería y administración tienen su usuario sin costo. El dictado con IA va incluido.
-- Agenda de citas: $14.99 al mes por clínica. Los mensajes de WhatsApp van aparte, por paquete: 200 por $15, 500 por $25 o 1000 por $35 al mes.
+- Agenda de citas: $14.99 al mes por clínica. Los recordatorios por WhatsApp los manda la recepción con un toque, sin costo aparte.
 - Prueba gratis de 7 días, sin tarjeta. Después, mes a mes, sin plan anual. Se paga con tarjeta de crédito o débito.
 
 ## Preguntas frecuentes
@@ -29,7 +29,7 @@ En dólares, al mes y netos (sin sumar ITBMS):
 - ¿Qué cuenta como profesional? Cada médico que hace expedientes. La recepción, enfermería y administración tienen su propio usuario sin costo.
 - ¿Puedo pasar mis pacientes desde Excel? Sí. El sistema importa tus pacientes desde un Excel o un CSV: nombre, cédula o pasaporte, celular, correo, fecha de nacimiento, alergias, enfermedades, medicamentos y seguro.
 - ¿Quién puede ver los expedientes? Solo las personas a las que les das ese acceso. La recepción puede agendar sin ver el expediente; si le das «Imprimir expedientes», lo puede ver e imprimir, pero no cambiar.
-- ¿Cómo es la prueba de 7 días? Creas tu cuenta y tu sistema queda listo al momento; lo usas una semana con todo incluido. No pedimos tarjeta.
+- ¿Cómo es la prueba de 7 días? Creas tu cuenta y tu sistema queda listo al momento; lo usas una semana con el plan que elijas. No pedimos tarjeta.
 - ¿Hay contrato o plan anual? No. Después de la prueba pagas mes a mes.
 - ¿Cómo pago? Con tarjeta de crédito o débito, mes a mes. Al terminar la prueba pagas desde tu sistema, en «Tu plan»; después el cobro es automático y te llega el recibo por correo.
 - ¿Puedo agregar profesionales después? Sí, cuando quieras, desde «Tu plan» en tu sistema: agregas profesionales o la agenda y pagas solo la diferencia por los días que quedan del mes.

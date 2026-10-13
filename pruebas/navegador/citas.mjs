@@ -96,6 +96,14 @@ try {
     const { c, p } = await abrir();
     assert.equal(await p.locator('.plan--agenda .plan__precio strong').innerText(), dolares(PRECIOS.agenda));
     const total = async () => (await p.locator('.plan--agenda .plan__suma:visible').allInnerTexts()).join(' | ');
+    // Sin paquetes a la venta (PAQUETES_A_LA_VENTA, 13-oct): una sola línea, con un toque, y ningún paquete que elegir.
+    if (PRECIOS.mensajes.length < 2) {
+      assert.equal(await p.locator('.plan--agenda input[name="plan-mensajes"]').count(), 0, 'no se ofrecen paquetes');
+      assert.match(await total(), new RegExp(`con un toque[\\s\\S]*Total: \\${dolares(PRECIOS.agenda)} al mes$`));
+      assert.doesNotMatch(await p.locator('main').innerText(), /salen solos|mensajes automáticos|confirmaciones automáticas|recordatorios automáticos/i, 'nada promete mensajes que salen solos');
+      await c.close();
+      return;
+    }
     assert.ok(await p.locator('.plan--agenda input[value="0"]').isChecked(), 'sin paquete, por defecto');
     assert.match(await total(), new RegExp(`con un toque[\\s\\S]*Total: \\${dolares(PRECIOS.agenda)} al mes$`));
     for (const m of PRECIOS.mensajes.slice(1)) {
@@ -115,14 +123,20 @@ try {
     assert.ok(await p.locator('[data-calculadora]').isVisible());
     assert.equal(await p.inputValue('[name="calc-mensajes"]'), '0', 'sin paquete, por defecto');
     assert.equal(await total(), dolares(sumar(PRECIOS.agenda, p0.precio, ...exp(2))));
-    await p.selectOption('[name="calc-mensajes"]', String(p1.mensajes));
-    assert.equal(await total(), dolares(sumar(PRECIOS.agenda, p1.precio, ...exp(2))));
-    assert.equal(await p.locator('[data-sub="agenda"]').innerText(), dolares(sumar(PRECIOS.agenda, p1.precio)));
-    // la tarjeta de la agenda sigue a la calculadora
-    assert.ok(await p.locator(`.plan--agenda input[value="${p1.mensajes}"]`).isChecked());
+    // Sin paquetes a la venta (PAQUETES_A_LA_VENTA, 13-oct) la calculadora no ofrece mensajes: la agenda va sola.
+    const paquete = p1 || p0;
+    if (p1) {
+      await p.selectOption('[name="calc-mensajes"]', String(p1.mensajes));
+      assert.equal(await total(), dolares(sumar(PRECIOS.agenda, p1.precio, ...exp(2))));
+      assert.equal(await p.locator('[data-sub="agenda"]').innerText(), dolares(sumar(PRECIOS.agenda, p1.precio)));
+      // la tarjeta de la agenda sigue a la calculadora
+      assert.ok(await p.locator(`.plan--agenda input[value="${p1.mensajes}"]`).isChecked());
+    } else {
+      assert.equal(await p.locator('[name="calc-mensajes"]').isVisible(), false, 'sin paquetes, no hay mensajes que elegir');
+    }
     await p.click('[data-sumar="1"]');
     await p.click('[data-sumar="1"]');
-    assert.equal(await total(), dolares(sumar(PRECIOS.agenda, p1.precio, ...exp(4))));
+    assert.equal(await total(), dolares(sumar(PRECIOS.agenda, paquete.precio, ...exp(4))));
     await p.uncheck('[name="calc-agenda"]');
     assert.equal(await total(), dolares(sumar(...exp(4))));
     await p.fill('[name="calc-profesionales"]', '0');
@@ -165,12 +179,13 @@ try {
     }
     let pedida = null;
     await p.route(/\/registro\/?(\?|$)/, (r) => { pedida = r.request().url(); r.fulfill({ status: 200, contentType: 'text/html', body: 'registro' }); });
-    await p.selectOption('[name="calc-mensajes"]', String(PRECIOS.mensajes[2].mensajes));
+    const ultimo = PRECIOS.mensajes.at(-1);
+    if (PRECIOS.mensajes.length > 1) await p.selectOption('[name="calc-mensajes"]', String(ultimo.mensajes));
     await p.click('[data-sumar="1"]');
     await p.click('[data-elegir="calculadora"]');
     await p.waitForURL(/\/registro\/?\?/);
     const q = new URL(pedida).searchParams;
-    assert.deepEqual([q.get('expediente'), q.get('profesionales'), q.get('agenda'), q.get('mensajes')], ['1', '3', '1', String(PRECIOS.mensajes[2].mensajes)]);
+    assert.deepEqual([q.get('expediente'), q.get('profesionales'), q.get('agenda'), q.get('mensajes')], ['1', '3', '1', String(ultimo.mensajes)]);
     await c.close();
   });
 
