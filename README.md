@@ -48,8 +48,8 @@ El sitio de la agencia (catálogo de servicios, soluciones por negocio, guías y
 | `privacidad/` | Qué datos trata el sitio (ninguno) y las demos |
 
 Las demos de restaurante y de citas viven en sus propios repos:
-[alphateklab-mesa](https://jojomunoz.github.io/alphateklab-mesa/) y
-[alphateklab-reservas](https://jojomunoz.github.io/alphateklab-reservas/).
+[alphateklab-mesa](https://alphatend.github.io/alphateklab-mesa/) y
+[alphateklab-reservas](https://alphatend.github.io/alphateklab-reservas/).
 
 ## Cómo se cambia
 

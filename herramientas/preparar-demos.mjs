@@ -22,4 +22,4 @@ export const PREPARAR = {
 };
 
 // las demos de otros repos se abren en local con la misma ruta que tienen en GitHub Pages
-export const local = (url, BASE) => url.replace('https://jojomunoz.github.io', BASE).replace(/^(?!http)/, `${BASE}/alphateklab/`);
+export const local = (url, BASE) => url.replace('https://alphatend.github.io', BASE).replace(/^(?!http)/, `${BASE}/alphateklab/`);

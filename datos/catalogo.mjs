@@ -30,8 +30,8 @@ export const TIPOS = [
   { id: 'pagos', nombre: 'Cobros y facturación', icono: 'credit-card', foto: 'tipo-pagos', desc: 'Pagos con Yappy y tarjeta, punto de venta y factura electrónica.' },
 ];
 
-const MESA = 'https://jojomunoz.github.io/alphateklab-mesa/';
-const RESERVAS = 'https://jojomunoz.github.io/alphateklab-reservas/';
+const MESA = 'https://alphatend.github.io/alphateklab-mesa/';
+const RESERVAS = 'https://alphatend.github.io/alphateklab-reservas/';
 
 // «icono»: solo en los servicios donde un ícono propio dice más que el de su tipo (revisión del 3-oct: las agendas
 // llevaban el de código); los demás usan el de su tipo.
@@ -505,7 +505,7 @@ export const SERVICIOS = [
     sectores: ['servicios'], tipos: ['software'], instala: false,
     para: 'Citas por barbero o estilista, recordatorio por WhatsApp y depósito en línea para que no se pierda el espacio.',
     incluye: ['Agenda por profesional y servicio', 'Recordatorio y confirmación', 'Depósito con Yappy o tarjeta'],
-    equipo: [], precio: null, demo: 'https://jojomunoz.github.io/alphateklab-reservas/',
+    equipo: [], precio: null, demo: 'https://alphatend.github.io/alphateklab-reservas/',
   },
   {
     id: 'S04', icono: 'stethoscope', slug: 'videoconsulta', nombre: 'Videoconsulta con cobro previo', corto: 'Videoconsulta',

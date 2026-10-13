@@ -7,9 +7,9 @@ repositorio está en su `CLAUDE.md` y su `README.md`. Aquí va cómo entran los 
 
 | Repositorio | Publicado en | Qué es |
 |---|---|---|
-| `jojomunoz/alphateklab` | https://alphateklab.com/ | Desde el 7-oct-2026, la portada de Citas Médicas (agenda y expediente para consultorios). El sitio de la agencia quedó en la rama `sitio-agencia` |
-| `jojomunoz/alphateklab-mesa` | https://jojomunoz.github.io/alphateklab-mesa/ | Demo de pedir y pagar desde la mesa: carta QR, salón, cocina, kiosco y administración |
-| `jojomunoz/alphateklab-reservas` | https://jojomunoz.github.io/alphateklab-reservas/ | Demo de citas con recordatorios y de reservas de cabañas por canal |
+| `alphatend/alphateklab` | https://alphateklab.com/ | Desde el 7-oct-2026, la portada de Citas Médicas (agenda y expediente para consultorios). El sitio de la agencia quedó en la rama `sitio-agencia` |
+| `alphatend/alphateklab-mesa` | https://alphatend.github.io/alphateklab-mesa/ | Demo de pedir y pagar desde la mesa: carta QR, salón, cocina, kiosco y administración |
+| `alphatend/alphateklab-reservas` | https://alphatend.github.io/alphateklab-reservas/ | Demo de citas con recordatorios y de reservas de cabañas por canal |
 
 Los tres son públicos. `main` es producción: GitHub Pages publica cada push en uno o dos minutos.
 
@@ -17,9 +17,9 @@ Los tres son públicos. `main` es producción: GitHub Pages publica cada push en
 
 ```sh
 mkdir alphateklab-trabajo && cd alphateklab-trabajo
-git clone https://github.com/jojomunoz/alphateklab.git
-git clone https://github.com/jojomunoz/alphateklab-mesa.git
-git clone https://github.com/jojomunoz/alphateklab-reservas.git
+git clone https://github.com/alphatend/alphateklab.git
+git clone https://github.com/alphatend/alphateklab-mesa.git
+git clone https://github.com/alphatend/alphateklab-reservas.git
 for r in alphateklab alphateklab-mesa alphateklab-reservas; do (cd $r && npm install); done
 (cd alphateklab && npx playwright install chromium)    # y «webkit» para probar como en un iPhone
 node alphateklab/herramientas/servir.mjs                  # sirve los tres en http://localhost:4900/alphateklab/

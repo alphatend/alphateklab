@@ -190,7 +190,7 @@ diseño de la casa: `~/Documents/NovahWEB/conocimiento/GUIA-DISENO-SIN-SLOP.md` 
   `git pull --rebase` antes de empezar y antes de empujar; si chocan archivos generados, resolver las fuentes y regenerar.
 - Servidor local sin Python: `node herramientas/servir.mjs` (sirve la carpeta de los tres repos en el 4900, con rangos
   de bytes para los videos).
-- Después de cada push, mirar que GitHub Pages haya publicado: `gh api repos/jojomunoz/<repo>/pages/builds --jq '.[0]'`
+- Después de cada push, mirar que GitHub Pages haya publicado: `gh api repos/alphatend/<repo>/pages/builds --jq '.[0]'`
   (un despliegue de reservas falló una vez por un tiempo de espera de Jekyll; los tres repos llevan `.nojekyll`).
 - Cerrojos, contra local y contra el sitio en vivo después de cada push:
   `PERMITIR_PENDIENTES=1 node --test pruebas/*.test.mjs pruebas/control/*.test.mjs`, `node pruebas/navegador/sitio.mjs <url>` y

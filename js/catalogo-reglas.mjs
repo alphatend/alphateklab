@@ -5,7 +5,7 @@
 // El otro precio decidido, las fotos del recorrido 3D (+$300), se fue con el servicio: desde oct-2026 solo software.
 export const PRECIOS_DECIDIDOS = { R01: '$10 al mes' };
 
-export const REPOS_DEMO = ['https://jojomunoz.github.io/alphateklab-mesa/', 'https://jojomunoz.github.io/alphateklab-reservas/'];
+export const REPOS_DEMO = ['https://alphatend.github.io/alphateklab-mesa/', 'https://alphatend.github.io/alphateklab-reservas/'];
 
 // Muletillas y restos que delatan texto sin revisar (guía sin slop §2.2 y §4).
 export const PALABRAS_PROHIBIDAS = [

@@ -2,8 +2,8 @@
 // imagen: captura real de la demo (herramientas/capturas.mjs), nunca una imagen generada.
 // Solo software (oct-2026): se quitaron las del recorrido 3D, el recorrido 360, el contador con cámara y los sensores.
 
-const MESA = 'https://jojomunoz.github.io/alphateklab-mesa/';
-const RESERVAS = 'https://jojomunoz.github.io/alphateklab-reservas/';
+const MESA = 'https://alphatend.github.io/alphateklab-mesa/';
+const RESERVAS = 'https://alphatend.github.io/alphateklab-reservas/';
 
 export const DEMOS = [
   {

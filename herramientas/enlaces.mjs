@@ -1,6 +1,6 @@
 // Recorre los tres sitios de alphateklab desde la portada y avisa de enlaces y recursos rotos.
 // Uso: node herramientas/enlaces.mjs http://localhost:4900   (en local, sirviendo ~/alphateklab/repos)
-//      node herramientas/enlaces.mjs https://jojomunoz.github.io   (lo publicado)
+//      node herramientas/enlaces.mjs https://alphatend.github.io   (lo publicado)
 // Sigue solo páginas de /alphateklab, /alphateklab-mesa y /alphateklab-reservas; los enlaces externos se
 // comprueban con una petición HEAD (o GET si el servidor no acepta HEAD) sin seguirlos.
 
@@ -65,7 +65,7 @@ while (cola.length) {
   const html = await r.text();
   for (const destino of extraer(html, limpia)) {
     // en local, lo que apunta a la dirección publicada se comprueba contra el servidor local
-    const d = quitarFragmento(destino).replace(/^https:\/\/jojomunoz\.github\.io(?=\/alphateklab)/, BASE);
+    const d = quitarFragmento(destino).replace(/^https:\/\/alphatend\.github\.io(?=\/alphateklab)/, BASE);
     const u = new URL(d);
     if (u.origin === new URL(BASE).origin && PROPIOS.test(u.pathname)) {
       if (/\.html?$|\/$/.test(u.pathname)) {
