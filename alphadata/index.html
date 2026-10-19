@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex" />
+<meta name="color-scheme" content="light dark" />
+<title>alphadata · lo que dicen de una empresa las fuentes públicas</title>
+<meta name="description" content="Demo privada de alphateklab: la ficha de debida diligencia de las sociedades de Panamá, con lo que dicen de cada una las fuentes públicas cruzadas." />
+<link rel="icon" href="../assets/marca/favicon.svg" type="image/svg+xml" />
+<link rel="preload" href="fuentes/ibm-plex-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="estilo.css" />
+<link rel="stylesheet" href="../demo-acceso/acceso.css" />
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+<header class="cabecera">
+  <div class="envoltura cabecera__fila">
+    <a class="marca" href="#/">alpha<span>data</span></a>
+    <nav class="indice-sitio" aria-label="Secciones"><a href="#/">Inicio</a><a href="#/lote">Cotejar una lista</a><a href="#/sigo">Siguiendo</a></nav>
+    <form class="buscador" role="search" id="buscar" autocomplete="off">
+      <label for="q" class="sr">Busca una sociedad por su nombre o su RUC</label>
+      <input id="q" type="search" placeholder="Nombre o RUC de una sociedad" enterkeyhint="search" aria-controls="resultados" />
+      <div id="resultados" class="resultados" role="region" aria-live="polite" aria-label="Resultados de la búsqueda" hidden></div>
+    </form>
+  </div>
+</header>
+<main id="contenido" class="envoltura" tabindex="-1">
+  <p class="cargando">Abriendo la demo…</p>
+  <noscript><p>Esta demo necesita JavaScript para leer sus datos.</p></noscript>
+</main>
+<footer class="pie">
+  <div class="envoltura">
+    <p>Demo privada de <a href="../">alphateklab</a>, en desarrollo. Cada dato sale de una fuente pública panameña o
+      internacional, con su enlace. Solo sociedades e instituciones: las personas naturales no se nombran. Que una
+      sociedad figure en una fuente no prueba nada por sí solo: hay que leer el original.</p>
+  </div>
+</footer>
+</body>
+</html>

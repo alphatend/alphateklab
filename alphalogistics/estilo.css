@@ -1,0 +1,713 @@
+/* alphalogistics (demo, 19-oct-2026).
+
+   De dónde sale: del papel del comercio exterior. Las fichas se leen como una declaración de aduana o el certificado de
+   una nave (casillas con su rótulo arriba, filetes finos, esquinas rectas); el color, de la carta náutica (papel frío,
+   agua somera, tinta marina), y la portada abre con el patio de contenedores visto desde arriba. Cada vista tiene la
+   forma de su dato: el producto es un mercado (cuánto, quién se lo reparte, de dónde, a qué precio), la empresa es su
+   mezcla y su competencia, la nave es su registro.
+
+   Tokens:
+     papel #F3F6F7 (fondo), superficie #FFFFFF, agua #DCE8EE (relleno y estados), tinta #13232E (títulos),
+     cuerpo #33434E, tenue #5B6B76, línea #C9D5DC, campo #7D8F9B (borde de controles, 3,35:1),
+     marino #0B4F7A: el ÚNICO acento (enlaces, selección, la serie principal; 8,70:1 sobre blanco).
+     Los colores de los contenedores (China, Estados Unidos, Panamá y Zona Libre, resto de Asia, Europa, Latinoamérica,
+     otros) solo dicen
+     el origen, dentro de las gráficas; todos pasan de 3:1 contra el papel, en claro y en oscuro.
+   Letra: Archivo variable, una sola familia en tres anchos: 118 % para los títulos (la rotulación de un casco), 100 %
+     para leer y 75 % para los rótulos de casilla. Cifras tabulares en toda tabla.
+   Esquinas: 0 en casillas y secciones, 4 px en controles, 2 px en marcas. */
+
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url("fuentes/archivo-latin-standard-normal.woff2") format("woff2-variations"),
+    url("fuentes/archivo-latin-standard-normal.woff2") format("woff2");
+}
+
+:root {
+  --f: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --papel: #f3f6f7;
+  --superficie: #ffffff;
+  --agua: #dce8ee;
+  --tinta: #13232e;
+  --cuerpo: #33434e;
+  --tenue: #5b6b76;
+  --linea: #c9d5dc;
+  --campo: #7d8f9b;
+  --marino: #0b4f7a;
+  --sobre-marino: #ffffff;
+  --o-china: #b4472e;
+  --o-eeuu: #1f5e8c;
+  --o-asia: #8f6a1e;
+  --o-europa: #2e7d5b;
+  --o-latam: #6b4c8a;
+  --o-panama: #4e7f8c;
+  --o-otros: #7d8a93;
+  --ancho: 76rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papel: #0e1a22;
+    --superficie: #13232e;
+    --agua: #18303d;
+    --tinta: #e6eef2;
+    --cuerpo: #c2cfd6;
+    --tenue: #8fa1ac;
+    --linea: #2a3d49;
+    --campo: #5f7684;
+    --marino: #7cb8e0;
+    --sobre-marino: #0e1a22;
+    --o-china: #e07a5f;
+    --o-eeuu: #6fa8d6;
+    --o-asia: #d9a94a;
+    --o-europa: #6cc49a;
+    --o-latam: #b48fd6;
+    --o-panama: #5fb8c2;
+    --o-otros: #9aa8b1;
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--cuerpo);
+  font-family: var(--f);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+h1,
+h2,
+h3 {
+  margin: 0;
+  color: var(--tinta);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+p,
+ul,
+ol {
+  margin: 0;
+}
+p {
+  text-wrap: pretty;
+}
+a {
+  color: var(--marino);
+  text-underline-offset: 0.16em;
+  text-decoration-thickness: 1px;
+}
+a:hover {
+  text-decoration-thickness: 2px;
+}
+:focus-visible {
+  outline: 2px solid var(--marino);
+  outline-offset: 2px;
+}
+::selection {
+  background: var(--agua);
+  color: var(--tinta);
+}
+.tab {
+  font-variant-numeric: tabular-nums;
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.saltar {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 100;
+  background: var(--marino);
+  color: var(--sobre-marino);
+  padding: 8px 12px;
+}
+.saltar:focus {
+  top: 8px;
+}
+.envoltura {
+  width: 100%;
+  max-width: var(--ancho);
+  margin-inline: auto;
+  padding-inline: max(16px, 3vw, env(safe-area-inset-left, 0px)) max(16px, 3vw, env(safe-area-inset-right, 0px));
+}
+
+/* ── cabecera: el nombre, el índice y el buscador en una sola línea ── */
+.cabecera {
+  border-bottom: 1px solid var(--linea);
+  background: var(--papel);
+}
+.cabecera__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 2rem;
+  min-height: 64px;
+  padding-block: 8px;
+}
+.marca {
+  color: var(--tinta);
+  text-decoration: none;
+  font-weight: 760;
+  font-stretch: 118%;
+  font-size: 1.12rem;
+  letter-spacing: -0.01em;
+}
+.marca span {
+  color: var(--marino);
+}
+.indice {
+  display: flex;
+  gap: 1.4rem;
+  font-size: 0.94rem;
+}
+.indice a {
+  color: var(--cuerpo);
+  text-decoration: none;
+  padding-block: 0.5rem;
+  border-bottom: 2px solid transparent;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.indice a:hover {
+  color: var(--tinta);
+}
+.indice a[aria-current] {
+  color: var(--tinta);
+  border-bottom-color: var(--marino);
+}
+.buscador {
+  position: relative;
+  flex: 1 1 20rem;
+  max-width: 30rem;
+  margin-left: auto;
+}
+.buscador input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 0.85rem;
+  border: 1px solid var(--campo);
+  border-radius: 4px;
+  background: var(--superficie);
+  color: var(--tinta);
+  font: inherit;
+  font-size: 0.95rem;
+}
+.buscador input::placeholder {
+  color: var(--tenue);
+}
+.resultados {
+  position: absolute;
+  z-index: 30;
+  right: 0;
+  top: calc(100% + 4px);
+  width: min(36rem, calc(100vw - 32px));
+  max-height: min(70vh, 36rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--superficie);
+  border: 1px solid var(--campo);
+  box-shadow: 0 14px 30px rgb(10 30 45 / 0.16);
+}
+.resultados h2 {
+  font-size: 0.74rem;
+  font-weight: 600;
+  font-stretch: 75%;
+  color: var(--tenue);
+  padding: 0.7rem 0.9rem 0.25rem;
+}
+.resultados a {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  min-height: 44px;
+  padding: 0.55rem 0.9rem;
+  color: var(--tinta);
+  text-decoration: none;
+  border-top: 1px solid var(--linea);
+}
+.resultados h2 + a {
+  border-top: 0;
+}
+.resultados a:hover,
+.resultados a.activo {
+  background: var(--agua);
+}
+.resultados small {
+  color: var(--tenue);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.resultados p {
+  padding: 0.8rem 0.9rem;
+}
+.resultados .cuenta {
+  border-top: 1px solid var(--linea);
+  font-size: 0.8rem;
+  color: var(--tenue);
+}
+
+/* ── página ── */
+main {
+  padding-block: 2rem 4rem;
+  min-height: 70vh;
+}
+main:focus {
+  outline: none;
+}
+.cargando {
+  color: var(--tenue);
+}
+.ruta {
+  font-size: 0.86rem;
+  color: var(--tenue);
+  margin-bottom: 0.6rem;
+}
+.ruta a {
+  color: var(--tenue);
+}
+h1.titulo {
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 760;
+  font-stretch: 118%;
+  letter-spacing: -0.02em;
+  max-width: 24ch;
+}
+h1.titulo--largo {
+  font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+  max-width: 36ch;
+}
+.entrada {
+  margin-top: 0.9rem;
+  max-width: 46rem;
+  font-size: 1.08rem;
+  color: var(--cuerpo);
+}
+.entrada b {
+  color: var(--tinta);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.seccion {
+  margin-top: 3rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--tinta);
+}
+.seccion > h2,
+.seccion__cab h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  font-stretch: 110%;
+}
+.seccion__cab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem 1.5rem;
+}
+.seccion__nota,
+.nota {
+  font-size: 0.86rem;
+  color: var(--tenue);
+  max-width: 44rem;
+}
+.seccion__nota {
+  margin-top: 0.3rem;
+}
+.dos {
+  display: grid;
+  gap: 0 3rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
+}
+.dos > .seccion {
+  min-width: 0;
+}
+.dicho {
+  margin-top: 0.8rem;
+  font-size: 0.96rem;
+  color: var(--tinta);
+  max-width: 44rem;
+}
+.dicho b {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── casillas: el encabezado de cada ficha, como una declaración ── */
+.casillas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12.5rem), 1fr));
+  margin-top: 1.4rem;
+  border-top: 1px solid var(--linea);
+  border-left: 1px solid var(--linea);
+}
+.casilla {
+  background: var(--superficie);
+  padding: 0.55rem 0.8rem 0.65rem;
+  border-right: 1px solid var(--linea);
+  border-bottom: 1px solid var(--linea);
+  min-width: 0;
+}
+.casilla--ancha {
+  grid-column: span 2;
+}
+.casilla dt,
+.casilla .r {
+  font-size: 0.74rem;
+  font-weight: 600;
+  font-stretch: 75%;
+  color: var(--tenue);
+  letter-spacing: 0.01em;
+}
+.casilla dd,
+.casilla .v {
+  margin: 0.15rem 0 0;
+  color: var(--tinta);
+  font-size: 1.02rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.casilla dd small {
+  display: block;
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--tenue);
+}
+@media (max-width: 34rem) {
+  .casilla--ancha {
+    grid-column: auto;
+  }
+}
+
+/* ── el patio: cada rectángulo es un monto fijo; el color, de dónde vino ── */
+.patio {
+  margin-top: 1.4rem;
+}
+.patio__grilla {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 30), 1fr);
+  gap: 3px;
+  max-width: 58rem;
+}
+.patio__c {
+  aspect-ratio: 2.4 / 1;
+  background: var(--o-otros);
+}
+.patio__c[data-o="china"] { background: var(--o-china); }
+.patio__c[data-o="eeuu"] { background: var(--o-eeuu); }
+.patio__c[data-o="asia"] { background: var(--o-asia); }
+.patio__c[data-o="europa"] { background: var(--o-europa); }
+.patio__c[data-o="latam"] { background: var(--o-latam); }
+.patio__c[data-o="panama"] { background: var(--o-panama); }
+.patio__escala {
+  margin-top: 0.6rem;
+  font-size: 0.86rem;
+  color: var(--tenue);
+}
+.patio__ley {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 0.2rem 1.5rem;
+  margin-top: 1rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.92rem;
+  max-width: 58rem;
+}
+.patio__ley li {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr auto;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--linea);
+}
+.patio__ley i {
+  display: inline-block;
+  width: 1.6rem;
+  height: 0.66rem;
+}
+.patio__ley b {
+  font-weight: 600;
+  color: var(--tinta);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 40rem) {
+  .patio__grilla {
+    grid-template-columns: repeat(var(--cols-m, 15), 1fr);
+    gap: 2px;
+  }
+}
+
+/* ── series ── */
+/* Las gráficas se dibujan al ancho de su columna (anchoDe en app.js): el rótulo mide 11 px en cualquier pantalla. */
+.grafica {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  margin-top: 1rem;
+}
+.grafica text {
+  fill: var(--tenue);
+  font: 500 11px var(--f);
+  font-variant-numeric: tabular-nums;
+}
+.grafica .v {
+  fill: var(--tinta);
+  font-weight: 600;
+}
+.grafica .eje {
+  stroke: var(--linea);
+}
+.grafica .guia {
+  stroke: var(--linea);
+  stroke-dasharray: 2 3;
+}
+.grafica .b {
+  fill: var(--marino);
+}
+.grafica .b--parcial {
+  fill: none;
+  stroke: var(--marino);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 2;
+}
+.grafica .l {
+  fill: none;
+  stroke: var(--marino);
+  stroke-width: 1.75;
+  vector-effect: non-scaling-stroke;
+}
+.grafica .a {
+  fill: var(--agua);
+}
+
+/* ── reparto: una tira apilada que dice quién se queda con qué parte ── */
+.reparto {
+  display: flex;
+  height: 14px;
+  margin-top: 1rem;
+  background: var(--agua);
+}
+.reparto i {
+  display: block;
+  height: 100%;
+  border-right: 2px solid var(--papel);
+}
+.reparto i:nth-child(5n + 1) { background: var(--marino); }
+.reparto i:nth-child(5n + 2) { background: color-mix(in srgb, var(--marino) 72%, var(--papel)); }
+.reparto i:nth-child(5n + 3) { background: color-mix(in srgb, var(--marino) 52%, var(--papel)); }
+.reparto i:nth-child(5n + 4) { background: color-mix(in srgb, var(--marino) 36%, var(--papel)); }
+.reparto i:nth-child(5n + 5) { background: color-mix(in srgb, var(--marino) 24%, var(--papel)); }
+.reparto i.resto {
+  background: transparent;
+  border-right: 0;
+}
+
+/* ── libro: tablas como un registro, con filetes finos ── */
+.libro-env {
+  overflow-x: auto;
+  margin-top: 0.8rem;
+}
+table.libro {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.93rem;
+  font-variant-numeric: tabular-nums;
+}
+.libro th,
+.libro td {
+  text-align: left;
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  border-bottom: 1px solid var(--linea);
+  vertical-align: baseline;
+}
+.libro th:last-child,
+.libro td:last-child {
+  padding-right: 0;
+}
+.libro thead th {
+  font-size: 0.74rem;
+  font-weight: 600;
+  font-stretch: 75%;
+  color: var(--tenue);
+  border-bottom-color: var(--campo);
+  padding-bottom: 0.35rem;
+}
+.libro .n {
+  text-align: right;
+  white-space: nowrap;
+}
+.libro .pos {
+  width: 2.2rem;
+  color: var(--tenue);
+  font-size: 0.8rem;
+}
+.libro td small {
+  display: block;
+  color: var(--tenue);
+  font-size: 0.8rem;
+  margin-top: 1px;
+}
+.libro a {
+  color: var(--tinta);
+  font-weight: 560;
+  text-decoration: none;
+}
+.libro a:hover {
+  color: var(--marino);
+  text-decoration: underline;
+}
+.libro .barra {
+  display: block;
+  height: 3px;
+  margin-top: 0.35rem;
+  background: var(--marino);
+  max-width: 100%;
+}
+.libro tr.yo td {
+  background: var(--agua);
+}
+.oculto {
+  color: var(--tenue);
+  font-style: italic;
+  font-weight: 400 !important;
+}
+.vacio {
+  margin-top: 0.8rem;
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+.marca-o {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-right: 0.4rem;
+  vertical-align: -0.05em;
+}
+
+/* ── interruptor de vistas (año / todo, importación / exportación) ── */
+.vista {
+  display: inline-flex;
+  border: 1px solid var(--campo);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.vista button {
+  appearance: none;
+  border: 0;
+  border-left: 1px solid var(--campo);
+  background: var(--superficie);
+  color: var(--cuerpo);
+  font: inherit;
+  font-size: 0.86rem;
+  padding: 0 0.85rem;
+  min-height: 36px;
+  cursor: pointer;
+}
+.vista button:first-child {
+  border-left: 0;
+}
+.vista button[aria-pressed="true"] {
+  background: var(--marino);
+  color: var(--sobre-marino);
+}
+
+/* ── capítulos del arancel ── */
+.capitulos {
+  list-style: none;
+  padding: 0;
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  column-gap: 2.5rem;
+}
+.capitulos li {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--linea);
+  font-size: 0.93rem;
+}
+.capitulos .cod {
+  color: var(--tenue);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.capitulos a {
+  color: var(--tinta);
+  text-decoration: none;
+}
+.capitulos a:hover {
+  color: var(--marino);
+  text-decoration: underline;
+}
+.capitulos small {
+  color: var(--tenue);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── pie ── */
+.pie {
+  border-top: 1px solid var(--linea);
+  padding-block: 1.5rem 2.5rem;
+  font-size: 0.84rem;
+  color: var(--tenue);
+}
+.pie p + p {
+  margin-top: 0.4rem;
+}
+.pie a {
+  color: var(--tenue);
+}
+
+@media (max-width: 40rem) {
+  .cabecera__fila {
+    gap: 0.3rem 1.2rem;
+  }
+  .buscador {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
+    margin: 0 0 0.3rem;
+  }
+  .libro .solo-ancho {
+    display: none;
+  }
+}
+
+/* Mientras no se pone la contraseña, la cabecera no ofrece nada que no se pueda abrir. */
+body[data-cerrado] .indice,
+body[data-cerrado] .buscador {
+  visibility: hidden;
+}
+
+@media (max-width: 26rem) { .nav__opcional { display: none !important; } }
+.titulo .marca-o { width: 0.8em; height: 0.8em; margin-right: 0.35em; vertical-align: 0; }

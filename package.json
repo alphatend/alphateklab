@@ -4,7 +4,7 @@
   "description": "Sitio de Citas Médicas de alphateklab: se genera con node herramientas/generar-citas.mjs y se publica en GitHub Pages desde main. Ver CLAUDE.md.",
   "scripts": {
     "generar": "node herramientas/generar-citas.mjs",
-    "prueba": "node --test pruebas/citas.test.mjs pruebas/portada.test.mjs pruebas/sintaxis.test.mjs",
+    "prueba": "node --test pruebas/citas.test.mjs pruebas/portada.test.mjs pruebas/sintaxis.test.mjs pruebas/demos.test.mjs",
     "prueba:navegador": "node pruebas/navegador/citas.mjs http://localhost:4900/alphateklab/",
     "capturas": "node herramientas/capturas-citas.mjs",
     "og": "node herramientas/og-citas.mjs"

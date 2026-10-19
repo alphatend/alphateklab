@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex" />
+<meta name="color-scheme" content="light dark" />
+<title>alphalogistics · quién importa qué en Panamá</title>
+<meta name="description" content="Demo de alphateklab: las importaciones, exportaciones y reexportaciones de Panamá por empresa y por producto desde 2020, con las naves del registro de la AMP y lo que cada empresa le vende al Estado." />
+<link rel="icon" href="../assets/marca/favicon.svg" type="image/svg+xml" />
+<link rel="preload" href="fuentes/archivo-latin-standard-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="estilo.css" />
+<link rel="stylesheet" href="../demo-acceso/acceso.css" />
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+<header class="cabecera">
+  <div class="envoltura cabecera__fila">
+    <a class="marca" href="#/">alpha<span>logistics</span></a>
+    <nav class="indice" aria-label="Secciones">
+      <a href="#/">Comercio</a>
+      <a href="#/productos">Productos</a>
+      <a href="#/naves">Naves</a>
+      <a href="#/sigo" class="nav__opcional">Siguiendo</a>
+    </nav>
+    <form class="buscador" role="search" id="buscar" autocomplete="off">
+      <label for="q" class="sr">Busca un producto, una empresa o una nave</label>
+      <input id="q" name="q" type="search" placeholder="Producto, empresa o nave" enterkeyhint="search" aria-controls="resultados" />
+      <div id="resultados" class="resultados" role="region" aria-live="polite" aria-label="Resultados de la búsqueda" hidden></div>
+    </form>
+  </div>
+</header>
+<main id="contenido" class="envoltura" tabindex="-1">
+  <p class="cargando">Abriendo la demo…</p>
+  <noscript><p>Esta demo necesita JavaScript para leer sus datos.</p></noscript>
+</main>
+<footer class="pie">
+  <div class="envoltura">
+    <p>Demo de <a href="../">alphateklab</a> hecha con datos que publica el Estado panameño: Aduanas en Cifras de la
+      Autoridad Nacional de Aduanas, el Registro de la Propiedad de Naves y las licencias de la Autoridad Marítima, los
+      edictos de adjudicación de la Autoridad del Canal y PanamaCompra. Las personas naturales no se nombran.</p>
+    <p><a href="#/fuentes">De dónde sale cada dato y qué se descartó</a></p>
+  </div>
+</footer>
+</body>
+</html>
