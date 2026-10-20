@@ -26,6 +26,14 @@ const VERBO = { modifica: 'La modificó', adiciona: 'Le añadió', reglamenta: '
 const VERBO_HIZO = { modifica: 'Modifica', adiciona: 'Añade a', reglamenta: 'Reglamenta', deroga: 'Deroga', reforma: 'Reforma', subroga: 'Subroga', aprueba: 'Aprueba', 'deja sin efecto': 'Deja sin efecto', sustituye: 'Sustituye' };
 const FUERTE = new Set(['deroga', 'subroga', 'deja sin efecto', 'sustituye']);
 const shardN = (id) => Number(id) % 200, shardD = (id) => Number(id) % 300;
+// «Derogada» venía de cualquier norma que dijera derogar «disposiciones del Código …»: el Código Civil, el Penal o el
+// Judicial salían derogados (revisión del 19-oct). Se dice lo que se sabe: que una norma posterior dice derogarla o
+// derogar parte de ella; en un código, nunca entero.
+const estadoTexto = (n) => {
+  if (/derogada/.test(n.estado || '')) return n.codigo ? 'Normas posteriores derogaron partes de este código' : 'Una norma posterior dice derogarla, en todo o en parte: revisar';
+  if (n.estado) return n.estado.replace(/^./, (x) => x.toUpperCase());
+  return n.recibio.length ? 'Tocada por normas posteriores' : 'Ninguna norma posterior dice tocarla';
+};
 /** «["DER. ADMINISTRATIVO","DER. FINANCIERO"]» → «Derecho administrativo, derecho financiero». */
 const materia = (r) => {
   let l = []; try { l = Array.isArray(r) ? r : JSON.parse(r || '[]'); } catch { l = String(r || '').split(/[;,]/); }
@@ -91,8 +99,8 @@ async function portada() {
     </section>
     <section class="bloque" aria-labelledby="t-pen">
       <h2 id="t-pen">Penas por delito</h2>
-      <p class="nota" style="margin-top:.25rem">Mediana de la pena de prisión impuesta, de la Base de Fallos del Ministerio Público.</p>
-      ${libro(r.penas.slice(0, 8), [{ t: 'Delito', v: (x) => esc(x.delito) }, { t: 'Casos', n: 1, v: (x) => esc(ent.format(x.n)) }, { t: 'Mediana', n: 1, v: (x) => esc(meses(x.med)) }])}
+      <p class="nota" style="margin-top:.25rem">Mediana de la pena de prisión leída de las decisiones penales de la Corte Suprema y de la Base de Fallos del Ministerio Público.</p>
+      ${libro(r.penas.slice(0, 8), [{ t: 'Delito', v: (x) => esc(x.delito) }, { t: 'Decisiones', n: 1, v: (x) => esc(ent.format(x.n)) }, { t: 'Mediana', n: 1, v: (x) => esc(meses(x.med)) }])}
       <p style="margin-top:.6rem"><a href="#/penal">Las ${esc(ent.format(r.penas.length))} figuras, con su rango y el acuerdo de pena</a></p>
     </section>
   </div>`;
@@ -122,7 +130,7 @@ async function norma(id) {
   <p class="ruta"><a href="#/">Normas</a> · ${esc(n.tipo ? n.tipo.toLowerCase().replace(/^./, (x) => x.toUpperCase()) : 'Norma')}</p>
   <h1 class="titulo">${esc(n.nombre)}</h1>
   ${n.titulo ? `<p class="subtitulo">${esc(n.titulo)}</p>` : ''}
-  <p class="estado${n.estado ? '' : ' estado--neutro'}">${n.estado ? esc(n.estado.replace(/^./, (x) => x.toUpperCase())) : n.recibio.length ? 'Tocada por normas posteriores' : 'Ninguna norma posterior dice tocarla'}</p>
+  <p class="estado${n.estado ? '' : ' estado--neutro'}">${esc(estadoTexto(n))}</p>
   <div class="acciones">
     <button type="button" id="copiar-cita">Copiar la cita</button>
     ${n.url ? `<a class="boton" href="${esc(n.url)}" rel="noopener">El original en Legispan</a>` : ''}
@@ -146,7 +154,7 @@ async function norma(id) {
         <div class="texto" style="margin-top:1rem">
           ${texto.antes ? `<p class="antes">${esc(texto.antes.slice(0, 3000))}</p>` : ''}
           ${texto.articulos.map((a) => `<div class="art" id="art-${esc(a.num || 'texto')}"><div class="art__cab"><a href="#/n/${esc(id)}/a/${esc(a.num || '')}">${a.num ? `Artículo ${esc(a.num)}` : 'Texto'}</a>${a.c ? `<span class="c">citado ${esc(ent.format(a.c))} ${a.c === 1 ? 'vez' : 'veces'}</span>` : ''}</div><p>${esc(a.txt.replace(/^art[ií]culo\s+[\w°º.-]+\s*[.:-]?\s*/i, ''))}</p></div>`).join('')}
-        </div></section>` : `<section class="seccion"><h2>Texto</h2><p class="nota">El texto de esta norma no viene en la demo (trae el de las ${esc(ent.format((await resumen()).conTexto))} más citadas).${n.url ? ` Está en <a href="${esc(n.url)}" rel="noopener">Legispan</a>.` : ''}</p></section>`}
+        </div></section>` : `<section class="seccion"><h2>Texto</h2><p class="nota">El texto de esta norma no viene en la demo: trae el de ${esc(ent.format((await resumen()).conTexto))} leyes y decretos, y el de la Constitución y los códigos no está en la base.</p></section>`}
     </div>
     <aside class="lado" aria-label="Datos y aplicación">
       <section class="seccion">
@@ -174,6 +182,7 @@ async function articulo(id, num) {
   setTimeout(() => {
     const el = document.getElementById(`art-${num}`);
     if (el) { el.scrollIntoView({ block: 'start' }); el.setAttribute('tabindex', '-1'); el.focus({ preventScroll: true }); el.style.background = 'var(--vino-suave)'; }
+    else main.querySelector('h1')?.insertAdjacentHTML('afterend', `<p class="estado" role="status">No encontré el artículo ${esc(decodeURIComponent(num))} en el texto de esta norma.</p>`);
   });
   return html;
 }
@@ -241,19 +250,20 @@ async function penal() {
   document.title = 'Penas por delito · alphalex';
   return `
   <h1 class="titulo">Penas por delito</h1>
-  <p class="entrada">Las penas de prisión de los fallos que publica el Ministerio Público en su Base de Fallos (sobre todo corrupción y blanqueo
-    de capitales, publicados de julio de 2024 a octubre de 2025). Por cada figura: cuántos casos, la pena del caso del medio y la mitad central,
-    y cuántos terminaron con acuerdo de pena. La pena se lee del texto: manda el original.</p>
+  <p class="entrada">Las penas de prisión leídas de las decisiones penales de la base: casi todas de la Corte Suprema (casaciones, apelaciones
+    y otros recursos) y el resto de la Base de Fallos del Ministerio Público. Por cada figura: cuántas decisiones traen una pena, la del caso del
+    medio y la mitad central, y en cuántas hubo acuerdo de pena. Cuentan también recursos que no se admitieron, con la pena de la instancia anterior.
+    La pena se lee del texto: manda el original.</p>
   <section class="bloque"><h2>${esc(ent.format(r.penas.length))} figuras con 5 casos o más</h2>
     ${libro(r.penas, [
       { t: 'Delito', v: (x) => esc(x.delito) },
-      { t: 'Casos', n: 1, v: (x) => esc(ent.format(x.n)) },
+      { t: 'Decisiones', n: 1, v: (x) => esc(ent.format(x.n)) },
       { t: 'Mediana', n: 1, v: (x) => esc(meses(x.med)) },
       { t: 'Mitad central', n: 1, ancho: 1, v: (x) => (x.p25 !== null ? `${esc(meses(x.p25))} a ${esc(meses(x.p75))}` : '—') },
       { t: 'Con acuerdo de pena', n: 1, v: (x) => `${esc(x.acuerdo)} %` },
       { t: 'Condena', n: 1, ancho: 1, v: (x) => `${esc(x.condena)} %` },
     ])}
-    <p class="nota" style="margin-top:.6rem">«a» son años y «m» meses. Un caso con varios delitos cuenta en cada uno.</p>
+    <p class="nota" style="margin-top:.6rem">«a» son años y «m» meses. Una decisión con varios delitos cuenta en cada uno.</p>
   </section>`;
 }
 
@@ -288,7 +298,10 @@ async function gaceta() {
   const ps = palabras().map(normal).filter(Boolean);
   const idx = await json('indice-normas');
   const tit = new Map(idx.map((x) => [x[0], x]));
-  const marca = (t) => { let h = esc(t); for (const p of palabras()) if (p) h = h.replace(new RegExp(`(${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<mark>$1</mark>'); return h; };
+  const lista = palabras().filter(Boolean);
+  const re = lista.length ? new RegExp(`(${lista.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi') : null;
+  // Se marca sobre el texto y se escapa cada trozo: marcar sobre lo ya escapado dejaba «&amp;» a la vista.
+  const marca = (t) => (re ? String(t).split(re).map((x, i) => (i % 2 ? `<mark>${esc(x)}</mark>` : esc(x))).join('') : esc(t));
   const ediciones = g.filter((e) => e.normas.length);
   const conPalabra = (e) => ps.length && e.normas.some((n) => ps.some((p) => (tit.get(n.id)?.[6] || '').includes(p)));
   setTimeout(() => {
@@ -304,7 +317,7 @@ async function gaceta() {
     <div class="radar">${palabras().map((p) => `<span class="palabra">${esc(p)}<button type="button" data-quitar="${esc(p)}" aria-label="Quitar ${esc(p)}">×</button></span>`).join('') || '<span class="nota">Todavía no hay palabras.</span>'}</div>
   </section>
   <section class="bloque"><h2>Ediciones${ps.length ? `: ${esc(ediciones.filter(conPalabra).length)} traen una palabra del radar` : ''}</h2>
-    <ul class="historia">${ediciones.slice(0, 120).map((e) => `<li${conPalabra(e) ? ' style="background:var(--vino-suave)"' : ''}><span class="f">${esc(fCorta(e.f))}</span><span>${e.u ? `<a href="${esc(e.u)}" rel="noopener">Gaceta n.º ${esc(e.num)}</a>` : `Gaceta n.º ${esc(e.num)}`} · ${esc(ent.format(e.n || e.normas.length))} normas
+    <ul class="historia">${[...ediciones.filter(conPalabra), ...ediciones.filter((e) => !conPalabra(e))].slice(0, 120).map((e) => `<li${conPalabra(e) ? ' style="background:var(--vino-suave)"' : ''}><span class="f">${esc(fCorta(e.f))}</span><span>${e.u ? `<a href="${esc(e.u)}" rel="noopener">Gaceta n.º ${esc(e.num)}</a>` : `Gaceta n.º ${esc(e.num)}`} · ${esc(ent.format(e.n || e.normas.length))} normas
       <span class="art" style="display:block">${e.normas.slice(0, 8).map((n) => `<a href="#/n/${esc(n.id)}">${marca(n.n)}</a>${tit.get(n.id)?.[2] && !/^Acto individual/.test(tit.get(n.id)[2]) ? `: ${marca(tit.get(n.id)[2].slice(0, 90))}` : ''}`).join('<br>')}${e.normas.length > 8 ? `<br>y ${esc(e.normas.length - 8)} más` : ''}</span></span></li>`).join('')}</ul>
   </section>`;
 }
@@ -347,11 +360,13 @@ async function pintar() {
     main.innerHTML = ruta ? await ruta[1](...h.match(ruta[0]).slice(1)) : noEsta('Esa dirección no existe en la demo.');
     conCsv(main, 'alphalex');
     activarSeguir(main, 'alphalex');
+    const ancla = h.split('#')[2];
+    if (ancla) setTimeout(() => document.getElementById(ancla)?.scrollIntoView({ block: 'start' }));
   } catch (e) {
     main.innerHTML = `<h1 class="titulo">No se pudo cargar</h1><p class="entrada">${esc(e.message)}. Revisa la conexión y vuelve a intentarlo.</p>`;
   }
   document.querySelectorAll('.indice-sitio a').forEach((a) => a.toggleAttribute('aria-current', !!ruta && a.getAttribute('href') === ruta[2]));
-  if (!primera && !/\/a\//.test(h)) { main.focus({ preventScroll: true }); window.scrollTo(0, 0); }
+  if (!primera && !/\/a\//.test(h) && !h.split('#')[2]) { main.focus({ preventScroll: true }); window.scrollTo(0, 0); }
   primera = false;
 }
 

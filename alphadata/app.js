@@ -205,7 +205,13 @@ async function cotejar(texto) {
   const filas = lineas.map((l) => {
     const ruc = l.replace(/\s+/g, '').replace(/D\.?V\.?\d+$/i, '');
     let x = porRuc.get(ruc);
-    if (!x) { const t = normal(l).replace(/ S ?A$| INC$| CORP$| S DE R ?L$/, ''); x = idx.find((y) => y[6] === normal(l)) || idx.find((y) => t.length >= 4 && y[6].startsWith(t)); }
+    // Por nombre: el exacto, o el comienzo solo si son dos palabras o más y hay UNA sola coincidencia («CONSTRUCTORA» o
+    // «GRUPO» casaban con la primera sociedad que empezara así; revisión del 19-oct).
+    if (!x) {
+      const t = normal(l).replace(/ S ?A$| INC$| CORP$| S DE R ?L$/, '');
+      x = idx.find((y) => y[6] === normal(l) || y[6] === t);
+      if (!x && t.split(' ').length >= 2) { const c = idx.filter((y) => y[6].startsWith(t)); if (c.length === 1) x = c[0]; }
+    }
     return { l, x };
   });
   const enc = filas.filter((f) => f.x).length, conS = filas.filter((f) => f.x?.[5] > 0).length;

@@ -149,6 +149,7 @@ function alCambiar(id, pintar) {
       const b = ev.target.closest('button'); if (!b) return;
       g.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
       $(`#${id}`).innerHTML = pintar(b.dataset.k);
+      conCsv(main, 'alphalogistics');
     });
   });
 }
@@ -247,7 +248,8 @@ async function productos() {
 }
 
 async function capitulo(cap) {
-  const [r, c] = await Promise.all([resumen(), json(`productos/${cap}.json`)]);
+  const [r, c] = await Promise.all([resumen(), json(`productos/${cap}.json`).catch(() => null)]);
+  if (!c) return noEsta('Ese capítulo no está en la demo.');
   const info = r.capitulos.find((x) => x.cap === cap);
   const a = r.anioRef;
   const lista = Object.entries(c).map(([sp, p]) => ({ sp, ...p, ref: p.anios?.I?.[a] || 0 })).sort((x, y) => y.ref - x.ref || y.total - x.total);
@@ -269,8 +271,8 @@ async function capitulo(cap) {
 
 async function producto(sp) {
   const cap = sp.slice(0, 2);
-  const [r, c] = await Promise.all([resumen(), json(`productos/${cap}.json`)]);
-  const p = c[sp];
+  const [r, c] = await Promise.all([resumen(), json(`productos/${cap}.json`).catch(() => null)]);
+  const p = c?.[sp];
   if (!p) return noEsta('Ese producto no está en la demo.');
   const a = r.anioRef, imp = p.anios?.I || {}, valor = imp[a] || 0, kg = p.kg?.[a] || 0;
   const capNom = r.capitulos.find((x) => x.cap === cap)?.nombre || `Capítulo ${cap}`;
@@ -450,7 +452,7 @@ async function empresa(id) {
   ${e.naves?.length ? `
   <section class="seccion" aria-labelledby="t-naves">
     <h2 id="t-naves">Naves a su nombre</h2>
-    ${libro(e.naves.slice(0, 12), [{ t: 'Nave', v: (n) => `<a href="#/n/${esc(n.ficha)}">${esc(n.nombre)}</a>` }, { t: 'Arqueo bruto', n: 1, v: (n) => esc(ent.format(n.tonelaje || 0)) }])}
+    ${libro(e.naves.slice(0, 12), [{ t: 'Nave', v: (n) => `<a href="#/n/${esc(n.ficha)}">${esc(n.nombre || 'Sin nombre en el registro')}</a>` }, { t: 'Arqueo bruto', n: 1, v: (n) => esc(ent.format(n.tonelaje || 0)) }])}
     ${e.naves.length > 12 ? `<p style="margin-top:.5rem"><a href="#/d/${esc(e.dueno)}">Las ${esc(ent.format(e.naves.length))} naves</a></p>` : ''}
   </section>` : ''}`;
 }
@@ -484,7 +486,7 @@ async function naves() {
     <section class="seccion" aria-labelledby="t-grandes">
       <h2 id="t-grandes">Las de mayor arqueo</h2>
       ${libro(v.grandes, [
-        { t: 'Nave', v: (n) => `<a href="#/n/${esc(n.ficha)}">${esc(n.nombre)}</a><small>Inscrita en ${esc(n.fecha?.slice(0, 4) || '—')}</small>` },
+        { t: 'Nave', v: (n) => `<a href="#/n/${esc(n.ficha)}">${esc(n.nombre || 'Sin nombre en el registro')}</a><small>Inscrita en ${esc(n.fecha?.slice(0, 4) || '—')}</small>` },
         { t: 'Arqueo bruto', n: 1, v: (n) => esc(ent.format(n.tonelaje)) },
       ])}
     </section>
@@ -493,7 +495,7 @@ async function naves() {
     <section class="seccion" aria-labelledby="t-recientes">
       <h2 id="t-recientes">Las últimas inscritas</h2>
       ${libro(v.recientes, [
-        { t: 'Nave', v: (n) => `<a href="#/n/${esc(n.ficha)}">${esc(n.nombre)}</a>` },
+        { t: 'Nave', v: (n) => `<a href="#/n/${esc(n.ficha)}">${esc(n.nombre || 'Sin nombre en el registro')}</a>` },
         { t: 'Inscrita', v: (n) => `<span class="tab">${esc(n.fecha)}</span>` },
         { t: 'Arqueo bruto', n: 1, v: (n) => esc(ent.format(n.tonelaje || 0)) },
       ])}
@@ -508,14 +510,14 @@ async function naves() {
 }
 
 async function nave(ficha) {
-  const s = await json(`naves/${Number(ficha) % 100}.json`);
+  const s = await json(`naves/${Number(ficha) % 100}.json`).catch(() => ({}));
   const n = s[ficha];
   if (!n) return noEsta('Esa nave no está en la demo.');
   document.title = `${n.nombre} · alphalogistics`;
   const metros = (x) => (x ? `${dos.format(x)} m` : null);
   return `
   <p class="ruta"><a href="#/naves">Naves</a> · Registro de la Propiedad de Naves</p>
-  <h1 class="titulo">${esc(n.nombre)}</h1>
+  <h1 class="titulo">${esc(n.nombre || 'Nave sin nombre en el registro')}</h1>
   <p class="entrada">${n.fecha ? `Inscrita el ${esc(n.fecha)}` : 'Inscrita'} en el Registro de la Propiedad de Naves de Panamá${n.tb ? `, con <b>${esc(ent.format(n.tb))}</b> de arqueo bruto` : ''}.${n.anterior ? ` Antes se llamaba ${esc(n.anterior)}.` : ''}</p>
   <dl class="casillas">
     ${casilla('Ficha', `<span class="tab">${esc(ficha)}</span>`)}
@@ -558,7 +560,7 @@ async function dueno(id) {
   <section class="seccion" aria-labelledby="t-flota">
     <h2 id="t-flota">Su flota</h2>
     ${libro(d.naves, [
-      { t: 'Nave', v: (n) => `<a href="#/n/${esc(n.ficha)}">${esc(n.nombre)}</a>${barra(n.tonelaje, max)}` },
+      { t: 'Nave', v: (n) => `<a href="#/n/${esc(n.ficha)}">${esc(n.nombre || 'Sin nombre en el registro')}</a>${barra(n.tonelaje, max)}` },
       { t: 'Inscrita', ancho: 1, v: (n) => `<span class="tab">${esc(n.fecha || '—')}</span>` },
       { t: 'Arqueo bruto', n: 1, v: (n) => esc(ent.format(n.tonelaje || 0)) },
     ])}

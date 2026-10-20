@@ -711,3 +711,7 @@ body[data-cerrado] .buscador {
 
 @media (max-width: 26rem) { .nav__opcional { display: none !important; } }
 .titulo .marca-o { width: 0.8em; height: 0.8em; margin-right: 0.35em; vertical-align: 0; }
+
+/* Un nombre largo sin espacios no puede ensanchar la tabla en el teléfono (#/e/deportes-jimmy-s-a, 19-oct). */
+.libro td { overflow-wrap: anywhere; }
+.libro td.n { overflow-wrap: normal; }
