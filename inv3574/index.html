@@ -15,7 +15,7 @@
 -->
 <style>
 /* Diseño (25-oct-2026, rehecho de cero): se lee como un artículo largo. Una columna de texto de 680 px y nada de
-   cajas: las secciones se separan con aire y un filete. Letra del sistema (San Francisco en iPhone y Mac) y un solo
+   cajas: arriba lo esencial abierto y debajo cada sección plegada en una fila. Letra del sistema (San Francisco en iPhone y Mac) y un solo
    acento azul, solo en lo que se toca. Los mapas son imágenes fijas que se amplían en el visor. */
 @font-face { font-family: "Inter"; src: url("../assets/fuentes/inter-latin.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
 :root {
@@ -60,14 +60,6 @@ main > * { max-width: calc(var(--col) + 2 * var(--margen)); margin-inline: auto;
 .cab h1 { font-size: clamp(2.6rem, 10vw, 4.5rem); line-height: 1; letter-spacing: -0.04em; }
 .entrada { margin: 20px 0 0; font-size: clamp(1.2rem, 3.6vw, 1.5rem); line-height: 1.38; letter-spacing: -0.014em; }
 .fecha { margin: 18px 0 0; font-size: .875rem; color: var(--texto-2); }
-
-/* Índice: marca la sección que está en pantalla */
-main > .indice { max-width: none; padding: 0; position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--fondo) 84%, transparent); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--linea); }
-.indice-c { max-width: calc(var(--ancho) + 2 * var(--margen)); margin: 0 auto; padding: 0 var(--margen); display: flex; gap: 22px; overflow-x: auto; scrollbar-width: none; }
-.indice-c::-webkit-scrollbar { display: none; }
-.indice a { flex: none; padding: 13px 0 11px; font-size: .8125rem; color: var(--texto-2); border-bottom: 2px solid transparent; transition: color .2s, border-color .2s; }
-.indice a:hover { color: var(--texto); text-decoration: none; }
-.indice a[aria-current="true"] { color: var(--texto); border-bottom-color: var(--texto); }
 
 /* Secciones: aire y un filete, sin cajas */
 main > section { padding-top: 48px; padding-bottom: 8px; scroll-margin-top: 44px; }
@@ -115,12 +107,26 @@ section > p { margin: 0 0 16px; }
 .doc-t span { display: block; margin-top: 2px; color: var(--texto-2); font-size: .9375rem; }
 .doc:hover b { color: var(--acento); }
 @media (max-width: 520px) { .doc { grid-template-columns: 1fr 10px; gap: 2px 16px; } .doc-ano, .doc-t { grid-column: 1; } .doc-ano { font-size: .875rem; } .doc::after { grid-column: 2; grid-row: 1 / span 2; align-self: center; margin: 0; } }
-details { margin-top: 12px; border-top: 1px solid var(--linea); }
-summary { padding: 14px 0; cursor: pointer; color: var(--acento); font-size: .9375rem; list-style: none; }
-summary::-webkit-details-marker { display: none; }
-summary::after { content: ""; display: inline-block; width: 7px; height: 7px; margin: 0 0 3px 10px; border-right: 1.5px solid; border-bottom: 1.5px solid; transform: rotate(45deg); transition: transform .2s; }
-details[open] summary::after { transform: rotate(225deg); margin-bottom: -1px; }
-details > p { margin: 0 0 12px; color: var(--texto-2); font-size: .9375rem; }
+/* Portada abierta y secciones plegadas: en el teléfono la primera pantalla cuenta todo y el resto se abre a pedido */
+.mapa-principal { margin-top: 4px; }
+.mapa-principal img { cursor: zoom-in; }
+main > .secciones { margin-top: 48px; }
+.seccion { border-top: 1px solid var(--linea); }
+.seccion:last-child { border-bottom: 1px solid var(--linea); }
+.seccion > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr 12px; gap: 4px 16px; align-items: center; padding: 20px 0; }
+.seccion > summary::-webkit-details-marker { display: none; }
+.seccion > summary h2 { grid-column: 1; margin: 0; font-size: 1.3rem; letter-spacing: -0.02em; transition: color .2s; }
+.seccion > summary p { grid-column: 1; margin: 0; font-size: .9375rem; line-height: 1.45; color: var(--texto-2); }
+.seccion > summary::after { content: ""; grid-column: 2; grid-row: 1 / span 2; justify-self: center; width: 9px; height: 9px; margin-top: -4px; border-right: 1.5px solid var(--texto-2); border-bottom: 1.5px solid var(--texto-2); transform: rotate(45deg); transition: transform .2s; }
+.seccion[open] > summary::after { transform: rotate(225deg); margin-top: 4px; }
+@media (hover: hover) { .seccion > summary:hover h2 { color: var(--acento); } }
+.seccion { scroll-margin-top: 8px; }
+.seccion-c { padding-bottom: 24px; }
+.seccion-c > :first-child, .seccion-c > h3:first-child { margin-top: 0; }
+.ver-mas, .cerrar-seccion { display: block; margin-top: 12px; padding: 8px 0; background: none; border: 0; color: var(--acento); font-size: .9375rem; cursor: pointer; }
+.ver-mas:hover, .cerrar-seccion:hover { text-decoration: underline; text-underline-offset: 3px; }
+.cerrar-seccion { margin-top: 20px; }
+.anos.solo-clave > li:not(.clave) { display: none; }
 main > .pie { padding-top: 56px; padding-bottom: 72px; font-size: .875rem; color: var(--texto-2); }
 .pie::before { content: ""; display: block; height: 1px; background: var(--linea); margin-bottom: 24px; }
 .pie p { margin: 0 0 8px; }
@@ -151,7 +157,11 @@ main > .pie { padding-top: 56px; padding-bottom: 72px; font-size: .875rem; color
   :root { --fondo: #fff; --superficie: #f2f2f2; --linea: #bbb; --texto: #000; --texto-2: #444; --acento: #000; }
   body { font-size: 10.5pt; }
   main > * { max-width: none; padding-inline: 0; }
-  .indice, .ampliar, .pie-acciones, summary, .doc::after { display: none !important; }
+  .ampliar, .pie-acciones, .ver-mas, .cerrar-seccion, .seccion > summary p, .seccion > summary::after, .doc::after { display: none !important; }
+  .anos.solo-clave > li:not(.clave) { display: grid !important; }
+  .seccion { border: 0; }
+  .seccion > summary { display: block; padding: 18pt 0 6pt; }
+  .seccion > summary h2 { font-size: 1.6rem; }
   .cab { padding-top: 0; }
   main > section { padding-top: 18pt; }
   main > section ~ section::before { margin-bottom: 18pt; }
@@ -269,23 +279,26 @@ async function abrir() {
   if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
 }
 
-// Lo que ayuda a leer: el índice marca la sección que está en pantalla, y el botón de imprimir abre lo plegado y carga
-// todas las imágenes antes de pedir la impresión.
+// Lo que ayuda a leer: las secciones plegadas se abren por su enlace (#historia) y traen al final un botón para
+// cerrarlas; la historia muestra primero los hechos clave; el botón de imprimir abre todo y carga las imágenes.
 function mejorar(url) {
-  const nav = app.querySelector('.indice'), carril = nav?.querySelector('.indice-c') || nav;
-  const enlaces = new Map([...(nav?.querySelectorAll('a[href^="#"]') || [])].map((a) => [a.getAttribute('href').slice(1), a]));
-  const enPantalla = new Set();
-  let actual = null;
-  const espia = new IntersectionObserver((es) => {
-    es.forEach((e) => (e.isIntersecting ? enPantalla.add(e.target.id) : enPantalla.delete(e.target.id)));
-    const id = [...enlaces.keys()].find((k) => enPantalla.has(k)) || null;
-    if (id === actual) return;
-    actual = id;
-    enlaces.forEach((a, k) => (k === id ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
-    const a = enlaces.get(id);
-    if (a) carril.scrollTo({ left: a.offsetLeft - carril.offsetLeft - (carril.clientWidth - a.offsetWidth) / 2, behavior: quieto ? 'auto' : 'smooth' });
-  }, { rootMargin: '-25% 0px -70% 0px' });
-  enlaces.forEach((_, k) => { const sec = document.getElementById(k); if (sec) espia.observe(sec); });
+  const abrirEnlace = () => { const d = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1))); if (d?.tagName === 'DETAILS') d.open = true; };
+  addEventListener('hashchange', abrirEnlace); abrirEnlace();
+  app.querySelectorAll('details.seccion').forEach((d) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'cerrar-seccion'; b.textContent = 'Cerrar esta sección';
+    b.addEventListener('click', () => { d.open = false; d.scrollIntoView({ block: 'start', behavior: quieto ? 'auto' : 'smooth' }); });
+    (d.querySelector('.seccion-c') || d).append(b);
+  });
+  app.querySelectorAll('ol.anos').forEach((ol) => {
+    const clave = ol.querySelectorAll(':scope > li.clave').length, resto = ol.children.length - clave;
+    if (!clave || !resto) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ver-mas';
+    const poner = (solo) => { ol.classList.toggle('solo-clave', solo); b.setAttribute('aria-expanded', String(!solo)); b.textContent = solo ? `Ver los ${resto} hechos restantes` : 'Ver solo los hechos clave'; };
+    b.addEventListener('click', () => poner(!ol.classList.contains('solo-clave')));
+    poner(true); ol.after(b);
+  });
 
   const abrirTodo = () => Promise.all([...app.querySelectorAll('img[data-img]')].map(async (im) => {
     try { if (!im.getAttribute('src')) im.src = await url(im.dataset.img); await im.decode(); } catch { /* sigue sin esa imagen */ }
