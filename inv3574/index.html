@@ -15,9 +15,8 @@
 -->
 <style>
 /* Diseño (25-oct-2026, rehecho de cero): se lee como un artículo largo. Una columna de texto de 680 px y nada de
-   cajas: las secciones se separan con aire y un filete. La pieza grande es el mapa, de borde a borde en el teléfono.
-   Letra del sistema (San Francisco en iPhone y Mac) y un solo acento azul, solo en lo que se toca; los colores de la
-   finca, los vecinos y el Estado viven en el mapa y su leyenda. */
+   cajas: las secciones se separan con aire y un filete. Letra del sistema (San Francisco en iPhone y Mac) y un solo
+   acento azul, solo en lo que se toca. Los mapas son imágenes fijas que se amplían en el visor. */
 @font-face { font-family: "Inter"; src: url("../assets/fuentes/inter-latin.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
 :root {
   color-scheme: light;
@@ -146,51 +145,13 @@ main > .pie { padding-top: 56px; padding-bottom: 72px; font-size: .875rem; color
 .visor__caja img { display: block; width: 100%; height: auto; }
 .visor__caja.real img { width: auto; max-width: none; }
 
-/* Mapa: la pieza grande de la página; se arma solo si el contenido trae [data-mapa-vivo] y sus figuras en GeoJSON */
-main > .mapa { max-width: none; padding: 0; }
-.mapa-vivo { height: min(68vh, 600px); background: var(--superficie); z-index: 0; }
-@media (min-width: 760px) { .mapa-vivo { width: calc(100% - 2 * var(--margen)); max-width: var(--ancho); height: min(72vh, 660px); margin: 0 auto; border-radius: 12px; } }
-.mapa-pie { max-width: calc(var(--col) + 2 * var(--margen)); margin: 0 auto; padding: 0 var(--margen); }
-.rec-nav { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
-.rec-nav span { order: -1; margin-right: auto; font-size: .875rem; color: var(--texto-2); font-variant-numeric: tabular-nums; }
-.rec-nav > button { padding: 9px 16px; border: 0; border-radius: 8px; font-size: .9375rem; font-weight: 600; cursor: pointer; transition: opacity .2s; }
-.rec-nav [data-ant] { background: var(--superficie); color: var(--texto); }
-.rec-nav [data-sig] { background: var(--acento); color: #fff; }
-.rec-nav > button:hover { opacity: .88; }
-.rec-nav > button:disabled { opacity: .35; cursor: default; }
-.recorrido { list-style: none; margin: 12px 0 0; padding: 0; }
-.recorrido > li { display: none; }
-.recorrido > li.activo { display: block; }
-.recorrido h3 { margin: 0; font-size: 1.25rem; letter-spacing: -0.015em; }
-.recorrido p { margin: 6px 0 0; }
-.mapa-ley { list-style: none; margin: 24px 0 0; padding: 14px 0 0; border-top: 1px solid var(--linea); display: grid; grid-template-columns: 1fr; font-size: .9375rem; }
-@media (min-width: 560px) { .mapa-ley { grid-template-columns: 1fr 1fr; column-gap: 24px; } }
-.mapa-ley label { display: flex; align-items: center; gap: 10px; padding: 6px 0; cursor: pointer; }
-.mapa-ley input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--acento); }
-.mapa-ley i { flex: none; width: 22px; height: 0; border-top: 3px solid; }
-.mapa-ley i.area { height: 12px; border: 2px dashed; border-radius: 2px; background: color-mix(in srgb, currentColor 25%, transparent); }
-.mapa-ley i.guiones { border-top-style: dashed; }
-.mapa-ley i.pto { width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; background: #3e2723; box-shadow: 0 0 0 1px #3e2723; }
-.mapa-acciones { display: flex; flex-wrap: wrap; gap: 0 22px; margin-top: 10px; }
-.mapa-acciones button, .mapa-acciones a { padding: 8px 0; background: none; border: 0; color: var(--acento); font-size: .9375rem; cursor: pointer; }
-.mapa-acciones button:hover { text-decoration: underline; text-underline-offset: 3px; }
-.mapa-msg { margin: 2px 0 0; min-height: 1.5em; font-size: .9375rem; color: var(--texto-2); }
-.mapa-vivo.grande { position: fixed; inset: 0; width: 100vw; max-width: none; height: 100dvh; margin: 0; border-radius: 0; z-index: 20; }
-.mapa-cerrar { display: none; }
-.mapa-vivo.grande ~ .mapa-cerrar { display: block; position: fixed; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 21; padding: 9px 16px; border: 0; border-radius: 8px; background: #fff; color: #1d1d1f; font-size: .9375rem; font-weight: 600; box-shadow: 0 2px 12px rgba(0, 0, 0, .3); cursor: pointer; }
-.leaflet-container { font-family: var(--letra); }
-.leaflet-tooltip.etq { font: 600 .8125rem var(--letra); color: #1d1d1f; background: rgba(255, 255, 255, .94); border: 0; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
-.leaflet-tooltip.medida { font: 600 .75rem var(--letra); color: #fff; background: rgba(0, 0, 0, .72); border: 0; border-radius: 6px; padding: 3px 7px; box-shadow: none; white-space: nowrap; }
-.leaflet-tooltip.medida::before { display: none; }
-
-/* Impresión: el informe en papel, sin controles; el recorrido del mapa sale entero como texto */
+/* Impresión: el informe en papel, sin controles */
 @media print {
   @page { margin: 16mm 14mm; }
   :root { --fondo: #fff; --superficie: #f2f2f2; --linea: #bbb; --texto: #000; --texto-2: #444; --acento: #000; }
   body { font-size: 10.5pt; }
   main > * { max-width: none; padding-inline: 0; }
-  .indice, .mapa-vivo, .mapa-cerrar, .rec-nav, .mapa-ley, .mapa-acciones, .mapa-msg, .ampliar, .pie-acciones, summary, .doc::after { display: none !important; }
-  .recorrido > li { display: block !important; margin-top: 10pt; break-inside: avoid; }
+  .indice, .ampliar, .pie-acciones, summary, .doc::after { display: none !important; }
   .cab { padding-top: 0; }
   main > section { padding-top: 18pt; }
   main > section ~ section::before { margin-bottom: 18pt; }
@@ -304,8 +265,6 @@ async function abrir() {
   salir.type = 'button'; salir.textContent = 'Cerrar sesión en este equipo';
   salir.addEventListener('click', () => { try { localStorage.removeItem(LLAVE); } catch { /* nada */ } location.reload(); });
   (app.querySelector('.pie-acciones') || app).append(salir);
-  const geo = app.querySelector('script[type="application/geo+json"]'), cajaMapa = app.querySelector('[data-mapa-vivo]');
-  if (geo && cajaMapa) montarMapa(cajaMapa, JSON.parse(geo.textContent)).catch(() => { cajaMapa.textContent = 'No se pudo cargar el mapa. Revise la conexión.'; });
   mejorar(url);
   if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
 }
@@ -340,141 +299,8 @@ function mejorar(url) {
   }));
 }
 
-// Mapa interactivo: Leaflet 1.9.4 (cdnjs) con fondo satelital o de calles de Esri; se carga cuando el mapa entra en
-// pantalla. Las figuras, las capas y los pasos del recorrido vienen del contenido cifrado; aquí no hay datos.
-// «Dónde estoy» usa la ubicación del teléfono solo en esta página; no se envía a ningún lado.
-const cargar = (tag, attrs) => new Promise((ok, mal) => { const e = document.createElement(tag); Object.assign(e, attrs); e.onload = ok; e.onerror = mal; document.head.append(e); });
 const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
-async function montarMapa(caja, datos) {
-  await new Promise((ok) => { const o = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { o.disconnect(); ok(); } }, { rootMargin: '300px' }); o.observe(caja); });
-  const V = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/';
-  await cargar('link', { rel: 'stylesheet', href: V + 'leaflet.min.css', crossOrigin: 'anonymous' });
-  await cargar('script', { src: V + 'leaflet.min.js', crossOrigin: 'anonymous' });
-  const L = window.L, raiz = caja.closest('section') || app, msg = raiz.querySelector('[data-mapa-msg]');
-  const avisar = (t) => { if (msg) msg.textContent = t; };
-  const esri = (s) => `https://server.arcgisonline.com/ArcGIS/rest/services/${s}/MapServer/tile/{z}/{y}/{x}`;
-  const atr = 'Imágenes y calles © Esri y sus fuentes';
-  const sat = L.layerGroup([L.tileLayer(esri('World_Imagery'), { maxZoom: 19, attribution: atr }),
-    L.tileLayer(esri('Reference/World_Transportation'), { maxZoom: 19, opacity: 0.8 }), L.tileLayer(esri('Reference/World_Boundaries_and_Places'), { maxZoom: 19 })]);
-  const calles = L.tileLayer(esri('World_Street_Map'), { maxZoom: 19, attribution: atr });
-  const mapa = L.map(caja, { layers: [sat], scrollWheelZoom: false, zoomSnap: 0.25 });
-  L.control.layers({ 'Satélite': sat, 'Calles': calles }, null, { position: 'topright' }).addTo(mapa);
-  L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(mapa);
 
-  // Una capa de Leaflet por cada «capa» del GeoJSON; las medidas solo se ven de cerca.
-  const capas = {}, medidas = L.layerGroup();
-  let finca = null;
-  for (const f of datos.features) {
-    const p = f.properties, g = (capas[p.capa] ||= L.featureGroup());
-    if (p.tipo === 'medida') {
-      L.tooltip({ permanent: true, direction: p.dir || 'center', className: 'medida', offset: [0, 0] })
-        .setLatLng([f.geometry.coordinates[1], f.geometry.coordinates[0]]).setContent(p.nombre).addTo(medidas);
-      continue;
-    }
-    L.geoJSON(f, {
-      style: () => (p.tipo === 'finca'
-        ? { color: p.color, weight: 3, fillColor: p.color, fillOpacity: 0.3, dashArray: '9 6' }
-        : { color: p.color, weight: 4, opacity: 0.95, dashArray: p.guiones ? '8 7' : null }),
-      pointToLayer: (_, ll) => L.circleMarker(ll, { radius: 7, color: '#fff', weight: 2, fillColor: '#3e2723', fillOpacity: 1 }),
-      onEachFeature: (_, l) => {
-        l.bindPopup(p.nombre);
-        if (p.tipo === 'finca') { finca = l; l.bindTooltip(p.etiqueta || p.nombre, { permanent: true, direction: 'center', className: 'etq' }); }
-      },
-    }).addTo(g);
-  }
-  // De cerca se ven las medidas de cada lado y el nombre de la finca se esconde para no taparlas.
-  const verMedidas = () => {
-    const z = mapa.getZoom() >= 16.25 && mapa.hasLayer(capas.finca);
-    if (z && !mapa.hasLayer(medidas)) { medidas.addTo(mapa); finca?.closeTooltip(); }
-    if (!z && mapa.hasLayer(medidas)) { medidas.remove(); if (mapa.hasLayer(capas.finca)) finca?.openTooltip(); }
-  };
-  mapa.on('zoomend', verMedidas);
-  const casillas = [...raiz.querySelectorAll('[data-mapa-ley] input[data-capa]')];
-  const mostrar = (lista) => {
-    for (const [k, g] of Object.entries(capas)) { const si = lista.includes(k); if (si && !mapa.hasLayer(g)) g.addTo(mapa); if (!si && mapa.hasLayer(g)) g.remove(); }
-    casillas.forEach((c) => { c.checked = lista.includes(c.dataset.capa); });
-    verMedidas();
-  };
-  casillas.forEach((c) => c.addEventListener('change', () => mostrar(casillas.filter((x) => x.checked).map((x) => x.dataset.capa))));
-  const ir = (lista) => {
-    const b = L.latLngBounds([]);
-    lista.forEach((k) => capas[k] && k !== 'ref' && b.extend(capas[k].getBounds()));
-    if (!b.isValid()) return;
-    const sola = lista.length === 1 && lista[0] === 'finca'; // de cerca, a los lados caben las medidas
-    const opc = { padding: [sola ? Math.min(96, caja.clientWidth * 0.22) : 20, 28], maxZoom: 17 };
-    quieto ? mapa.fitBounds(b, opc) : mapa.flyToBounds(b, { ...opc, duration: 1.1 });
-  };
-
-  // Recorrido: cada paso del contenido dice qué capas encender.
-  const pasos = [...raiz.querySelectorAll('[data-recorrido] > li')];
-  if (pasos.length) {
-    const nav = document.createElement('div'); nav.className = 'rec-nav';
-    nav.innerHTML = '<button type="button" data-ant>Anterior</button><span aria-live="polite"></span><button type="button" data-sig>Siguiente</button>';
-    raiz.querySelector('[data-recorrido]').before(nav);
-    const cont = nav.querySelector('span');
-    let actual = 0;
-    const paso = (k) => {
-      actual = Math.max(0, Math.min(pasos.length - 1, k));
-      pasos.forEach((li, n) => li.classList.toggle('activo', n === actual));
-      cont.textContent = `${actual + 1} de ${pasos.length}`;
-      nav.querySelector('[data-ant]').disabled = actual === 0; nav.querySelector('[data-sig]').disabled = actual === pasos.length - 1;
-      const lista = pasos[actual].dataset.capas.split(',');
-      mostrar(lista); ir((pasos[actual].dataset.ir || pasos[actual].dataset.capas).split(','));
-    };
-    nav.querySelector('[data-ant]').addEventListener('click', () => paso(actual - 1));
-    nav.querySelector('[data-sig]').addEventListener('click', () => paso(actual + 1));
-    mapa.fitBounds(finca.getBounds().pad(1.2));
-    paso(0);
-  } else { mostrar(Object.keys(capas)); mapa.fitBounds(finca ? finca.getBounds().pad(0.9) : L.featureGroup(Object.values(capas)).getBounds()); }
-
-  // Pantalla completa.
-  const cerrar = document.createElement('button'); cerrar.type = 'button'; cerrar.className = 'mapa-cerrar'; cerrar.textContent = 'Cerrar pantalla completa';
-  caja.after(cerrar);
-  const grande = (si) => { caja.classList.toggle('grande', si); mapa.scrollWheelZoom[si ? 'enable' : 'disable'](); setTimeout(() => mapa.invalidateSize(), 80); };
-  cerrar.addEventListener('click', () => grande(false));
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && caja.classList.contains('grande')) grande(false); });
-  raiz.querySelector('[data-mapa-grande]')?.addEventListener('click', () => grande(true));
-
-  // Dónde estoy: punto azul con su margen de error y distancia al borde de la finca.
-  let yo = null;
-  raiz.querySelector('[data-mapa-yo]')?.addEventListener('click', () => {
-    if (!navigator.geolocation) { avisar('Este teléfono no da la ubicación.'); return; }
-    avisar('Buscando su ubicación…');
-    navigator.geolocation.getCurrentPosition((pos) => {
-      const ll = L.latLng(pos.coords.latitude, pos.coords.longitude);
-      yo?.remove();
-      yo = L.layerGroup([L.circle(ll, { radius: pos.coords.accuracy, color: '#1a73e8', weight: 1, fillOpacity: 0.12 }),
-        L.circleMarker(ll, { radius: 8, color: '#fff', weight: 3, fillColor: '#1a73e8', fillOpacity: 1 }).bindPopup('Usted está aquí')]).addTo(mapa);
-      if (!finca) return;
-      const a = finca.getLatLngs()[0];
-      let dentro = false;
-      for (let i = 0, j = a.length - 1; i < a.length; j = i++) if ((a[i].lat > ll.lat) !== (a[j].lat > ll.lat) && ll.lng < (a[j].lng - a[i].lng) * (ll.lat - a[i].lat) / (a[j].lat - a[i].lat) + a[i].lng) dentro = !dentro;
-      // distancia al borde: al segmento más cercano, en metros (aproximación plana; sobra a esta escala)
-      const P = mapa.options.crs.project.bind(mapa.options.crs), q = P(ll);
-      const seg = (u, v) => { const A = P(u), B = P(v), dx = B.x - A.x, dy = B.y - A.y, t = Math.max(0, Math.min(1, ((q.x - A.x) * dx + (q.y - A.y) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(q.x - A.x - t * dx, q.y - A.y - t * dy); };
-      const m = Math.min(...a.map((u, k) => seg(u, a[(k + 1) % a.length]))) * Math.cos(ll.lat * Math.PI / 180);
-      avisar(dentro ? `Usted está dentro de la zona donde probablemente está la finca (precisión del teléfono: ±${Math.round(pos.coords.accuracy)} m).` : `Usted está a unos ${Math.round(m)} m del borde de la zona probable de la finca (precisión del teléfono: ±${Math.round(pos.coords.accuracy)} m).`);
-      const b = L.latLngBounds([ll]).extend(finca.getBounds());
-      quieto ? mapa.fitBounds(b.pad(0.25)) : mapa.flyToBounds(b.pad(0.25), { duration: 1 });
-    }, () => avisar('No se pudo leer la ubicación. Revise que el teléfono le dé permiso a esta página.'), { enableHighAccuracy: true, timeout: 15000 });
-  });
-
-  // Bajar para Google Earth: KML hecho aquí mismo con las figuras del mapa.
-  raiz.querySelector('[data-mapa-kml]')?.addEventListener('click', (e) => {
-    const esc = (t) => String(t).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
-    const kc = (hex, a) => a + hex.slice(5, 7) + hex.slice(3, 5) + hex.slice(1, 3);
-    const co = (c) => c.map(([x, y]) => `${x},${y},0`).join(' ');
-    const pm = datos.features.filter((f) => f.properties.tipo !== 'medida').map((f, k) => {
-      const p = f.properties, g = f.geometry, col = p.color || '#3e2723';
-      const geo = g.type === 'Polygon' ? `<Polygon><outerBoundaryIs><LinearRing><coordinates>${co(g.coordinates[0])}</coordinates></LinearRing></outerBoundaryIs></Polygon>`
-        : g.type === 'LineString' ? `<LineString><tessellate>1</tessellate><coordinates>${co(g.coordinates)}</coordinates></LineString>` : `<Point><coordinates>${co([g.coordinates])}</coordinates></Point>`;
-      return `<Placemark><name>${esc(p.nombre)}</name><Style><LineStyle><color>${kc(col, 'ff')}</color><width>3</width></LineStyle><PolyStyle><color>${kc(col, '55')}</color></PolyStyle></Style>${geo}</Placemark>`;
-    }).join('');
-    const kml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${esc(e.currentTarget.dataset.titulo || 'Mapa')}</name>${pm}</Document></kml>`;
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }));
-    a.download = e.currentTarget.dataset.nombre || 'mapa.kml'; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-  });
-}
 abrir().catch(() => { app.innerHTML = '<p class="cargando">No se pudo abrir la página. Recargue para intentarlo otra vez.</p>'; });
 </script>
 </body>
