@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>Acceso privado · alphateklab</title>
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<!--
+  Página privada (25-oct-2026). GitHub Pages no pide contraseña, así que todo el contenido y las imágenes están
+  comprimidos y cifrados (AES-256-GCM; la llave sale de la contraseña con PBKDF2-SHA256, 600.000 vueltas, sal pública
+  en acceso.json). Aquí solo está la puerta y el lector. La contraseña no está en el código ni en el repositorio.
+  Lo arma ~/proyectos/cuire/inv3574/armar.mjs, fuera del repo.
+-->
+<style>
+@font-face { font-family: "Manrope"; src: url("../assets/fuentes/manrope-latin.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("../assets/fuentes/inter-latin.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
+:root {
+  --papel: #f6f7f9; --blanco: #ffffff; --tinta: #141922; --tinta-2: #343c4a; --tinta-3: #535d6c; --linea: #dde2ea;
+  --senal: #4f46e5; --senal-suave: #e7e6fd; --acento: #0f766e; --apoyo: #e2f3f0; --hondo: #151a30;
+  --ok: #157a3c; --ok-fondo: #e3f2e7; --aviso: #9a5a0a; --aviso-fondo: #fbeedd; --peligro: #b42318; --peligro-fondo: #fbe6e3;
+  --f-texto: "Inter", "Helvetica Neue", Arial, sans-serif; --f-titulo: "Manrope", "Inter", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--papel); color: var(--tinta); font: 400 1.0625rem/1.6 var(--f-texto); -webkit-text-size-adjust: 100%; }
+main { max-width: 860px; margin: 0 auto; padding: 0 16px 64px; }
+h1, h2, h3 { font-family: var(--f-titulo); line-height: 1.2; letter-spacing: -0.01em; }
+h2 { font-size: clamp(1.35rem, 3.2vw, 1.7rem); margin: 0 0 12px; }
+a { color: var(--senal); }
+:focus-visible { outline: 3px solid var(--senal); outline-offset: 2px; border-radius: 4px; }
+b { font-weight: 650; }
+
+/* Puerta */
+.puerta { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+.puerta__c { width: 100%; max-width: 380px; background: var(--blanco); border: 1px solid var(--linea); border-radius: 16px; padding: 28px 24px; }
+.puerta__c h1 { font-size: 1.5rem; margin: 0 0 6px; }
+.puerta__c p { color: var(--tinta-3); margin: 0 0 18px; font-size: 0.95rem; }
+.puerta label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; }
+.puerta input { width: 100%; font: inherit; padding: 12px 14px; border: 1px solid #b9c0cc; border-radius: 10px; background: #fff; }
+.puerta button { margin-top: 12px; width: 100%; font: 600 1rem var(--f-titulo); padding: 13px; border: 0; border-radius: 10px; background: var(--senal); color: #fff; cursor: pointer; transition: background 0.2s; }
+.puerta button:hover { background: #4338ca; }
+.puerta button:disabled { opacity: 0.7; cursor: progress; }
+.puerta__e { color: var(--peligro); font-size: 0.9rem; margin: 10px 0 0; }
+
+/* Cabecera */
+.cab { padding: 28px 0 8px; }
+.cab__marca { display: inline-block; font: 600 0.78rem var(--f-titulo); text-transform: uppercase; letter-spacing: 0.08em; color: var(--acento); background: var(--apoyo); padding: 4px 10px; border-radius: 99px; }
+.cab__t { font-size: clamp(2.1rem, 6vw, 3rem); margin: 12px 0 4px; }
+.cab__sub { margin: 0; color: var(--tinta-2); }
+.cab__fecha { margin: 4px 0 0; color: var(--tinta-3); font-size: 0.9rem; }
+.indice { position: sticky; top: 0; z-index: 5; display: flex; gap: 6px; overflow-x: auto; padding: 12px 0; margin-top: 12px; background: var(--papel); scrollbar-width: none; }
+.indice::-webkit-scrollbar { display: none; }
+.indice a { flex: none; text-decoration: none; color: var(--tinta-2); background: var(--blanco); border: 1px solid var(--linea); padding: 7px 12px; border-radius: 99px; font-size: 0.9rem; transition: border-color 0.2s, color 0.2s; }
+.indice a:hover { border-color: var(--senal); color: var(--senal); }
+.salir { position: fixed; right: 12px; bottom: 12px; z-index: 6; font: 600 0.85rem var(--f-titulo); background: var(--blanco); color: var(--tinta-2); border: 1px solid var(--linea); border-radius: 99px; padding: 8px 14px; cursor: pointer; }
+
+/* Bloques */
+.bloque { background: var(--blanco); border: 1px solid var(--linea); border-radius: 16px; padding: 22px 18px; margin: 16px 0; scroll-margin-top: 64px; }
+@media (min-width: 700px) { .bloque { padding: 28px 30px; } }
+.nota { color: var(--tinta-3); font-size: 0.95rem; }
+.estado { display: grid; gap: 10px; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .estado { grid-template-columns: 1fr 1fr; } }
+.ficha { border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; border: 1px solid transparent; }
+.ficha strong { font-family: var(--f-titulo); font-size: 1.12rem; }
+.ficha span:last-child { color: var(--tinta-2); font-size: 0.95rem; }
+.ficha__e { font: 600 0.75rem var(--f-titulo); text-transform: uppercase; letter-spacing: 0.07em; }
+.ficha--no { background: var(--peligro-fondo); } .ficha--no .ficha__e { color: var(--peligro); }
+.ficha--si { background: var(--ok-fondo); } .ficha--si .ficha__e { color: var(--ok); }
+.ficha--prob { background: var(--senal-suave); } .ficha--prob .ficha__e { color: var(--senal); }
+.ficha--aviso { background: var(--aviso-fondo); } .ficha--aviso .ficha__e { color: var(--aviso); }
+
+/* Figuras */
+.fig { margin: 14px 0 0; position: relative; }
+.fig img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--linea); background: var(--papel); min-height: 120px; }
+.fig--chica img { max-width: 620px; }
+.ver { margin-top: 8px; font: 600 0.9rem var(--f-titulo); background: none; border: 1px solid var(--linea); color: var(--senal); padding: 8px 14px; border-radius: 99px; cursor: pointer; }
+.ver:hover { border-color: var(--senal); }
+
+/* Línea de tiempo */
+.linea { list-style: none; margin: 0; padding: 0; position: relative; }
+.linea li { display: grid; grid-template-columns: 78px 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid var(--linea); }
+.linea li:first-child { border-top: 0; }
+.anio { font: 700 0.95rem var(--f-titulo); color: var(--acento); font-variant-numeric: tabular-nums; padding-top: 1px; }
+
+/* Chips */
+.chip { display: inline-block; font: 600 0.72rem var(--f-titulo); text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 9px; border-radius: 99px; white-space: nowrap; vertical-align: 1px; }
+.chip--pedido { background: var(--ok-fondo); color: var(--ok); }
+.chip--persona { background: var(--senal-suave); color: var(--senal); }
+.chip--opcion { background: var(--papel); color: var(--tinta-2); border: 1px solid var(--linea); }
+.chip--pro { background: var(--apoyo); color: var(--acento); }
+.chip--aviso { background: var(--aviso-fondo); color: var(--aviso); }
+
+/* Dónde está */
+.opciones { display: grid; gap: 12px; }
+.op { border: 1px solid var(--linea); border-radius: 12px; padding: 14px 16px; }
+.op h3 { font-size: 1.12rem; margin: 0 0 6px; }
+.op ul { margin: 0; padding-left: 20px; }
+.op li { margin: 3px 0; }
+.nivel { display: block; font: 700 0.75rem var(--f-titulo); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
+.op--1 { border-color: var(--senal); border-width: 2px; } .op--1 .nivel { color: var(--senal); }
+.op--2 .nivel { color: var(--aviso); } .op--3 .nivel { color: var(--tinta-3); }
+.falta { margin: 8px 0 0; font-size: 0.95rem; color: var(--tinta-2); }
+
+/* Pasos */
+.pasos { list-style: none; margin: 0; padding: 0; }
+.paso { display: grid; grid-template-columns: 1fr; gap: 6px; padding: 12px 0; border-top: 1px solid var(--linea); }
+.paso:first-child { border-top: 0; }
+@media (min-width: 640px) { .paso { grid-template-columns: 120px 1fr; gap: 12px; } .paso .chip { justify-self: start; margin-top: 3px; } }
+
+/* Tabla */
+.tabla { width: 100%; border-collapse: collapse; font-size: 0.97rem; }
+.tabla th, .tabla td { text-align: left; vertical-align: top; padding: 9px 8px; border-top: 1px solid var(--linea); }
+.tabla th { width: 84px; color: var(--tinta-3); font-weight: 600; }
+.tabla tr:first-child th, .tabla tr:first-child td { border-top: 0; }
+
+/* Documentos */
+.docs { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 640px) { .docs { grid-template-columns: 1fr 1fr; } }
+.doc { text-align: left; font: inherit; color: inherit; background: var(--papel); border: 1px solid var(--linea); border-radius: 12px; padding: 12px 14px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; transition: border-color 0.2s, background 0.2s; }
+.doc:hover { border-color: var(--senal); background: #fff; }
+.doc b { font-family: var(--f-titulo); }
+.doc span:last-child { color: var(--tinta-3); font-size: 0.92rem; }
+.doc__a { font: 700 0.78rem var(--f-titulo); color: var(--acento); }
+
+details summary { cursor: pointer; font-weight: 600; color: var(--senal); }
+details ul { padding-left: 20px; }
+.pie { color: var(--tinta-3); font-size: 0.85rem; text-align: center; padding: 12px 0 40px; }
+
+/* Visor */
+.visor { border: 0; padding: 0; margin: 0; width: 100vw; height: 100vh; max-width: none; max-height: none; background: #0e1118; color: #fff; }
+.visor::backdrop { background: rgba(0,0,0,0.8); }
+.visor__barra { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; background: #0e1118; z-index: 2; }
+.visor__barra button { font: 600 0.9rem var(--f-titulo); background: #fff; color: var(--tinta); border: 0; border-radius: 99px; padding: 8px 14px; cursor: pointer; }
+.visor__caja { overflow: auto; height: calc(100vh - 56px); -webkit-overflow-scrolling: touch; }
+.visor__caja img { display: block; width: 100%; height: auto; }
+.visor__caja.real img { width: auto; max-width: none; }
+.cargando { color: var(--tinta-3); padding: 40px 0; text-align: center; }
+</style>
+</head>
+<body>
+<main id="app"><p class="cargando">Cargando…</p></main>
+<script type="module">
+const LLAVE = 'inv3574-llave';
+const b64 = (u8) => btoa(String.fromCharCode(...u8));
+const deB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const app = document.getElementById('app');
+let acceso = null;
+const leerAcceso = async () => (acceso ||= await (await fetch('acceso.json', { cache: 'no-cache' })).json());
+const importar = (bruta) => crypto.subtle.importKey('raw', bruta, 'AES-GCM', false, ['decrypt']);
+const descifrar = async (llave, datos) => { const u8 = new Uint8Array(datos); return crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8.slice(0, 12) }, llave, u8.slice(12)); };
+async function probar(llave) {
+  const a = await leerAcceso();
+  try { return new TextDecoder().decode(await descifrar(llave, deB64(a.prueba))) === 'inv3574'; } catch { return false; }
+}
+async function derivar(clave) {
+  const a = await leerAcceso();
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(clave), 'PBKDF2', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: deB64(a.sal), iterations: a.vueltas }, base, 256));
+}
+const guardar = (b) => { try { localStorage.setItem(LLAVE, b64(b)); } catch { /* sin almacenamiento */ } };
+const guardada = () => { try { const s = localStorage.getItem(LLAVE); return s ? deB64(s) : null; } catch { return null; } };
+
+function pedir() {
+  return new Promise((resolver) => {
+    app.innerHTML = `<section class="puerta"><div class="puerta__c">
+      <h1>Acceso privado</h1><p>Escriba la contraseña que le pasaron.</p>
+      <form autocomplete="off"><label for="clave">Contraseña</label>
+      <input id="clave" type="password" autocomplete="current-password" required>
+      <button type="submit">Entrar</button><p class="puerta__e" role="alert" hidden></p></form></div></section>`;
+    const f = app.querySelector('form'), c = app.querySelector('input'), e = app.querySelector('.puerta__e'), b = app.querySelector('button');
+    c.focus();
+    f.addEventListener('submit', async (ev) => {
+      ev.preventDefault(); b.disabled = true; b.textContent = 'Abriendo…'; e.hidden = true;
+      try {
+        const bruta = await derivar(c.value); const llave = await importar(bruta);
+        if (await probar(llave)) { guardar(bruta); resolver(llave); return; }
+        e.textContent = 'Esa no es la contraseña.';
+      } catch { e.textContent = 'No se pudo comprobar. Revise la conexión y vuelva a intentarlo.'; }
+      e.hidden = false; b.disabled = false; b.textContent = 'Entrar'; c.select();
+    });
+  });
+}
+
+async function abrir() {
+  let llave = null;
+  const g = guardada();
+  if (g) { const k = await importar(g); if (await probar(k)) llave = k; }
+  if (!llave) llave = await pedir();
+  app.innerHTML = '<p class="cargando">Abriendo…</p>';
+  const cifrado = await (await fetch('datos/c.dat', { cache: 'no-cache' })).arrayBuffer();
+  const plano = await descifrar(llave, cifrado);
+  const texto = await new Response(new Blob([plano]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  const { html, imgs } = JSON.parse(texto);
+  app.innerHTML = html;
+  const cache = new Map();
+  const url = (alias) => {
+    if (!cache.has(alias)) cache.set(alias, (async () => {
+      const i = imgs[alias];
+      const d = await descifrar(llave, await (await fetch('datos/' + i.archivo)).arrayBuffer());
+      return URL.createObjectURL(new Blob([d], { type: i.tipo }));
+    })());
+    return cache.get(alias);
+  };
+  const ver = new IntersectionObserver((es) => es.forEach(async (en) => {
+    if (!en.isIntersecting) return; ver.unobserve(en.target);
+    try { en.target.src = await url(en.target.dataset.img); } catch { en.target.alt = 'No se pudo abrir la imagen.'; }
+  }), { rootMargin: '300px' });
+  app.querySelectorAll('img[data-img]').forEach((im) => ver.observe(im));
+
+  const visor = document.createElement('dialog');
+  visor.className = 'visor';
+  visor.innerHTML = `<div class="visor__barra"><button type="button" data-tam>Tamaño real</button><button type="button" data-cerrar>Cerrar</button></div><div class="visor__caja"><img alt=""></div>`;
+  document.body.append(visor);
+  const vimg = visor.querySelector('img'), caja = visor.querySelector('.visor__caja');
+  visor.querySelector('[data-cerrar]').addEventListener('click', () => visor.close());
+  visor.querySelector('[data-tam]').addEventListener('click', (e) => { caja.classList.toggle('real'); e.target.textContent = caja.classList.contains('real') ? 'Ajustar a la pantalla' : 'Tamaño real'; });
+  app.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-abrir]'); if (!b) return;
+    caja.classList.remove('real'); visor.querySelector('[data-tam]').textContent = 'Tamaño real';
+    vimg.removeAttribute('src'); vimg.alt = b.textContent.trim(); visor.showModal(); caja.scrollTop = 0;
+    try { vimg.src = await url(b.dataset.abrir); } catch { vimg.alt = 'No se pudo abrir la imagen.'; }
+  });
+  const salir = document.createElement('button');
+  salir.className = 'salir'; salir.type = 'button'; salir.textContent = 'Salir';
+  salir.addEventListener('click', () => { try { localStorage.removeItem(LLAVE); } catch { /* nada */ } location.reload(); });
+  document.body.append(salir);
+  if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
+}
+abrir().catch(() => { app.innerHTML = '<p class="cargando">No se pudo abrir la página. Recargue para intentarlo otra vez.</p>'; });
+</script>
+</body>
+</html>
