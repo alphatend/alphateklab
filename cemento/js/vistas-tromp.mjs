@@ -1,7 +1,9 @@
 // La curva de Tromp del separador: se meten los tamizados de la alimentación, los finos y los gruesos, y sale la
 // curva con el bypass, el corte (d50), la imperfección y la carga circulante. Lo escrito queda en el aparato.
-import { esc, icono, numero } from "./util.mjs";
-import { aviso } from "./ui.mjs";
+import { esc, icono, numero, fechaHora } from "./util.mjs";
+import { aviso, dialogo, nombre, puede } from "./ui.mjs";
+import * as api from "./api.mjs";
+import { nombreCompleto } from "./componentes.mjs";
 import { calcularTromp, EJEMPLO } from "./tromp.mjs";
 
 const CLAVE = "bp-tromp";
@@ -12,8 +14,10 @@ function filasDe(datos) {
   return datos.tamanos.map((t, k) => ({ t, a: datos.alimentacion[k], f: datos.finos[k], g: datos.gruesos[k] }));
 }
 
-export function vistaTromp() {
+export function vistaTromp({ d } = {}) {
   let filas = leer() ?? filasDe(EJEMPLO);
+  const guardados = [...(d?.tromp ?? [])].sort((a, b) => b.en.localeCompare(a.en));
+  const molinos = (d?.equipos ?? []).filter((e) => e.activo && !e.padre_id && e.tipo !== "colector");
   const fila = (x, k) => `<tr data-k="${k}">
       <td><input type="text" inputmode="decimal" aria-label="Tamaño (µm), fila ${k + 1}" data-c="t" value="${esc(x.t ?? "")}"></td>
       <td><input type="text" inputmode="decimal" aria-label="Alimentación, fila ${k + 1}" data-c="a" value="${esc(x.a ?? "")}"></td>
@@ -36,6 +40,15 @@ export function vistaTromp() {
             <button type="button" class="boton chico" data-accion="ejemplo">Usar el ejemplo</button>
             <button type="button" class="boton chico plano" data-accion="limpiar">Vaciar</button></div>
           <p style="font-size:14px;color:var(--tinta-3)">El ejemplo es inventado, para ver cómo funciona. Las mallas van de la más fina a la más gruesa.</p>
+          ${!d?.yo || puede(d.yo, "editar") ? `<div class="herramientas-item" style="border-top:0.5px solid var(--linea);padding-top:12px">
+            <button type="button" class="boton primario chico" data-accion="guardar">${icono("bien")}Guardar este muestreo</button>
+            <span class="ayuda">Queda con el molino y la fecha, para seguirlo junto al Blaine en Laboratorio.</span></div>` : ""}
+          ${guardados.length ? `<div><span class="rotulo">Muestreos guardados</span><ul class="lista" style="margin-top:8px;background:var(--hundido)">${guardados.slice(0, 12).map((x) => {
+            let r = null; try { r = calcularTromp(x.datos); } catch { /* datos incompletos */ }
+            return `<li><button type="button" class="fila" data-cargar="${esc(x.id)}"><span class="titulo">${esc(nombreCompleto(d, x.equipo_id))} <small>· ${esc(fechaHora(x.en))}</small></span>
+              <span class="detalle">${r ? `<span>d50 ${numero(r.d50, 1)} µm</span><span>bypass ${numero(r.bypass * 100, 1)} %</span>` : ""}${x.nota ? `<span>${esc(x.nota)}</span>` : ""}<span>${esc(nombre(d, x.por).split(" ")[0])}</span></span>
+              <span class="lado">${x._sinEnviar ? `<span class="marca sinenviar">Sin enviar</span>` : icono("derecha", "ico chevron")}</span></button></li>`;
+          }).join("")}</ul></div>` : ""}
         </div>
         <div data-resultado aria-live="polite"></div>
       </div>`,
@@ -70,7 +83,30 @@ export function vistaTromp() {
         else if (b.dataset.accion === "fila") filas.push({ t: "", a: "", f: "", g: "" });
         else if (b.dataset.accion === "ejemplo") filas = filasDe(EJEMPLO);
         else if (b.dataset.accion === "limpiar") { filas = [0, 1, 2, 3, 4].map(() => ({ t: "", a: "", f: "", g: "" })); aviso("Tabla vacía."); }
-        else return;
+        else if (b.dataset.cargar) {
+          const x = guardados.find((y) => y.id === b.dataset.cargar);
+          filas = filasDe(x.datos);
+          aviso(`Cargado el muestreo del ${fechaHora(x.en)}.`);
+          scrollTo({ top: 0, behavior: "smooth" });
+        } else if (b.dataset.accion === "guardar") {
+          const llenas = filas.filter((x) => [x.t, x.a, x.f, x.g].every((v) => Number.isFinite(num(v))));
+          if (llenas.length < 3) return aviso("Llena por lo menos tres mallas completas.", { error: true });
+          const ahora = new Date(); ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
+          dialogo({
+            titulo: "Guardar el muestreo",
+            html: `<div class="campo"><label for="tr-m">Molino</label><select id="tr-m">${molinos.map((e) => `<option value="${esc(e.id)}">${esc(nombreCompleto(d, e.id))}</option>`).join("")}</select></div>
+              <div class="campo"><label for="tr-en">Hora del muestreo</label><input id="tr-en" type="datetime-local" value="${ahora.toISOString().slice(0, 16)}"></div>
+              <div class="campo"><label for="tr-n">Nota <small>(opcional)</small></label><input id="tr-n" type="text" placeholder="Por ejemplo: después de ajustar las paletas"></div>`,
+            botones: [{ texto: "Cancelar", valor: null }, { texto: "Guardar", valor: true, clase: "primario", alElegir: async (v) => {
+              try {
+                await api.encolar("tromp", { id: crypto.randomUUID(), equipo_id: v.querySelector("#tr-m").value, en: new Date(v.querySelector("#tr-en").value).toISOString(), nota: v.querySelector("#tr-n").value,
+                  datos: { tamanos: llenas.map((x) => num(x.t)), alimentacion: llenas.map((x) => num(x.a)), finos: llenas.map((x) => num(x.f)), gruesos: llenas.map((x) => num(x.g)) } });
+                aviso("Muestreo guardado.");
+              } catch (x) { aviso(x.message, { error: true }); return false; }
+            } }],
+          });
+          return;
+        } else return;
         cuerpo.innerHTML = filas.map(fila).join("");
         recalcular();
       });

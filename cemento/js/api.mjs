@@ -215,7 +215,12 @@ function aplicarPendientes(d) {
     if (m) {
       const insp = d.inspecciones.find((i) => i.id === m[1]);
       if (insp && insp.estado !== "hecha") {
-        Object.assign(insp, { estado: "hecha", hecha_por: p.quien, hecha_en: p.datos.hecha_en, respuestas: p.datos.respuestas, _sinEnviar: true });
+        Object.assign(insp, { estado: "hecha", hecha_por: p.quien, hecha_en: p.datos.hecha_en, respuestas: p.datos.respuestas, firma: p.datos.firma ?? null,
+          firma_nombre: p.datos.firma_nombre ?? null, verificaciones: p.datos.verificaciones ?? null, _sinEnviar: true });
+        for (const t of p.datos.tareas ?? []) {
+          const x = d.tareas?.find((y) => y.id === t.id);
+          if (x && t.hecha) Object.assign(x, { estado: "hecha", hecha_por: p.quien, hecha_en: p.datos.hecha_en, nota_cierre: t.nota ?? "", _sinEnviar: true });
+        }
         insp.items ??= d.plantillas.find((x) => x.id === insp.plantilla_id)?.items ?? [];
         for (const h of p.datos.hallazgos ?? []) {
           if (!d.hallazgos.some((x) => x.id === h.id)) {
@@ -228,11 +233,41 @@ function aplicarPendientes(d) {
     if (p.ruta === "hallazgos" && !d.hallazgos.some((x) => x.id === p.datos.id)) {
       d.hallazgos.unshift({ ...p.datos, numero: null, estado: "abierto", creado_por: p.quien, fotos: p.datos.fotos ?? [], _sinEnviar: true });
     }
+    // tareas: crear o cambiar (la ruta lleva el id, o va en los datos)
+    const mt = /^tareas(?:\/([^/]+))?$/.exec(p.ruta);
+    if (mt && d.tareas) {
+      const id = mt[1] ?? p.datos.id;
+      const x = d.tareas.find((y) => y.id === id);
+      const cambios = { ...p.datos, _sinEnviar: true };
+      if (cambios.estado === "hecha" && x?.estado !== "hecha") Object.assign(cambios, { hecha_por: p.quien, hecha_en: p.datos.fecha ?? new Date().toISOString() });
+      if (cambios.fotos && x) cambios.fotos = [...new Set([...(x.fotos ?? []), ...cambios.fotos])];
+      if (x) Object.assign(x, cambios);
+      else d.tareas.push({ estado: "pendiente", prioridad: "media", fotos: [], creada_por: p.quien, creada: p.datos.fecha, asignada_a: p.quien, ...cambios, id });
+    }
+    if (p.ruta === "entregas" && d.entregas && !d.entregas.some((x) => x.id === p.datos.id)) {
+      d.entregas.unshift({ ...p.datos, de: p.quien, en: p.datos.en, recibida_por: null, _sinEnviar: true });
+    }
+    const mr = /^entregas\/(.+)\/recibir$/.exec(p.ruta);
+    if (mr) {
+      const x = d.entregas?.find((y) => y.id === mr[1]);
+      if (x && !x.recibida_por) Object.assign(x, { recibida_por: p.quien, recibida_en: p.datos.en, nota_recibido: p.datos.nota ?? "", _sinEnviar: true });
+    }
+    const mp = /^paros(?:\/([^/]+))?$/.exec(p.ruta);
+    if (mp && d.paros) {
+      const id = mp[1] ?? p.datos.id;
+      const x = d.paros.find((y) => y.id === id);
+      if (x) Object.assign(x, p.datos, { _sinEnviar: true });
+      else d.paros.unshift({ tipo: "no_programado", fin: null, creado_por: p.quien, creado: p.datos.inicio, ...p.datos, id, _sinEnviar: true });
+    }
+    for (const [ruta, tabla] of [["laboratorio", "laboratorio"], ["tromp", "tromp"]]) {
+      if (p.ruta === ruta && d[tabla] && !d[tabla].some((x) => x.id === p.datos.id)) d[tabla].push({ ...p.datos, por: p.quien, _sinEnviar: true });
+    }
     const mh = /^hallazgos\/(.+)$/.exec(p.ruta);
     if (mh) {
       const h = d.hallazgos.find((x) => x.id === mh[1]);
       if (h) {
-        for (const k of ["estado", "prioridad", "accion", "responsable_id", "ot", "vence", "descripcion"]) if (p.datos[k] !== undefined) h[k] = p.datos[k];
+        for (const k of ["estado", "prioridad", "accion", "responsable_id", "ot", "vence", "descripcion", "paro_id", "equipo_id"]) if (p.datos[k] !== undefined) h[k] = p.datos[k];
+        if (p.datos.estado && p.datos.estado !== "paro") h.paro_id = null;
         if (p.datos.estado === "cerrado") h.cerrado ??= p.datos.fecha;
         if (p.datos.estado && p.datos.estado !== "cerrado") h.cerrado = null;
         h._sinEnviar = true;
@@ -248,12 +283,13 @@ function aplicarPendientes(d) {
   return d;
 }
 
-/** Guarda una foto, video o audio en la cola. Devuelve su id (el que se usa en las respuestas). */
-export async function guardarMedio(blob, nombre = "") {
-  const medioId = `${blob.type.startsWith("video/") ? "v" : "f"}-${crypto.randomUUID()}`; // la letra dice cómo mostrarlo
-  const bytes = await blob.arrayBuffer();
-  await base("cola", "readwrite", (s) => s.put({ id: `m-${medioId}`, orden: Date.now(), tipo: "media", medioId, bytes, mime: blob.type || "image/jpeg", nombre, quien: sesion.persona }));
-  localUrls.set(medioId, URL.createObjectURL(blob));
+/** Guarda una foto, video o audio en la cola (un Blob, o { bytes, type } si ya se tienen los bytes). Devuelve su id. */
+export async function guardarMedio(medio, nombre = "") {
+  const mime = medio.type || "image/jpeg";
+  const medioId = `${mime.startsWith("video/") ? "v" : "f"}-${crypto.randomUUID()}`; // la letra dice cómo mostrarlo
+  const bytes = medio instanceof Blob ? await medio.arrayBuffer() : medio.bytes; // ojo: los Blob nuevos también tienen .bytes(), un método
+  await base("cola", "readwrite", (s) => s.put({ id: `m-${medioId}`, orden: Date.now(), tipo: "media", medioId, bytes, mime, nombre, quien: sesion.persona }));
+  localUrls.set(medioId, URL.createObjectURL(medio instanceof Blob ? medio : new Blob([bytes], { type: mime })));
   pedirPersistencia();
   await leerCola();
   enviarCola();
@@ -268,36 +304,42 @@ export async function encolar(ruta, cuerpo) {
   return enviarCola();
 }
 
-let enCurso = null;
+let enCurso = null, otraVez = false;
 export function enviarCola() {
-  enCurso ??= (async () => {
-    let enviados = 0;
+  // si ya se está mandando, lo que acaba de entrar (la firma sube y enseguida se encola la inspección) va en otra vuelta
+  if (enCurso) { otraVez = true; return enCurso; }
+  enCurso = (async () => {
+    let enviados = 0, rechazados = 0;
     cola.enviando = true;
     avisar();
     try {
-      await leerCola();
-      for (const p of cola.pendientes) {
-        if (!sesion.token) break; // sin sesión no se manda: la cola espera intacta
-        if (p.quien && p.quien !== sesion.persona) continue; // de otra persona: espera a que entre
-        try {
-          if (p.tipo === "media") {
-            await pedir(`media?id=${encodeURIComponent(p.medioId)}&nombre=${encodeURIComponent(p.nombre ?? "")}`, { metodo: "POST", cuerpo: p.bytes, tipo: p.mime, limite: 120000 });
-          } else {
-            await pedir(p.ruta, { metodo: "POST", datos: p.datos });
+      vueltas: do {
+        otraVez = false;
+        await leerCola();
+        for (const p of cola.pendientes) {
+          if (!sesion.token) break vueltas; // sin sesión no se manda: la cola espera intacta
+          if (p.quien && p.quien !== sesion.persona) continue; // de otra persona: espera a que entre
+          try {
+            if (p.tipo === "media") {
+              await pedir(`media?id=${encodeURIComponent(p.medioId)}&nombre=${encodeURIComponent(p.nombre ?? "")}`, { metodo: "POST", cuerpo: p.bytes, tipo: p.mime, limite: 120000 });
+            } else {
+              await pedir(p.ruta, { metodo: "POST", datos: p.datos });
+            }
+            await base("cola", "readwrite", (s) => s.delete(p.id));
+            enviados++;
+            cola.ultimoError = null;
+          } catch (e) {
+            if (e.sinRed || e.status === 401 || e.status === 403 && /contraseña/.test(e.message) || e.status >= 500 || e.status === 429) {
+              cola.ultimoError = e.message;
+              break vueltas; // se reintenta después, en el mismo orden
+            }
+            // lo rechazó el servidor y no se va a arreglar solo: se aparta, con el motivo, sin perderlo
+            await base("rechazados", "readwrite", (s) => s.put({ ...p, motivo: e.message, rechazado: new Date().toISOString() }));
+            await base("cola", "readwrite", (s) => s.delete(p.id));
+            rechazados++;
           }
-          await base("cola", "readwrite", (s) => s.delete(p.id));
-          enviados++;
-          cola.ultimoError = null;
-        } catch (e) {
-          if (e.sinRed || e.status === 401 || e.status === 403 && /contraseña/.test(e.message) || e.status >= 500 || e.status === 429) {
-            cola.ultimoError = e.message;
-            break; // se reintenta después, en el mismo orden
-          }
-          // lo rechazó el servidor y no se va a arreglar solo: se aparta, con el motivo, sin perderlo
-          await base("rechazados", "readwrite", (s) => s.put({ ...p, motivo: e.message, rechazado: new Date().toISOString() }));
-          await base("cola", "readwrite", (s) => s.delete(p.id));
         }
-      }
+      } while (otraVez);
     } catch (e) {
       cola.ultimoError = e.message;
     } finally {
@@ -305,7 +347,8 @@ export function enviarCola() {
       cola.enviando = false;
       enCurso = null;
     }
-    if (enviados) await refrescar().catch(() => avisar());
+    // lo rechazado se había aplicado en la pantalla antes de mandarlo: con los datos del servidor se deshace
+    if (enviados || rechazados) await refrescar().catch(() => avisar());
     else avisar();
     return { enviados, quedan: cola.pendientes.filter((p) => !p.quien || p.quien === sesion.persona).length };
   })();

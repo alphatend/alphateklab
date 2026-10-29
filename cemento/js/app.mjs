@@ -2,9 +2,9 @@
 // entrar con usuario y contraseña, la bandeja de avisos y lo que falta por enviar. Las demás vistas están en
 // vistas-*.mjs.
 import "./tema.mjs";
-import { esc, icono, hoyPanama, plural, fechaHora, haceCuanto } from "./util.mjs";
+import { esc, icono, iconoNav, hoyPanama, plural, fechaHora, haceCuanto } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, confirmar, vacio, persona, nombre, avatar, esAdmin } from "./ui.mjs";
+import { aviso, confirmar, dialogo, vacio, persona, nombre, avatar, esAdmin, puede, cerrarHojas, nombrePerfil } from "./ui.mjs";
 import { vistaTablero } from "./vistas-tablero.mjs";
 import { vistaCalendario } from "./vistas-calendario.mjs";
 import { vistaInspecciones, vistaInspeccion, vistaAsignar } from "./vistas-inspecciones.mjs";
@@ -14,29 +14,43 @@ import { vistaColectores } from "./vistas-colectores.mjs";
 import { vistaReportes, vistaReporteInspeccion } from "./vistas-reportes.mjs";
 import { vistaTromp } from "./vistas-tromp.mjs";
 import { vistaAjustes, vistaUsuarios } from "./vistas-ajustes.mjs";
+import { vistaTareas, vistaTarea } from "./vistas-tareas.mjs";
+import { vistaTurno, vistaEntrega, vistaNuevaEntrega } from "./vistas-turno.mjs";
+import { vistaParos, vistaParo } from "./vistas-paros.mjs";
+import { vistaLaboratorio } from "./vistas-laboratorio.mjs";
+import { vistaIndicadores } from "./vistas-indicadores.mjs";
+import { vistaPlanta, vistaEscanear, vistaQr, vistaEtiquetas } from "./vistas-planta.mjs";
+import { usarDatos } from "./componentes.mjs";
 
 const raiz = document.getElementById("app");
 const NAV = [
   { grupo: null, items: [
     { ruta: "tablero", texto: "Tablero", icono: "tablero" },
+    { ruta: "tareas", texto: "Tareas", icono: "tareas" },
     { ruta: "calendario", texto: "Calendario", icono: "calendario" },
     { ruta: "inspecciones", texto: "Inspecciones", icono: "inspecciones" },
     { ruta: "hallazgos", texto: "Hallazgos", icono: "hallazgos" },
+    { ruta: "turno", texto: "Entrega de turno", icono: "turno" },
   ] },
   { grupo: "Planta", items: [
     { ruta: "equipos", texto: "Equipos", icono: "equipos" },
     { ruta: "colectores", texto: "Colectores", icono: "colector" },
+    { ruta: "paros", texto: "Paros", icono: "paros" },
+  ] },
+  { grupo: "Proceso", items: [
+    { ruta: "laboratorio", texto: "Laboratorio", icono: "laboratorio" },
+    { ruta: "tromp", texto: "Curva de Tromp", icono: "tromp" },
   ] },
   { grupo: "Informes", items: [
+    { ruta: "indicadores", texto: "Indicadores", icono: "indicadores" },
     { ruta: "reportes", texto: "Reportes", icono: "reportes" },
-    { ruta: "tromp", texto: "Curva de Tromp", icono: "tromp" },
   ] },
 ];
 const PESTANAS = [
   { ruta: "tablero", texto: "Tablero", icono: "tablero" },
-  { ruta: "calendario", texto: "Calendario", icono: "calendario" },
-  { ruta: "equipos", texto: "Equipos", icono: "equipos" },
-  { ruta: "colectores", texto: "Colectores", icono: "colector" },
+  { ruta: "tareas", texto: "Tareas", icono: "tareas" },
+  { ruta: "escanear", texto: "Escanear", icono: "escanear", clase: "escanear" },
+  { ruta: "planta", texto: "Planta", icono: "planta" },
   { ruta: "mas", texto: "Más", icono: "mas" },
 ];
 const VISTAS = {
@@ -60,13 +74,29 @@ const VISTAS = {
   avisos: vistaAvisos,
   pendientes: vistaPendientes,
   mas: vistaMas,
+  tareas: vistaTareas,
+  tarea: vistaTarea,
+  turno: vistaTurno,
+  entrega: vistaEntrega,
+  "nueva-entrega": vistaNuevaEntrega,
+  paros: vistaParos,
+  paro: vistaParo,
+  laboratorio: vistaLaboratorio,
+  indicadores: vistaIndicadores,
+  planta: vistaPlanta,
+  escanear: vistaEscanear,
+  qr: vistaQr,
+  etiquetas: vistaEtiquetas,
 };
 // a qué sección pertenece cada vista (para marcarla en el riel y en las pestañas)
 const SECCION = {
   inicio: "tablero", inspeccion: "inspecciones", asignar: "inspecciones", hallazgo: "hallazgos", "nuevo-hallazgo": "hallazgos",
-  plantilla: "equipos", reporte: "reportes", usuarios: "ajustes",
+  plantilla: "equipos", reporte: "reportes", usuarios: "ajustes", tarea: "tareas", entrega: "turno", "nueva-entrega": "turno", paro: "paros",
+  etiquetas: "equipos", qr: "escanear",
 };
-const EN_MAS = new Set(["inspecciones", "hallazgos", "reportes", "tromp", "ajustes", "avisos", "pendientes", "mas"]);
+// en el teléfono, qué pestaña se marca para las secciones que no tienen la suya
+const EN_PLANTA = new Set(["equipos", "colectores", "paros", "laboratorio", "tromp", "planta"]);
+const EN_MAS = new Set(["inspecciones", "hallazgos", "reportes", "indicadores", "turno", "calendario", "ajustes", "avisos", "pendientes", "mas"]);
 
 function ruta() {
   const [camino, consulta = ""] = location.hash.replace(/^#\/?/, "").split("?");
@@ -127,8 +157,17 @@ function mostrarVista(r, fn, misma, anterior, esta) {
     console.error(e);
     v = { titulo: "Algo falló", html: `<div class="error-carga">No se pudo mostrar esta pantalla: ${esc(e.message)}. <a href="#/tablero">Volver al tablero</a></div>` };
   }
+  usarDatos(contexto().d);
   main.innerHTML = v.html;
   main.classList.toggle("ancho", !!v.ancho);
+  // al llegar a una pantalla (no al redibujarla con datos nuevos) sus filas y tarjetas entran escalonadas
+  if (!misma && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    for (const lista of main.querySelectorAll(".lista, .tarjetas, .equipos-rejilla, .ficha-cifras, .lista-tareas, .kpis-app, .tiras, .graficas, .items")) {
+      [...lista.children].slice(0, 12).forEach((h, k) => h.style.setProperty("--i", k));
+    }
+    main.classList.add("entrando");
+    setTimeout(() => main.classList.remove("entrando"), 700);
+  }
   document.title = `${v.titulo} · ${nombreApp()}`;
   document.getElementById("titulo-barra").textContent = v.tituloCorto ?? v.titulo;
   const volver = document.getElementById("volver");
@@ -157,10 +196,11 @@ function armarArmazon() {
     <aside class="riel vidrio" aria-label="Navegación">
       <div class="marca-riel">${logo ? `<img src="${esc(logo)}" alt="">` : ""}<div><div class="nombre-app">${esc(nombreApp())}</div>
         <div class="sub">${esc(d.ajustes?.planta || d.ajustes?.empresa || "Inspecciones y hallazgos")}</div></div></div>
-      <nav>${NAV.map((g) => `${g.grupo ? `<div class="grupo-nav">${g.grupo}</div>` : ""}${g.items.map((n) => `<a href="#/${n.ruta}" data-seccion="${n.ruta}">${icono(n.icono)}<span>${n.texto}</span></a>`).join("")}`).join("")}</nav>
+      <button type="button" class="crear-riel" data-crear hidden>${icono("mas1")}<span>Crear</span><kbd>N</kbd></button>
+      <nav>${NAV.map((g) => `${g.grupo ? `<div class="grupo-nav">${g.grupo}</div>` : ""}${g.items.map((n) => `<a href="#/${n.ruta}" data-seccion="${n.ruta}">${iconoNav(n.icono)}<span>${n.texto}</span></a>`).join("")}`).join("")}</nav>
       <div class="pie-riel">
-        <nav><a href="#/avisos" data-seccion="avisos">${icono("campana")}<span>Avisos</span></a>
-          <a href="#/ajustes" data-seccion="ajustes">${icono("ajustes")}<span>Ajustes</span></a></nav>
+        <nav><a href="#/avisos" data-seccion="avisos">${iconoNav("campana")}<span>Avisos</span></a>
+          <a href="#/ajustes" data-seccion="ajustes">${iconoNav("ajustes")}<span>Ajustes</span></a></nav>
         <a class="senal" id="senal-riel" href="#/pendientes"></a>
         <a class="yo-riel" href="#/ajustes" id="yo-riel"></a>
       </div>
@@ -174,10 +214,47 @@ function armarArmazon() {
       </header>
       <main id="contenido" class="contenido" tabindex="-1"></main>
     </div>
-    <nav class="pestanas vidrio" aria-label="Secciones">${PESTANAS.map((n) => `<a href="#/${n.ruta}" data-seccion="${n.ruta}">${icono(n.icono)}<span>${n.texto}</span></a>`).join("")}</nav>
+    <div class="dock"><nav class="pestanas vidrio" aria-label="Secciones">${PESTANAS.map((n) => `<a href="#/${n.ruta}" data-seccion="${n.ruta}" class="${n.clase ?? ""}">${iconoNav(n.icono)}<span>${n.texto}</span></a>`).join("")}</nav>
+      <button type="button" class="crear-flotante vidrio" data-crear aria-label="Crear: hallazgo, tarea, paro…" hidden>${icono("mas1")}</button></div>
   </div>`;
+  raiz.querySelectorAll("[data-crear]").forEach((b) => b.addEventListener("click", abrirCrear));
   armazonListo = true;
 }
+
+// «Crear»: un solo lugar para todo lo que se anota, según los permisos. Si se está en un equipo, ya viene puesto.
+function opcionesCrear(yo, r = ruta()) {
+  const eq = ["equipo", "qr"].includes(r.nombre) && r.param ? `equipo=${encodeURIComponent(r.param)}` : "";
+  const con = (h) => (eq ? `${h}${h.includes("?") ? "&" : "?"}${eq}` : h);
+  return [
+    puede(yo, "editar") && { icono: "hallazgos", texto: "Hallazgo", detalle: "Algo que está mal en un equipo", ir: con("#/nuevo-hallazgo"), color: "rojo" },
+    puede(yo, "editar") && { icono: "tareas", texto: "Tarea", detalle: puede(yo, "tareas") ? "Para ti, para otro o para un turno" : "Algo que tienes que hacer", ir: con("#/tarea/nueva"), color: "azul" },
+    puede(yo, "asignar") && { icono: "inspecciones", texto: "Asignar inspección", detalle: "A una persona o a un turno", ir: con("#/asignar"), color: "indigo" },
+    puede(yo, "editar") && { icono: "paros", texto: "Paro", detalle: "Un equipo que paró", ir: con("#/paro/nuevo"), color: "naranja" },
+    puede(yo, "editar") && { icono: "turno", texto: "Entregar turno", detalle: "Lo que pasó y lo pendiente", ir: "#/nueva-entrega", color: "verde" },
+    puede(yo, "editar") && { icono: "laboratorio", texto: "Resultado de laboratorio", detalle: "Blaine, residuo, humedad…", ir: "#/laboratorio?registrar=1", color: "morado" },
+  ].filter(Boolean);
+}
+
+async function abrirCrear() {
+  const { yo } = contexto();
+  const ops = opcionesCrear(yo);
+  if (!ops.length) return;
+  const destino = await dialogo({
+    titulo: "Crear",
+    botones: [{ texto: "Cancelar", valor: null }],
+    html: `<div class="crear-hoja">${ops.map((o, k) => `<button type="button" data-op="${k}" style="--i:${k}"><span class="icono-fila ${o.color}">${icono(o.icono)}</span>
+      <span class="texto"><b>${esc(o.texto)}</b><small>${esc(o.detalle)}</small></span></button>`).join("")}</div>`,
+    alMontar: (velo, cerrar) => velo.querySelectorAll("[data-op]").forEach((b) => b.addEventListener("click", () => cerrar(ops[Number(b.dataset.op)].ir))),
+  });
+  if (destino) ir(destino);
+}
+// en el iPad o la computadora con teclado, N abre «Crear» (fuera de los campos)
+addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() !== "n" || e.metaKey || e.ctrlKey || e.altKey || e.target.closest?.("input, textarea, select, [contenteditable]") || document.querySelector(".velo")) return;
+  if (!document.querySelector("[data-crear]:not([hidden])")) return;
+  e.preventDefault();
+  abrirCrear();
+});
 
 const avisosNuevos = (d) => {
   const visto = api.LS.leer("bp-avisos-visto") ?? "";
@@ -188,22 +265,29 @@ function actualizarArmazon(r) {
   const { d, yo, hoy } = contexto();
   const actual = SECCION[r.nombre] ?? r.nombre;
   document.querySelectorAll("[data-seccion]").forEach((a) => {
-    const es = a.dataset.seccion === actual || (a.dataset.seccion === "mas" && EN_MAS.has(actual) && a.closest(".pestanas"));
+    const enPestanas = !!a.closest(".pestanas");
+    const es = a.dataset.seccion === actual || (enPestanas && ((a.dataset.seccion === "mas" && EN_MAS.has(actual)) || (a.dataset.seccion === "planta" && EN_PLANTA.has(actual))));
     if (es) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
   // globos: las inspecciones vencidas o de hoy que me tocan; los avisos sin ver
-  const mias = d.inspecciones.filter((i) => i.estado === "pendiente" && i.asignada_a === yo.id && i.vence <= hoy).length;
+  const turnoMio = yo.turno ? `turno:${yo.turno}` : "-";
+  const mias = d.inspecciones.filter((i) => i.estado === "pendiente" && (i.asignada_a === yo.id || i.asignada_a === turnoMio) && i.vence <= hoy).length;
   const nuevos = avisosNuevos(d);
   const globo = (sel, n, etiqueta) => document.querySelectorAll(sel).forEach((a) => {
     a.querySelector(".globo")?.remove();
     if (n) a.insertAdjacentHTML("beforeend", `<span class="globo" aria-label="${etiqueta}">${n > 99 ? "99+" : n}</span>`);
   });
   globo('[data-seccion="tablero"]', mias, `${mias} para hoy o atrasadas`);
+  const tareasHoy = (d.tareas ?? []).filter((t) => t.estado !== "hecha" && (t.asignada_a === yo.id || t.asignada_a === turnoMio) && t.vence && t.vence <= hoy).length;
+  globo('[data-seccion="tareas"]', tareasHoy, `${tareasHoy} tareas para hoy o atrasadas`);
   globo('[data-seccion="avisos"], #campana-barra', nuevos, `${nuevos} avisos nuevos`);
   globo('.pestanas [data-seccion="mas"]', nuevos, `${nuevos} avisos nuevos`);
+  const crea = opcionesCrear(yo, r).length > 0;
+  document.querySelectorAll("[data-crear]").forEach((b) => { b.hidden = !crea; });
+  document.body.classList.toggle("con-crear", crea);
   const yoRiel = document.getElementById("yo-riel");
-  if (yoRiel) yoRiel.innerHTML = `${avatar(yo)}<span><b>${esc(yo.nombre)}</b><small>${esc(yo.puesto || (esAdmin(yo) ? "Administrador" : ""))}</small></span>`;
+  if (yoRiel) yoRiel.innerHTML = `${avatar(yo)}<span><b>${esc(yo.nombre)}</b><small>${esc(yo.puesto || nombrePerfil(yo))}</small></span>`;
   pintarSenal();
 }
 
@@ -319,12 +403,16 @@ function vistaMas({ d, yo }) {
     titulo: "Más",
     html: `<div class="cabeza"><div><h1>Más</h1></div></div>
       <ul class="lista"><li><a class="fila con-icono" href="#/ajustes">${avatar(yo)}<span class="titulo">${esc(yo.nombre)}</span>
-        <span class="detalle">${esc(yo.puesto || (esAdmin(yo) ? "Administrador" : "Inspector"))} · ${esc(yo.usuario)}</span><span class="lado horizontal">${icono("derecha", "ico chevron")}</span></a></li></ul>
+        <span class="detalle">${esc(yo.puesto || nombrePerfil(yo))} · ${esc(yo.usuario)}</span><span class="lado horizontal">${icono("derecha", "ico chevron")}</span></a></li></ul>
       <section class="seccion"><ul class="lista">
+        ${fila("#/turno", "turno", "", "Entrega de turno", (d.entregas ?? []).some((e) => !e.recibida_por && e.de !== yo.id) ? "Hay una por recibir" : "Lo que deja el que sale")}
+        ${fila("#/calendario", "calendario", "rojo", "Calendario", "Inspecciones, tareas y paros")}
         ${fila("#/inspecciones", "inspecciones", "", "Inspecciones", `${pend} pendientes`)}
-        ${fila("#/hallazgos", "hallazgos", "rojo", "Hallazgos", `${abiertos} abiertos`)}
+        ${fila("#/hallazgos", "hallazgos", "naranja", "Hallazgos", `${abiertos} abiertos`)}
+      </ul></section>
+      <section class="seccion"><ul class="lista">
+        ${fila("#/indicadores", "indicadores", "verde", "Indicadores", "Cumplimiento, cierre y disponibilidad")}
         ${fila("#/reportes", "reportes", "verde", "Reportes", "Por equipo, PDF, Excel y correo")}
-        ${fila("#/tromp", "tromp", "indigo", "Curva de Tromp")}
       </ul></section>
       <section class="seccion"><ul class="lista">
         ${fila("#/avisos", "campana", "rojo", "Avisos", "", nuevos ? `<span class="marca alta">${nuevos} nuevos</span>` : "")}
@@ -426,7 +514,7 @@ export async function cerrarSesion() {
   dibujarEntrar();
 }
 
-addEventListener("hashchange", () => dibujar());
+addEventListener("hashchange", () => { cerrarHojas(); dibujar(); });
 api.alCambiar(() => {
   if (!armazonListo) return;
   pintarSenal();

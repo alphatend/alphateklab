@@ -1,29 +1,54 @@
 // El calendario: las inspecciones por su fecha límite y las fechas compromiso de los hallazgos. Mes en el iPad y la
 // computadora; en el teléfono, la semana y la agenda. Elegir un día cambia solo lo de abajo (sin redibujar todo).
 // «Suscribirse» da el enlace .ics de cada persona para Google Calendar, Apple u Outlook.
-import { esc, icono, fechaDia, fechaCorta, sumarDias, nombreMes, DIAS_CORTOS, diaSemana, plural, numeroHallazgo } from "./util.mjs";
+import { esc, icono, fechaDia, fechaCorta, fechaHora, diaDe, sumarDias, nombreMes, DIAS_CORTOS, diaSemana, plural, numeroHallazgo } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, dialogo, vacio, plantilla, nombreCorto, queInspeccion, esAdmin, filaInspeccion, marcaPrioridad } from "./ui.mjs";
+import { aviso, dialogo, vacio, plantilla, nombreCorto, queInspeccion, esAdmin, puede, filaInspeccion, marcaPrioridad, equiposDe } from "./ui.mjs";
+import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto } from "./componentes.mjs";
+import { esMia, paraQuien } from "./vistas-tareas.mjs";
 
-function eventos(d, yo, hoy, quien) {
+function eventos(d, yo, hoy, quien, fam) {
   const porDia = new Map();
   const poner = (dia, ev) => (porDia.get(dia) ?? porDia.set(dia, []).get(dia)).push(ev);
+  const turno = yo.turno ? `turno:${yo.turno}` : "-";
   for (const i of d.inspecciones) {
-    if (quien === "mios" && i.asignada_a !== yo.id && i.hecha_por !== yo.id) continue;
+    if (!enFiltro(fam, equiposDe(i))) continue;
+    if (quien === "mios" && i.asignada_a !== yo.id && i.asignada_a !== turno && i.hecha_por !== yo.id) continue;
     const clase = i.estado === "hecha" ? "hecha" : i.vence < hoy ? "atrasada" : "";
     poner(i.vence, { tipo: "insp", i, clase, texto: `${queInspeccion(d, i)} · ${plantilla(d, i.plantilla_id)?.nombre ?? ""}` });
   }
+  for (const t of d.tareas ?? []) {
+    if (!t.vence || !enFiltro(fam, t.equipo_id) || (quien === "mios" && !esMia(t, yo))) continue;
+    poner(t.vence, { tipo: "tarea", t, clase: t.estado === "hecha" ? "hecha" : t.vence < hoy ? "atrasada" : "tarea", texto: `${t.estado === "hecha" ? "✓ " : ""}${t.titulo}` });
+  }
+  // los paros programados, en cada día que duran (y los no programados en curso, hoy)
+  for (const p of d.paros ?? []) {
+    if (!enFiltro(fam, p.equipo_id)) continue;
+    if (p.tipo === "programado") {
+      const ini = diaDe(p.inicio), fin = diaDe(p.fin ?? p.inicio);
+      for (let x = ini, k = 0; x <= fin && k < 31; x = sumarDias(x, 1), k++) poner(x, { tipo: "paro", p, clase: "paro", texto: `Paro: ${nombreCompleto(d, p.equipo_id)}` });
+    } else if (!p.fin) poner(hoy, { tipo: "paro", p, clase: "atrasada", texto: `Parado: ${nombreCompleto(d, p.equipo_id)}` });
+  }
   for (const h of d.hallazgos) {
-    if (!h.vence || h.estado === "cerrado" || (quien === "mios" && h.responsable_id !== yo.id)) continue;
+    if (!h.vence || h.estado === "cerrado" || !enFiltro(fam, h.equipo_id) || (quien === "mios" && h.responsable_id !== yo.id)) continue;
     poner(h.vence, { tipo: "hall", h, clase: "compromiso", texto: `${numeroHallazgo(h)} ${h.descripcion}` });
   }
-  for (const xs of porDia.values()) xs.sort((a, b) => ({ atrasada: 0, "": 1, compromiso: 2, hecha: 3 })[a.clase] - ({ atrasada: 0, "": 1, compromiso: 2, hecha: 3 })[b.clase]);
+  const orden = { paro: 0, atrasada: 1, "": 2, tarea: 3, compromiso: 4, hecha: 5 };
+  for (const xs of porDia.values()) xs.sort((a, b) => orden[a.clase] - orden[b.clase]);
   return porDia;
 }
 
 function agenda(d, yo, hoy, porDia, dia, admin) {
   const xs = porDia.get(dia) ?? [];
-  const filas = xs.map((ev) => ev.tipo === "insp" ? filaInspeccion(d, ev.i, hoy) : `<li><a class="fila" href="#/hallazgo/${encodeURIComponent(ev.h.id)}">
+  const filas = xs.map((ev) => ev.tipo === "insp" ? filaInspeccion(d, ev.i, hoy) : ev.tipo === "tarea" ? `<li><a class="fila con-icono" href="#/tarea/${encodeURIComponent(ev.t.id)}">
+      <span class="icono-fila ${ev.t.estado === "hecha" ? "verde" : "indigo"}">${icono("tareas")}</span><span class="titulo">${esc(ev.t.titulo)}</span>
+      <span class="detalle"><span>Tarea</span>${ev.t.equipo_id ? `<span>${esc(nombreCompleto(d, ev.t.equipo_id))}</span>` : ""}<span>${esc(paraQuien(d, ev.t.asignada_a))}</span></span>
+      <span class="lado">${ev.t.estado === "hecha" ? `<span class="marca ok">Hecha</span>` : ev.clase === "atrasada" ? `<span class="marca atrasada">Atrasada</span>` : ""}</span></a></li>`
+    : ev.tipo === "paro" ? `<li><a class="fila con-icono" href="#/paro/${encodeURIComponent(ev.p.id)}"><span class="icono-fila ${ev.p.tipo === "programado" ? "morado" : "rojo"}">${icono("paros")}</span>
+      <span class="titulo">${ev.p.tipo === "programado" ? "Paro programado" : "Parado"}: ${esc(nombreCompleto(d, ev.p.equipo_id))}</span>
+      <span class="detalle"><span>${esc(fechaHora(ev.p.inicio))}${ev.p.fin ? ` → ${esc(fechaHora(ev.p.fin))}` : ""}</span>${ev.p.descripcion ? `<span>${esc(ev.p.descripcion.slice(0, 80))}</span>` : ""}</span>
+      <span class="lado">${icono("derecha", "ico chevron")}</span></a></li>`
+    : `<li><a class="fila" href="#/hallazgo/${encodeURIComponent(ev.h.id)}">
       <span class="titulo">${esc(ev.h.descripcion)}</span><span class="detalle"><span class="mono">${numeroHallazgo(ev.h)}</span><span>Fecha compromiso</span>
       ${ev.h.responsable_id ? `<span>${esc(nombreCorto(d, ev.h.responsable_id))}</span>` : ""}</span>
       <span class="lado"><span class="marca paro">${icono("reloj")}Compromiso</span>${marcaPrioridad(ev.h.prioridad)}</span></a></li>`);
@@ -33,18 +58,19 @@ function agenda(d, yo, hoy, porDia, dia, admin) {
 }
 
 export function vistaCalendario({ d, yo, hoy, query }) {
-  const admin = esAdmin(yo);
+  const admin = puede(yo, "asignar");
   const quien = query.get("q") ?? (admin ? "todos" : "mios");
   let elegido = query.get("d") ?? hoy;
   const mes = (query.get("m") ?? elegido.slice(0, 7)) + "-01";
-  const porDia = eventos(d, yo, hoy, quien);
+  const fam = familia(d, query.get("eq"));
+  const porDia = eventos(d, yo, hoy, quien, fam);
   // la cuadrícula: de lunes a domingo, las semanas que toca el mes
   const primero = sumarDias(mes, -diaSemana(mes));
   const finMes = sumarDias(sumarDias(mes, 32).slice(0, 8) + "01", -1);
   const dias = [];
   for (let x = primero; x <= finMes || diaSemana(x) !== 0; x = sumarDias(x, 1)) dias.push(x);
   const mesAnterior = sumarDias(mes, -1).slice(0, 7), mesSiguiente = sumarDias(finMes, 1).slice(0, 7);
-  const enlace = (cambios) => `#/calendario?${new URLSearchParams({ q: quien, ...(query.get("m") ? { m: query.get("m") } : {}), ...cambios })}`;
+  const enlace = (cambios) => `#/calendario?${new URLSearchParams({ q: quien, ...(query.get("m") ? { m: query.get("m") } : {}), ...(query.get("eq") ? { eq: query.get("eq") } : {}), ...cambios })}`;
   const celda = (x) => {
     const xs = porDia.get(x) ?? [];
     return `<button type="button" class="dia${x.slice(0, 7) !== mes.slice(0, 7) ? " fuera" : ""}${x === hoy ? " hoy" : ""}${x === elegido ? " elegido" : ""}" data-dia="${x}"
@@ -75,9 +101,10 @@ export function vistaCalendario({ d, yo, hoy, query }) {
   return {
     titulo: "Calendario",
     html: `<div class="cabeza"><div><h1>Calendario</h1>
-        <p class="bajada">${admin ? "Las inspecciones de todos por su fecha límite y las fechas compromiso de los hallazgos." : "Tus inspecciones y los compromisos de tus hallazgos."}</p></div>
+        <p class="bajada">${admin ? "Inspecciones, tareas, paros programados y compromisos de hallazgos, de todos." : "Tus inspecciones, tus tareas, los paros programados y los compromisos de tus hallazgos."}</p></div>
         <div class="acciones"><button type="button" class="boton" data-accion="suscribir">${icono("enlace")}Ponerlo en mi calendario</button>
           ${admin ? `<a class="boton primario" href="#/asignar?vence=${elegido}">${icono("mas1")}Asignar</a>` : ""}</div></div>
+      ${barraFiltros(d, query).replace('<div class="buscador">', '<div class="buscador" hidden>')}
       <div class="cal-barra">
         <h2>${esc(nombreMes(mes))}</h2>
         <div class="flechas"><a class="boton-icono" href="${enlace({ m: mesAnterior })}" aria-label="Mes anterior">${icono("flecha")}</a>
@@ -129,6 +156,8 @@ export function vistaCalendario({ d, yo, hoy, query }) {
         }
         if (e.target.closest('[data-accion="suscribir"]')) suscribir(d);
       });
+      // el filtro de equipo redibuja la vista (el mes y la agenda dependen de él)
+      montarFiltros(m, d, { ruta: "calendario", alCambiar: (q) => { location.hash = `#/calendario?${q}`; } });
       // en el teléfono, deslizar la semana con el dedo
       const tira = m.querySelector("[data-semana-tira]");
       let x0 = null;

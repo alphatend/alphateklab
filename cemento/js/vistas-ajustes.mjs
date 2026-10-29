@@ -1,13 +1,14 @@
 // Ajustes (cada uno: su cuenta, el tema, las notificaciones de este aparato, la hora de su aviso, el calendario) y,
 // para el administrador, la empresa (nombre y logo de los reportes), los usuarios, mandar avisos y los datos.
-import { esc, icono, plural, hoyPanama } from "./util.mjs";
+import { esc, icono, plural, hoyPanama, normal } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, dialogo, confirmar, vacio, avatar, esAdmin, etiquetaPersona } from "./ui.mjs";
+import { aviso, dialogo, confirmar, vacio, avatar, esAdmin, etiquetaPersona, PERFILES, PERMISOS, perfilDe, nombrePerfil } from "./ui.mjs";
 import { preferencia, elegir as elegirTema } from "./tema.mjs";
 import { cerrarSesion } from "./app.mjs";
 import { excelDe, alcanceDe, periodo, entregarArchivo } from "./vistas-reportes.mjs";
 import { TIPO_XLSX } from "./xlsx.mjs";
 import { suscribir } from "./vistas-calendario.mjs";
+import { nombreCompleto, elegirEquipo } from "./componentes.mjs";
 
 const seccion = (titulo, filas, pie = "") => `<section class="seccion"><h2>${titulo}</h2><div class="lista">${filas}</div>${pie ? `<p class="pie-seccion">${pie}</p>` : ""}</section>`;
 const ajuste = (ic, color, titulo, detalle, lado = "") => `<div class="ajuste">${ic ? `<span class="icono-fila ${color}">${icono(ic)}</span>` : ""}
@@ -24,7 +25,7 @@ export function vistaAjustes({ d, yo }) {
     html: `<div class="cabeza"><div><h1>Ajustes</h1></div></div>
       <div class="ajustes">
       <div class="lista"><div class="ajuste">${avatar(yo)}<span class="texto"><b>${esc(yo.nombre)}</b><small>${esc([yo.puesto, yo.turno ? `Turno ${yo.turno}` : "", `usuario ${yo.usuario}`].filter(Boolean).join(" · "))}</small></span>
-        <span class="marca ${admin ? "en_proceso" : ""}">${admin ? "Administrador" : "Inspector"}</span></div>
+        <span class="marca ${admin ? "en_proceso" : ""}">${esc(nombrePerfil(yo))}</span></div>
         <div class="ajuste"><span class="icono-fila gris">${icono("llave")}</span><span class="texto"><b>Contraseña</b></span><button type="button" class="boton chico" data-accion="clave">Cambiar</button></div>
         <div class="ajuste"><span class="icono-fila rojo">${icono("salir")}</span><span class="texto"><b>Salir de este aparato</b><small>Lo que no se haya enviado se queda guardado.</small></span><button type="button" class="boton chico peligro" data-accion="salir">Salir</button></div></div>
 
@@ -56,6 +57,16 @@ export function vistaAjustes({ d, yo }) {
             <div class="campo"><label for="a-pie">Pie de los reportes <small>(opcional)</small></label><input id="a-pie" type="text" value="${esc(a.pie_reporte ?? "")}" placeholder="Por ejemplo: Uso interno"></div>
           </div>
           <div><button type="submit" class="boton primario chico">${icono("bien")}Guardar</button></div></form>`) : ""}
+
+      ${admin ? seccion("Reglas de la planta", `<div class="ajuste"><span class="icono-fila rojo">${icono("alerta")}</span><span class="texto"><b>Escalar hallazgos de prioridad alta</b>
+          <small>Te avisa en el resumen de la mañana cuando uno lleva abierto más de estos días.</small></span>
+          <input type="number" min="1" max="60" value="${esc(a.escalar_dias ?? 3)}" data-escalar aria-label="Días" style="width:84px;min-height:38px;text-align:center"><span class="ayuda">días</span></div>
+        <label class="ajuste"><span class="icono-fila indigo">${icono("firma")}</span><span class="texto"><b>Firma al terminar una inspección</b>
+          <small>Con el dedo; sale en el reporte. Cada plantilla puede cambiarlo.</small></span>
+          <span class="interruptor"><input type="checkbox" data-firma ${a.pedir_firma === false ? "" : "checked"}><span></span></span></label>
+        <div class="ajuste"><span class="icono-fila morado">${icono("laboratorio")}</span><span class="texto"><b>Parámetros del laboratorio</b>
+          <small>${esc(Object.keys(a.lab ?? {}).map((id) => d.equipos.find((e) => e.id === id)?.nombre).filter(Boolean).join(", ") || "Ningún molino todavía")}</small></span>
+          <button type="button" class="boton chico" data-accion="lab">Editar</button></div>`, "Los rangos del laboratorio que vienen son típicos de libro: cámbialos por los de la planta.") : ""}
 
       ${admin ? seccion("Equipo de trabajo", `<a class="fila con-icono" href="#/usuarios"><span class="icono-fila indigo">${icono("personas")}</span><span class="titulo">Usuarios</span>
           <span class="detalle">${plural(d.personas.filter((p) => p.activo).length, "activo", "activos")}${d.personas.some((p) => p.activo && !p.tiene_clave) ? ` · ${d.personas.filter((p) => p.activo && !p.tiene_clave).length} sin contraseña` : ""}</span>
@@ -90,6 +101,7 @@ export function vistaAjustes({ d, yo }) {
         if (ac === "clave") return cambiarClave();
         if (ac === "calendario") return suscribir(d);
         if (ac === "avisar") return mandarAviso(d, yo);
+        if (ac === "lab") return editarLab(d);
         if (ac === "sin-hora") return guardarHora(m, "");
         if (ac === "activar-push" || ac === "probar-push" || ac === "quitar-push") return manejarPush(m, ac, b);
         if (ac === "actualizar") {
@@ -119,6 +131,13 @@ export function vistaAjustes({ d, yo }) {
         }
       });
       m.querySelector("[data-hora]").addEventListener("change", (e) => guardarHora(m, e.target.value));
+      m.querySelector("[data-escalar]")?.addEventListener("change", async (e) => {
+        try { await api.escribir("ajustes", { escalar_dias: Number(e.target.value) }); aviso(`Se escala a los ${e.target.value} días.`); } catch (x) { aviso(x.sinRed ? "Hace falta señal." : x.message, { error: true }); }
+      });
+      m.querySelector("[data-firma]")?.addEventListener("change", async (e) => {
+        try { await api.escribir("ajustes", { pedir_firma: e.target.checked }); aviso(e.target.checked ? "Se pide firma al terminar." : "Ya no se pide firma (salvo en las plantillas que la pidan)."); }
+        catch (x) { e.target.checked = !e.target.checked; aviso(x.sinRed ? "Hace falta señal." : x.message, { error: true }); }
+      });
       const fEmp = m.querySelector("[data-empresa]");
       fEmp?.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -142,6 +161,45 @@ export function vistaAjustes({ d, yo }) {
       });
     },
   };
+}
+
+/** Los parámetros del laboratorio de cada molino: nombre, unidad y rango. */
+async function editarLab(d) {
+  const lab = structuredClone(d.ajustes?.lab ?? {});
+  const fila = (eq, p, k) => `<div class="rejilla-campos" style="grid-template-columns:2fr 1fr 1fr 1fr auto;gap:6px;align-items:center" data-eq="${esc(eq)}" data-k="${k}">
+    <input type="text" data-c="nombre" value="${esc(p.nombre)}" placeholder="Blaine" aria-label="Parámetro"><input type="text" data-c="unidad" value="${esc(p.unidad ?? "")}" placeholder="cm²/g" aria-label="Unidad">
+    <input type="text" inputmode="decimal" data-c="min" value="${esc(p.min ?? "")}" placeholder="mín." aria-label="Mínimo"><input type="text" inputmode="decimal" data-c="max" value="${esc(p.max ?? "")}" placeholder="máx." aria-label="Máximo">
+    <button type="button" class="boton-icono" data-quitar-p aria-label="Quitar">${icono("basura")}</button></div>`;
+  const pintar = () => Object.entries(lab).map(([eq, ps]) => `<section class="panel" style="background:var(--hundido);padding:12px"><h3 style="display:flex;justify-content:space-between;align-items:center">${esc(nombreCompleto(d, eq))}
+      <button type="button" class="boton mini plano peligro" data-quitar-m="${esc(eq)}">Quitar molino</button></h3>
+    ${ps.map((p, k) => fila(eq, p, k)).join("")}<div><button type="button" class="boton mini" data-agregar-p="${esc(eq)}">${icono("mas1")}Parámetro</button></div></section>`).join("") || `<p class="ayuda">Ningún molino todavía.</p>`;
+  await dialogo({
+    titulo: "Parámetros del laboratorio",
+    ancho: true,
+    html: `<div data-lab style="display:grid;gap:10px">${pintar()}</div><div><button type="button" class="boton chico" data-agregar-m>${icono("mas1")}Agregar un molino</button></div>
+      <p class="error-form" role="alert" hidden style="color:var(--rojo);font-weight:600"></p>`,
+    botones: [{ texto: "Cancelar", valor: null }, { texto: "Guardar", valor: true, clase: "primario", alElegir: async (v) => {
+      const num = (x) => (String(x).trim() === "" ? null : Number(String(x).replace(",", ".")));
+      for (const ps of Object.values(lab)) for (const p of ps) { p.min = num(p.min ?? ""); p.max = num(p.max ?? ""); p.id ||= normal(p.nombre).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `p${Math.random().toString(36).slice(2, 6)}`; }
+      if (Object.values(lab).flat().some((p) => !p.nombre?.trim() || Number.isNaN(p.min) || Number.isNaN(p.max))) { const err = v.querySelector(".error-form"); err.hidden = false; err.textContent = "Cada parámetro necesita nombre, y el mínimo y máximo tienen que ser números."; return false; }
+      try { await api.escribir("ajustes", { lab }); aviso("Parámetros guardados."); } catch (x) { const err = v.querySelector(".error-form"); err.hidden = false; err.textContent = x.sinRed ? "Hace falta señal." : x.message; return false; }
+    } }],
+    alMontar(v) {
+      const zona = v.querySelector("[data-lab]");
+      zona.addEventListener("input", (e) => { const f = e.target.closest("[data-eq]"); if (f) lab[f.dataset.eq][Number(f.dataset.k)][e.target.dataset.c] = e.target.value; });
+      v.addEventListener("click", async (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        if (b.hasAttribute("data-quitar-p")) { const f = b.closest("[data-eq]"); lab[f.dataset.eq].splice(Number(f.dataset.k), 1); zona.innerHTML = pintar(); }
+        if (b.dataset.agregarP) { lab[b.dataset.agregarP].push({ id: "", nombre: "", unidad: "", min: null, max: null }); zona.innerHTML = pintar(); zona.querySelector(`[data-eq="${CSS.escape(b.dataset.agregarP)}"]:last-of-type input`)?.focus(); }
+        if (b.dataset.quitarM) { delete lab[b.dataset.quitarM]; zona.innerHTML = pintar(); }
+        if (b.hasAttribute("data-agregar-m")) {
+          const id = await elegirEquipo(d, { titulo: "¿De qué molino?", soloArriba: true });
+          if (id && !lab[id]) { lab[id] = [{ id: "", nombre: "", unidad: "", min: null, max: null }]; zona.innerHTML = pintar(); }
+        }
+      });
+    },
+  });
 }
 
 async function guardarHora(m, hora) {
@@ -267,7 +325,7 @@ export function vistaUsuarios({ d, yo }) {
       <span class="titulo">${esc(p.nombre)}${p.id === yo.id ? " <small>(tú)</small>" : ""}</span>
       <span class="detalle"><span class="mono">${esc(p.usuario)}</span>${p.puesto ? `<span>${esc(p.puesto)}</span>` : ""}${p.turno ? `<span>Turno ${esc(p.turno)}</span>` : ""}
         ${p.aviso_hora ? `<span>${icono("reloj", "ico chico")} ${esc(p.aviso_hora)}</span>` : ""}</span>
-      <span class="lado">${p.rol === "admin" ? `<span class="marca en_proceso">Administrador</span>` : ""}
+      <span class="lado"><span class="marca ${p.rol === "admin" ? "en_proceso" : ""}">${esc(nombrePerfil(p))}</span>
         ${!p.activo ? `<span class="marca">Desactivado</span>` : !p.tiene_clave ? `<span class="marca media">Sin contraseña</span>` : p.debe_cambiar ? `<span class="marca">Contraseña temporal</span>` : ""}</span>
     </button></li>`;
   const activos = d.personas.filter((p) => p.activo), inactivos = d.personas.filter((p) => !p.activo);
@@ -301,11 +359,9 @@ async function editarPersona(d, yo, p) {
         <div class="campo"><label for="u-puesto">Puesto</label><input id="u-puesto" type="text" value="${esc(p?.puesto ?? "")}" placeholder="Jefe de turno" list="u-puestos">
           <datalist id="u-puestos"><option value="Jefe de turno"><option value="Ingeniero de procesos"><option value="Técnico mecánico"><option value="Técnico eléctrico"><option value="Operador"></datalist></div>
         <div class="campo"><label for="u-turno">Turno</label><select id="u-turno">${["", "A", "B", "C", "D"].map((t) => `<option value="${t}" ${(p?.turno ?? "") === t ? "selected" : ""}>${t ? `Turno ${t}` : "Sin turno"}</option>`).join("")}</select></div>
-        <div class="campo"><label for="u-rol">Qué puede hacer</label><select id="u-rol" ${p?.id === yo.id ? "disabled" : ""}>
-          <option value="inspector" ${p?.rol !== "admin" ? "selected" : ""}>Inspector: llena inspecciones y hallazgos</option>
-          <option value="admin" ${p?.rol === "admin" ? "selected" : ""}>Administrador: además asigna, edita y maneja usuarios</option></select></div>
         <div class="campo"><label for="u-hora">Aviso diario <small>(hora)</small></label><input id="u-hora" type="time" value="${esc(p?.aviso_hora ?? "06:00")}"></div>
       </div>
+      ${elegirPerfil(p, yo)}
       <div class="campo"><label for="u-clave">${nueva ? "Contraseña temporal" : "Poner una contraseña temporal nueva"} ${nueva ? "" : "<small>(si se le olvidó)</small>"}</label>
         <div style="display:flex;gap:8px"><input id="u-clave" type="text" value="${esc(temporal)}" autocomplete="off" spellcheck="false" style="font-family:var(--mono)">
           <button type="button" class="boton chico" data-generar>Otra</button></div>
@@ -323,7 +379,7 @@ async function editarPersona(d, yo, p) {
       try {
         const r = await api.escribir("personas", {
           id: p?.id, nombre: val("#u-nombre").trim(), usuario: val("#u-usuario").trim() || usuarioDe(val("#u-nombre")), puesto: val("#u-puesto"), turno: val("#u-turno"),
-          rol: p?.id === yo.id ? "admin" : val("#u-rol"), aviso_hora: val("#u-hora"), activo: v.querySelector("#u-activo") ? v.querySelector("#u-activo").checked : true,
+          ...permisosElegidos(v, p, yo), aviso_hora: val("#u-hora"), activo: v.querySelector("#u-activo") ? v.querySelector("#u-activo").checked : true,
           ...(clave ? { clave } : {}),
         });
         if (clave) creada = { ...r, clave };
@@ -336,9 +392,67 @@ async function editarPersona(d, yo, p) {
       usuario.addEventListener("input", () => { tocado = true; });
       nombre.addEventListener("input", () => { if (!tocado) usuario.value = usuarioDe(nombre.value); });
       v.querySelector("[data-generar]").addEventListener("click", () => { v.querySelector("#u-clave").value = claveTemporal(); });
+      montarPerfil(v);
     },
   });
   if (creada) entregarCredenciales(creada);
+}
+
+// Qué puede hacer: cuatro perfiles para elegir de un toque y, plegado, «Personalizar» con un interruptor por permiso
+// (Eduardo: «como en Excel: solo leer, permite editar»). Si los interruptores no calzan con ningún perfil, es «Personalizado».
+const ICONO_PERFIL = { lectura: "ojo", inspector: "inspecciones", supervisor: "personas", admin: "llave" };
+
+function elegirPerfil(p, yo) {
+  const yoMismo = p?.id === yo.id;
+  const actual = p ? perfilDe(p) : "inspector";
+  const tiene = new Set(actual === "admin" ? PERFILES.admin.permisos : p?.permisos ?? PERFILES.inspector.permisos);
+  const marcado = actual === "personalizado" ? null : actual;
+  return `<div class="campo" data-perfiles><span class="rotulo" id="u-r-perfil">Qué puede hacer <span class="marca" data-personalizado ${marcado ? "hidden" : ""}>Personalizado</span></span>
+      <div class="perfiles" role="radiogroup" aria-labelledby="u-r-perfil">${Object.entries(PERFILES).map(([k, x], n) => `<button type="button" role="radio" class="perfil" data-perfil="${k}"
+          aria-checked="${k === marcado}" tabindex="${k === marcado || (!marcado && !n) ? 0 : -1}" ${yoMismo ? "disabled" : ""}>
+          <span class="perfil-ico">${icono(ICONO_PERFIL[k])}</span><span class="perfil-texto"><b>${esc(x.nombre)}</b><small>${esc(x.desc)}</small></span>
+          <span class="perfil-check" aria-hidden="true">${icono("bien")}</span></button>`).join("")}</div>
+      ${yoMismo ? `<span class="ayuda">Eres el administrador: eso no te lo puedes quitar tú mismo.</span>` : `<details class="mas-detalles" ${marcado ? "" : "open"}><summary>${icono("derecha", "ico")}<span>Personalizar</span><small>permiso por permiso</small></summary>
+        <div class="permisos">${Object.entries(PERMISOS).map(([k, [t, dsc]]) => `<label class="ajuste"><span class="texto"><b>${esc(t)}</b><small>${esc(dsc)}</small></span>
+          <span class="interruptor"><input type="checkbox" data-permiso="${k}" ${tiene.has(k) ? "checked" : ""} ${actual === "admin" ? "disabled" : ""}><span></span></span></label>`).join("")}</div></details>`}</div>`;
+}
+
+function montarPerfil(v) {
+  const caja = v.querySelector("[data-perfiles]");
+  const cards = [...caja.querySelectorAll("[data-perfil]")];
+  const llaves = [...caja.querySelectorAll("[data-permiso]")];
+  const marcar = (k) => {
+    cards.forEach((c) => { c.setAttribute("aria-checked", String(c.dataset.perfil === k)); c.tabIndex = c.dataset.perfil === k ? 0 : -1; });
+    caja.querySelector("[data-personalizado]").hidden = !!k;
+  };
+  const elegir = (k) => {
+    marcar(k);
+    const xs = new Set(PERFILES[k].permisos);
+    llaves.forEach((l) => { l.checked = xs.has(l.dataset.permiso); l.disabled = k === "admin"; });
+    navigator.vibrate?.(6);
+  };
+  caja.addEventListener("click", (e) => { const c = e.target.closest("[data-perfil]"); if (c && !c.disabled) elegir(c.dataset.perfil); });
+  caja.addEventListener("keydown", (e) => {
+    const c = e.target.closest?.("[data-perfil]");
+    const paso = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!c || !paso) return;
+    e.preventDefault();
+    const sig = cards[(cards.indexOf(c) + paso + cards.length) % cards.length];
+    sig.focus();
+    elegir(sig.dataset.perfil);
+  });
+  caja.addEventListener("change", (e) => {
+    if (!e.target.dataset.permiso) return;
+    const k = perfilDe({ permisos: llaves.filter((l) => l.checked).map((l) => l.dataset.permiso) });
+    marcar(k === "personalizado" ? null : k);
+  });
+}
+
+/** rol y permisos para mandar al servidor. */
+function permisosElegidos(v, p, yo) {
+  if (p?.id === yo.id) return { rol: "admin" };
+  if (v.querySelector('[data-perfil="admin"][aria-checked="true"]')) return { rol: "admin" };
+  return { rol: "inspector", permisos: [...v.querySelectorAll("[data-permiso]")].filter((l) => l.checked).map((l) => l.dataset.permiso) };
 }
 
 async function entregarCredenciales(p) {

@@ -33,6 +33,10 @@ export function aviso(texto, { error = false, ms = 3200, icono: ic = null, accio
   return el;
 }
 
+const abiertas = new Set(); // las hojas abiertas (se cierran solas al cambiar de pantalla)
+/** Cierra todas las hojas abiertas (al navegar, como iOS al volver atrás). */
+export const cerrarHojas = () => [...abiertas].forEach((cerrar) => cerrar(null));
+
 /** Hoja de diálogo. botones: [{texto, valor, clase, icono, alElegir}]. Devuelve el valor del botón (o null si se cierra). */
 export function dialogo({ titulo, html = "", botones = [{ texto: "Listo", valor: true, clase: "primario" }], alMontar, ancho = false }) {
   return new Promise((ok) => {
@@ -47,6 +51,7 @@ export function dialogo({ titulo, html = "", botones = [{ texto: "Listo", valor:
     const cerrar = (v) => {
       if (cerrado) return;
       cerrado = true;
+      abiertas.delete(cerrar);
       removeEventListener("keydown", tecla);
       anterior?.focus?.({ preventScroll: true });
       ok(v);
@@ -69,7 +74,9 @@ export function dialogo({ titulo, html = "", botones = [{ texto: "Listo", valor:
         cerrar(def.valor);
       }
     });
+    abiertas.add(cerrar);
     const mostrar = () => {
+      if (cerrado) return;
       addEventListener("keydown", tecla);
       document.body.append(velo);
       alMontar?.(velo, cerrar);
@@ -150,6 +157,28 @@ export function queInspeccion(d, i) {
   return nombreEquipo(equipo(d, ids[0]));
 }
 export const esAdmin = (yo) => yo?.rol === "admin";
+/** ¿Esta persona puede…? (editar, asignar, tareas, equipos, revisar). El administrador, todo. */
+export const puede = (yo, permiso) => yo?.rol === "admin" || (yo?.permisos ?? ["editar"]).includes(permiso);
+export const PERFILES = {
+  lectura: { nombre: "Solo ver", desc: "Ve inspecciones, hallazgos, tareas y reportes. No cambia nada.", permisos: [] },
+  inspector: { nombre: "Inspector", desc: "Llena inspecciones, anota hallazgos, sus tareas, entregas de turno, paros y laboratorio.", permisos: ["editar"] },
+  supervisor: { nombre: "Supervisor", desc: "Además asigna inspecciones, le pasa tareas a otros y da el visto bueno.", permisos: ["editar", "asignar", "tareas", "revisar"] },
+  admin: { nombre: "Administrador", desc: "Todo, también usuarios, equipos y ajustes.", permisos: ["editar", "asignar", "tareas", "equipos", "revisar"] },
+};
+export const PERMISOS = {
+  editar: ["Llenar y anotar", "Inspecciones, hallazgos, sus tareas, entregas de turno, paros y laboratorio"],
+  asignar: ["Asignar inspecciones", "Y programar paros"],
+  tareas: ["Pasarles tareas a otros", "A una persona o a un turno"],
+  equipos: ["Editar equipos y plantillas", "Equipos, subequipos, colectores y lo que se revisa"],
+  revisar: ["Dar el visto bueno", "A las inspecciones hechas"],
+};
+/** El perfil que corresponde a unos permisos («Personalizado» si no calza con ninguno). */
+export function perfilDe(p) {
+  if (p?.rol === "admin") return "admin";
+  const xs = [...(p?.permisos ?? ["editar"])].sort().join(",");
+  return Object.entries(PERFILES).find(([k, v]) => k !== "admin" && [...v.permisos].sort().join(",") === xs)?.[0] ?? "personalizado";
+}
+export const nombrePerfil = (p) => PERFILES[perfilDe(p)]?.nombre ?? "Personalizado";
 
 // ------------------------------------------------------------------------------- filas
 

@@ -2,13 +2,15 @@
 // Solo maneja los archivos de la app (mismo origen); el servidor de datos (otro origen) lo maneja la app con su cola.
 // VERSION la pone publicar-web.sh: al cambiar, el aparato baja la versión nueva y la app ofrece «Actualizar» (no se
 // cambia sola a mitad de una inspección).
-const VERSION = "609633-1029";
+const VERSION = "c3926c-1029";
 const CACHE = `bitacora-${VERSION}`;
 const ARCHIVOS = [
   "./", "./index.html", "./manifest.webmanifest", "./css/app.css",
   "./js/app.mjs", "./js/api.mjs", "./js/ui.mjs", "./js/util.mjs", "./js/tema.mjs", "./js/medios.mjs", "./js/tromp.mjs", "./js/xlsx.mjs",
   "./js/vistas-tablero.mjs", "./js/vistas-calendario.mjs", "./js/vistas-inspecciones.mjs", "./js/vistas-hallazgos.mjs", "./js/vistas-equipos.mjs",
   "./js/vistas-colectores.mjs", "./js/vistas-reportes.mjs", "./js/vistas-tromp.mjs", "./js/vistas-ajustes.mjs",
+  "./js/componentes.mjs", "./js/graficas.mjs", "./js/tendencia.mjs", "./js/qr.mjs", "./js/lector-qr.mjs", "./js/lector-qr-worker.js", "./js/vendor/jsQR.js",
+  "./js/vistas-tareas.mjs", "./js/vistas-turno.mjs", "./js/vistas-paros.mjs", "./js/vistas-laboratorio.mjs", "./js/vistas-indicadores.mjs", "./js/vistas-planta.mjs",
   "./fuentes/inter-latin.woff2",
   "./iconos/icono-192.png", "./iconos/icono-512.png", "./iconos/icono-512-enmascarable.png", "./iconos/apple-touch-icon.png", "./iconos/favicon-64.png",
 ];

@@ -3,10 +3,13 @@
 import { esc, icono, fechaHora, fechaCorta, haceCuanto, plural, diasEntre, diaDe, normal, numeroHallazgo } from "./util.mjs";
 import * as api from "./api.mjs";
 import {
-  aviso, filaHallazgo, vacio, equipo, plantilla, nombre, nombreEquipo, marcaPrioridad, marcaEstado, marcaSinEnviar, esAdmin,
+  aviso, filaHallazgo, vacio, equipo, plantilla, nombre, nombreEquipo, marcaPrioridad, marcaEstado, marcaSinEnviar, esAdmin, puede,
   etiquetaPersona, galeria, botonesMedio, TEXTO_ESTADO, ESTADOS, ICONO_ESTADO,
 } from "./ui.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
+import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, campoEquipo } from "./componentes.mjs";
+import { proximosProgramados } from "./vistas-paros.mjs";
+import { filaTarea, montarChecks } from "./vistas-tareas.mjs";
 
 const ORDEN_PRIORIDAD = { alta: 0, media: 1, baja: 2 };
 
@@ -21,49 +24,43 @@ export function opcionesEquipo(d, elegido) {
 
 export function vistaHallazgos({ d, yo, hoy, query }) {
   const f = query.get("f") ?? "abiertos";
-  const eqFiltro = query.get("equipo");
+  const eqFiltro = query.get("eq") ?? query.get("equipo");
   const buscar = query.get("b") ?? "";
-  let xs = d.hallazgos;
-  if (eqFiltro) xs = xs.filter((h) => h.equipo_id === eqFiltro);
+  const fam = familia(d, eqFiltro);
+  let xs = d.hallazgos.filter((h) => enFiltro(fam, h.equipo_id));
   if (f === "abiertos") xs = xs.filter((h) => h.estado !== "cerrado");
   if (f === "mios") xs = xs.filter((h) => h.estado !== "cerrado" && h.responsable_id === yo.id);
   if (f === "paro") xs = xs.filter((h) => h.estado === "paro");
   if (f === "cerrados") xs = xs.filter((h) => h.estado === "cerrado");
   if (buscar) {
     const b = normal(buscar);
-    xs = xs.filter((h) => normal(`${numeroHallazgo(h)} ${h.descripcion} ${h.accion} ${h.ot} ${nombreEquipo(equipo(d, h.equipo_id))}`).includes(b));
+    xs = xs.filter((h) => normal(`${numeroHallazgo(h)} ${h.descripcion} ${h.accion} ${h.ot} ${nombreCompleto(d, h.equipo_id)}`).includes(b));
   }
   xs = [...xs].sort((a, b) => (a.estado === "cerrado") - (b.estado === "cerrado") || ORDEN_PRIORIDAD[a.prioridad] - ORDEN_PRIORIDAD[b.prioridad] || (b.creado ?? "").localeCompare(a.creado ?? ""));
   const abiertos = d.hallazgos.filter((h) => h.estado !== "cerrado");
   const viejos = abiertos.filter((h) => diasEntre(diaDe(h.creado), hoy) >= 7).length;
-  const q = (id) => `#/hallazgos?f=${id}${eqFiltro ? `&equipo=${encodeURIComponent(eqFiltro)}` : ""}`;
+  const q = (id) => `#/hallazgos?${new URLSearchParams({ ...Object.fromEntries(query), f: id })}`;
   const filtro = (id, texto, n) => `<a href="${q(id)}" ${f === id ? 'aria-current="true"' : ""}>${texto}${n ? ` <b>${n}</b>` : ""}</a>`;
   return {
     titulo: "Hallazgos",
     atras: matchMedia("(max-width: 899px)").matches ? "#/mas" : null,
     html: `<div class="cabeza"><div><h1>Hallazgos</h1>
         <p class="bajada">${abiertos.length ? `${plural(abiertos.length, "abierto", "abiertos")}${viejos ? `, ${plural(viejos, "con más de una semana", "con más de una semana")}` : ""}.` : "No hay hallazgos abiertos."}
-        ${eqFiltro ? ` Solo de ${esc(nombreEquipo(equipo(d, eqFiltro)))} · <a href="#/hallazgos?f=${f}">ver todos</a>` : ""} También están en el <a href="#/tablero?v=hallazgos">tablero</a>.</p></div>
+        También están en el <a href="#/tablero?v=hallazgos">tablero</a>.</p></div>
         <div class="acciones"><a class="boton primario" href="#/nuevo-hallazgo${eqFiltro ? `?equipo=${encodeURIComponent(eqFiltro)}` : ""}">${icono("mas1")}Anotar</a></div></div>
-      <div class="buscador" style="margin-bottom:12px;max-width:420px">${icono("buscar")}<input type="search" placeholder="Buscar por número, OT, equipo o texto" value="${esc(buscar)}" data-buscar aria-label="Buscar"></div>
+      ${barraFiltros(d, new URLSearchParams({ ...Object.fromEntries(query), ...(eqFiltro ? { eq: eqFiltro } : {}) }), { placeholder: "Buscar por número, OT, equipo o texto" })}
       <nav class="filtros" aria-label="Filtrar">
         ${filtro("abiertos", "Abiertos", abiertos.length)}${filtro("mios", "A mi cargo", abiertos.filter((h) => h.responsable_id === yo.id).length)}${filtro("paro", "Para el paro", d.hallazgos.filter((h) => h.estado === "paro").length)}${filtro("cerrados", "Cerrados")}${filtro("todos", "Todos")}
       </nav>
-      <div data-resultados>${xs.length ? `<ul class="lista">${xs.map((h) => filaHallazgo(d, h, hoy)).join("")}</ul>` : vacio(buscar ? "Nada con eso." : f === "mios" ? "No tienes hallazgos a tu cargo." : "Nada por aquí.")}</div>`,
+      <div data-resultados>${xs.length ? `<ul class="lista">${xs.map((h) => filaHallazgo(d, h, hoy)).join("")}</ul>` : vacio(buscar || fam ? "Nada con ese filtro." : f === "mios" ? "No tienes hallazgos a tu cargo." : "Nada por aquí.")}</div>`,
     montar(m) {
-      const campo = m.querySelector("[data-buscar]");
-      let reloj = null;
-      campo.addEventListener("input", () => {
-        clearTimeout(reloj);
-        reloj = setTimeout(() => {
-          const q2 = new URLSearchParams({ f, ...(eqFiltro ? { equipo: eqFiltro } : {}), ...(campo.value ? { b: campo.value } : {}) });
-          history.replaceState(null, "", `#/hallazgos?${q2}`);
-          const v = vistaHallazgos({ d: api.obtener(), yo, hoy, query: q2 });
-          const tmp = document.createElement("div");
-          tmp.innerHTML = v.html;
-          m.querySelector("[data-resultados]").replaceWith(tmp.querySelector("[data-resultados]"));
-        }, 160);
-      });
+      montarFiltros(m, d, { ruta: "hallazgos", alCambiar: (q2) => {
+        const v = vistaHallazgos({ d: api.obtener(), yo, hoy, query: q2 });
+        const tmp = document.createElement("div");
+        tmp.innerHTML = v.html;
+        m.querySelector("[data-resultados]").replaceWith(tmp.querySelector("[data-resultados]"));
+        m.querySelector("nav.filtros").replaceWith(tmp.querySelector("nav.filtros"));
+      } });
     },
   };
 }
@@ -80,7 +77,12 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
     { fecha: h.creado, persona_id: h.creado_por, texto: `Lo anotó${insp ? ` en la inspección «${plantilla(d, insp.plantilla_id)?.nombre ?? ""}»` : ""}.`, fotos: [] },
     ...seg.map((s) => ({ ...s, cambio: !!s.estado, texto: [s.estado ? `Pasó a «${TEXTO_ESTADO[s.estado]}».` : "", s.texto].filter(Boolean).join(" ") })),
   ];
-  const puedeTexto = esAdmin(yo) || h.creado_por === yo.id;
+  const editar = puede(yo, "editar");
+  const puedeTexto = editar && (esAdmin(yo) || h.creado_por === yo.id);
+  // los paros programados de este equipo (o de su padre) primero, después los demás
+  const fam = familia(d, equipo(d, h.equipo_id)?.padre_id ?? h.equipo_id);
+  const paros = proximosProgramados(d).sort((a, b) => fam.has(b.equipo_id) - fam.has(a.equipo_id));
+  const tareasDe = (d.tareas ?? []).filter((t) => t.hallazgo_id === h.id);
   const tarde = h.vence && h.estado !== "cerrado" && h.vence < hoy;
   const nuevas = []; // fotos del comentario que se está escribiendo
   return {
@@ -89,7 +91,7 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
     atras: "#/tablero?v=hallazgos",
     viva: false,
     html: `<div class="cabeza"><div class="hallazgo-cabeza">
-        <div class="migas"><span class="mono">${numeroHallazgo(h)}</span><a href="#/equipo/${encodeURIComponent(h.equipo_id)}">${esc(nombreEquipo(eq))}</a>${h.item ? `<span>· ${esc(h.item)}</span>` : ""}</div>
+        <div class="migas"><span class="mono">${numeroHallazgo(h)}</span><a href="#/equipo/${encodeURIComponent(h.equipo_id)}">${esc(nombreCompleto(d, h.equipo_id))}</a>${h.item ? `<span>· ${esc(h.item)}</span>` : ""}</div>
         <h1>${esc(h.descripcion)}</h1>
         <div class="marcas">${h._sinEnviar ? marcaSinEnviar() : ""}${marcaPrioridad(h.prioridad)} ${marcaEstado(h.estado)}
           ${h.ot ? `<span class="marca tag">${esc(h.ot)}</span>` : ""}
@@ -99,10 +101,14 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
       ${galeria(h.fotos ?? [])}
       <div class="hoja-insp" style="margin-top:18px">
         <div>
-          <form class="panel" id="form-h" novalidate>
+          ${editar ? `<form class="panel" id="form-h" novalidate>
             <div class="campo"><span class="rotulo" id="r-estado">En qué va</span>
               <div class="segmento" role="group" aria-labelledby="r-estado">${ESTADOS.map((e) => `<button type="button" data-estado="${e}" data-valor="${e}" aria-pressed="${h.estado === e}">${TEXTO_ESTADO[e]}</button>`).join("")}</div></div>
-            ${puedeTexto ? `<div class="campo"><label for="h-desc">Qué se encontró</label><textarea id="h-desc" style="min-height:70px">${esc(h.descripcion)}</textarea></div>` : ""}
+            <div class="campo" data-zona-paro ${h.estado === "paro" ? "" : "hidden"}><label for="h-paro">Para cuál paro</label>
+              <select id="h-paro"><option value="">El próximo que se programe</option>${paros.map((p) => `<option value="${esc(p.id)}" ${p.id === h.paro_id ? "selected" : ""}>${esc(nombreCompleto(d, p.equipo_id))} · ${esc(fechaHora(p.inicio))}</option>`).join("")}</select>
+              <span class="ayuda">Entra a la lista de trabajos de ese paro.</span></div>
+            ${puedeTexto ? `<div class="campo"><label for="h-desc">Qué se encontró</label><textarea id="h-desc" style="min-height:70px">${esc(h.descripcion)}</textarea></div>
+              <div class="campo"><span class="rotulo">Equipo o subequipo</span>${campoEquipo(d, { id: "h-equipo", valor: h.equipo_id, titulo: "Dónde está el hallazgo" })}</div>` : ""}
             <div class="rejilla-campos dos">
               <div class="campo"><label for="h-resp">A cargo de</label>
                 <select id="h-resp"><option value="">Nadie todavía</option>${d.personas.filter((p) => p.activo || p.id === h.responsable_id).map((p) => `<option value="${esc(p.id)}" ${p.id === h.responsable_id ? "selected" : ""}>${esc(etiquetaPersona(p, yo))}</option>`).join("")}</select></div>
@@ -120,22 +126,30 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
               <div class="herramientas-item">${botonesMedio("comentario")}${hayDictado ? `<button type="button" class="boton chico" data-dictar>${icono("microfono")}Dictar</button>` : ""}</div>
               <div data-galeria-nueva></div></div>
             <div><button class="boton primario" type="submit">${icono("bien")}Guardar</button></div>
-          </form>
+          </form>` : soloVer(d, h)}
         </div>
         <aside class="panel">
           <h2>Historial</h2>
           <ol class="historial">${historia.map((x) => `<li class="${x.cambio ? "cambio" : ""}"><div class="quien-fecha">${esc(nombre(d, x.persona_id))} · ${esc(fechaHora(x.fecha))}${x._sinEnviar ? " · sin enviar" : ""}</div>
             <div class="que-paso">${esc(x.texto)}</div>${galeria(x.fotos ?? [])}</li>`).join("")}</ol>
           ${insp ? `<a class="boton chico" href="#/inspeccion/${encodeURIComponent(insp.id)}">Ver la inspección</a>` : ""}
+          <div><h2 style="display:flex;justify-content:space-between;align-items:center">Tareas ${editar ? `<a class="boton mini" href="#/tarea/nueva?hallazgo=${encodeURIComponent(h.id)}">${icono("mas1")}Tarea</a>` : ""}</h2>
+            ${tareasDe.length ? `<ul class="lista-tareas" style="margin-top:8px;background:var(--hundido)">${tareasDe.map((t) => filaTarea(d, t, hoy)).join("")}</ul>` : `<p class="ayuda" style="margin-top:6px">Lo que hay que hacer para resolverlo, a quién y para cuándo.</p>`}</div>
         </aside>
       </div>`,
     montar(m) {
+      montarChecks(m, d);
       const f = m.querySelector("#form-h");
+      if (!f) return;
       let estado = h.estado, prioridad = h.prioridad, parar = null;
       f.addEventListener("click", (e) => {
         const b = e.target.closest("button");
         if (!b) return;
-        if (b.dataset.estado) { estado = b.dataset.estado; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }
+        if (b.dataset.estado) {
+          estado = b.dataset.estado;
+          b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+          m.querySelector("[data-zona-paro]").hidden = estado !== "paro";
+        }
         if (b.dataset.prioridad) { prioridad = b.dataset.prioridad; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }
         if (b.dataset.quitar) { nuevas.splice(nuevas.indexOf(b.dataset.quitar), 1); m.querySelector("[data-galeria-nueva]").innerHTML = galeria(nuevas, { quitar: true }); }
         if (b.hasAttribute("data-dictar")) {
@@ -160,11 +174,14 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
         e.preventDefault();
         const cambio = {
           estado, prioridad, accion: f["h-accion"].value, responsable_id: f["h-resp"].value, ot: f["h-ot"].value.trim(), vence: f["h-vence"].value || null,
+          ...(estado === "paro" ? { paro_id: f["h-paro"].value || null } : {}),
+          ...(puedeTexto && f["h-equipo"]?.value && f["h-equipo"].value !== h.equipo_id ? { equipo_id: f["h-equipo"].value } : {}),
           ...(puedeTexto && f["h-desc"].value.trim() && f["h-desc"].value.trim() !== h.descripcion ? { descripcion: f["h-desc"].value.trim() } : {}),
           texto: f["h-texto"].value.trim(), fotos: [...nuevas], seguimiento_id: crypto.randomUUID(), fecha: new Date().toISOString(),
         };
         const nada = estado === h.estado && prioridad === h.prioridad && cambio.accion === (h.accion ?? "") && cambio.responsable_id === (h.responsable_id ?? "")
-          && cambio.ot === (h.ot ?? "") && (cambio.vence ?? null) === (h.vence ?? null) && !cambio.descripcion && !cambio.texto && !nuevas.length;
+          && cambio.ot === (h.ot ?? "") && (cambio.vence ?? null) === (h.vence ?? null) && !cambio.descripcion && !cambio.texto && !nuevas.length
+          && !cambio.equipo_id && (estado !== "paro" || (cambio.paro_id ?? null) === (h.paro_id ?? null));
         if (nada) { aviso("No hay cambios que guardar."); return; }
         const b = f.querySelector("button[type=submit]");
         b.disabled = true;
@@ -182,9 +199,22 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
   };
 }
 
+/** Lo mismo que el formulario, para quien solo ve. */
+function soloVer(d, h) {
+  return `<div class="panel"><dl class="datos-insp">
+      <dt>En qué va</dt><dd>${esc(TEXTO_ESTADO[h.estado])}</dd>
+      <dt>A cargo de</dt><dd>${h.responsable_id ? esc(nombre(d, h.responsable_id)) : "Nadie todavía"}</dd>
+      <dt>Prioridad</dt><dd>${esc(h.prioridad[0].toUpperCase() + h.prioridad.slice(1))}</dd>
+      ${h.ot ? `<dt>OT o aviso</dt><dd class="mono">${esc(h.ot)}</dd>` : ""}
+      ${h.vence ? `<dt>Compromiso</dt><dd>${esc(fechaCorta(h.vence))}</dd>` : ""}</dl>
+    ${h.accion ? `<div><span class="rotulo">Qué hay que hacer</span><p style="margin:6px 0 0">${esc(h.accion)}</p></div>` : ""}
+    <p class="ayuda">${icono("candado", "ico chico")} Tu usuario es de solo ver: los cambios los hace quien tiene permiso de editar.</p></div>`;
+}
+
 // ------------------------------------------------------------------------------- nuevo
 
 export function vistaNuevoHallazgo({ d, yo, query, ir }) {
+  if (!puede(yo, "editar")) return { titulo: "Anotar un hallazgo", atras: "#/tablero?v=hallazgos", html: vacio("Tu usuario es de solo ver: los hallazgos los anota quien tiene permiso de editar.") };
   const admin = d.personas.find((p) => p.rol === "admin" && p.activo);
   const fotos = [];
   return {
@@ -194,14 +224,14 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
     html: `<div class="cabeza"><div><h1>Anotar un hallazgo</h1>
         <p class="bajada">Algo que viste fuera de una inspección. Funciona sin señal: se envía cuando vuelva.</p></div></div>
       <form class="panel" id="form-nh" novalidate style="max-width:680px">
-        <div class="campo"><label for="nh-equipo">Equipo</label>
-          <select id="nh-equipo">${opcionesEquipo(d, query.get("equipo"))}</select></div>
+        <div class="campo"><span class="rotulo">Equipo o subequipo</span>${campoEquipo(d, { id: "nh-equipo", valor: query.get("equipo") ?? "", titulo: "Dónde está el hallazgo", placeholder: "Elegir el equipo" })}</div>
         <div class="campo"><label for="nh-desc">Qué se encontró</label>
           <textarea id="nh-desc" required placeholder="Por ejemplo: la vejiga del acumulador 2 no tiene presión"></textarea>
           <div class="herramientas-item">${botonesMedio("nuevo")}${hayDictado ? `<button type="button" class="boton chico" data-dictar>${icono("microfono")}Dictar</button>` : ""}</div>
           <div data-galeria-nueva></div></div>
         <div class="campo"><span class="rotulo" id="nh-r-prio">Prioridad</span>
           <div class="segmento" role="group" aria-labelledby="nh-r-prio">${["alta", "media", "baja"].map((p) => `<button type="button" data-prioridad="${p}" data-valor="${p}" aria-pressed="${p === "media"}">${p[0].toUpperCase() + p.slice(1)}</button>`).join("")}</div></div>
+        <details class="mas-detalles"><summary>${icono("derecha", "ico")}<span>Más detalles</span><small>qué hacer, a cargo de, OT y fecha</small></summary>
         <div class="rejilla-campos dos">
           <div class="campo"><label for="nh-accion">Qué hay que hacer <small>(opcional)</small></label>
             <input id="nh-accion" type="text"></div>
@@ -211,7 +241,7 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
             <input id="nh-ot" type="text" autocapitalize="characters"></div>
           <div class="campo"><label for="nh-vence">Fecha compromiso <small>(opcional)</small></label>
             <input id="nh-vence" type="date"></div>
-        </div>
+        </div></details>
         <p class="error-form" role="alert" hidden style="color:var(--rojo);font-weight:600"></p>
         <div><button class="boton primario" type="submit">${icono("bien")}Anotar</button></div>
       </form>`,
@@ -245,6 +275,7 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
         e.preventDefault();
         const err = f.querySelector(".error-form");
         const descripcion = f["nh-desc"].value.trim();
+        if (!f["nh-equipo"].value) { err.hidden = false; err.textContent = "Elige el equipo."; return; }
         if (!descripcion) { err.hidden = false; err.textContent = "Escribe qué se encontró."; f["nh-desc"].focus(); return; }
         const b = f.querySelector("button[type=submit]");
         b.disabled = true;

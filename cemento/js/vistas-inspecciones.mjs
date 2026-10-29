@@ -3,26 +3,30 @@ import { esc, icono, fechaCorta, fechaHora, sumarDias, plural, numero, diasEntre
 import * as api from "./api.mjs";
 import {
   aviso, dialogo, confirmar, filaInspeccion, vacio, equipo, plantilla, persona, nombre, nombreCorto, nombreEquipo, queInspeccion,
-  equiposDe, esAdmin, etiquetaPersona, marcaVence, marcaPrioridad, galeria, botonesMedio, marcaSinEnviar,
+  equiposDe, esAdmin, puede, etiquetaPersona, marcaVence, marcaPrioridad, galeria, botonesMedio, marcaSinEnviar,
 } from "./ui.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
+import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, campoEquipo, escanear, equipoDelQr, pedirFirma, equipoDe } from "./componentes.mjs";
+import { opcionesQuien, paraQuien } from "./vistas-tareas.mjs";
 
 const reducir = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ------------------------------------------------------------------------------- lista
 
 export function vistaInspecciones({ d, yo, hoy, query }) {
-  const admin = esAdmin(yo);
+  const admin = puede(yo, "asignar");
   const f = query.get("f") ?? (admin ? "todas" : "mias");
   const buscar = query.get("b") ?? "";
-  let xs = d.inspecciones;
-  if (f === "mias") xs = xs.filter((i) => i.asignada_a === yo.id || i.hecha_por === yo.id);
+  const fam = familia(d, query.get("eq"));
+  const turno = yo.turno ? `turno:${yo.turno}` : "-";
+  let xs = d.inspecciones.filter((i) => enFiltro(fam, equiposDe(i)));
+  if (f === "mias") xs = xs.filter((i) => i.asignada_a === yo.id || i.asignada_a === turno || i.hecha_por === yo.id);
   if (f === "atrasadas") xs = xs.filter((i) => i.estado === "pendiente" && i.vence < hoy);
   if (f === "hechas") xs = xs.filter((i) => i.estado === "hecha");
   if (f === "revisar") xs = xs.filter((i) => i.estado === "hecha" && !i.revisada_en);
   if (buscar) {
     const b = normal(buscar);
-    xs = xs.filter((i) => normal(`${queInspeccion(d, i)} ${plantilla(d, i.plantilla_id)?.nombre} ${nombre(d, i.asignada_a)} ${equiposDe(i).map((e) => equipo(d, e)?.tag).join(" ")}`).includes(b));
+    xs = xs.filter((i) => normal(`${queInspeccion(d, i)} ${plantilla(d, i.plantilla_id)?.nombre} ${paraQuien(d, i.asignada_a)} ${equiposDe(i).map((e) => nombreCompleto(d, e)).join(" ")}`).includes(b));
   }
   const pend = xs.filter((i) => i.estado === "pendiente").sort((a, b) => a.vence.localeCompare(b.vence));
   const grupos = [
@@ -33,14 +37,14 @@ export function vistaInspecciones({ d, yo, hoy, query }) {
       .sort((a, b) => (b.hecha_en ?? "").localeCompare(a.hecha_en ?? ""))],
   ].filter(([, g]) => g.length);
   const cuenta = (filtro) => {
-    if (filtro === "mias") return d.inspecciones.filter((i) => i.estado === "pendiente" && i.asignada_a === yo.id).length;
+    if (filtro === "mias") return d.inspecciones.filter((i) => i.estado === "pendiente" && (i.asignada_a === yo.id || i.asignada_a === turno)).length;
     if (filtro === "atrasadas") return d.inspecciones.filter((i) => i.estado === "pendiente" && i.vence < hoy).length;
     if (filtro === "revisar") return d.inspecciones.filter((i) => i.estado === "hecha" && !i.revisada_en).length;
     return null;
   };
   const filtro = (id, texto) => {
     const n = cuenta(id);
-    return `<a href="#/inspecciones?f=${id}" ${f === id ? 'aria-current="true"' : ""}>${texto}${n ? ` <b>${n}</b>` : ""}</a>`;
+    return `<a href="#/inspecciones?${new URLSearchParams({ ...Object.fromEntries(query), f: id })}" ${f === id ? 'aria-current="true"' : ""}>${texto}${n ? ` <b>${n}</b>` : ""}</a>`;
   };
   return {
     titulo: "Inspecciones",
@@ -48,26 +52,19 @@ export function vistaInspecciones({ d, yo, hoy, query }) {
     html: `<div class="cabeza"><div><h1>Inspecciones</h1>
         <p class="bajada">${admin ? "Las que asignaste, de todos." : "Las que te asignaron. Tócala para llenarla."}</p></div>
         ${admin ? `<div class="acciones"><a class="boton primario" href="#/asignar">${icono("mas1")}Asignar</a></div>` : ""}</div>
-      <div class="buscador" style="margin-bottom:12px;max-width:420px">${icono("buscar")}<input type="search" placeholder="Buscar por equipo, tag o persona" value="${esc(buscar)}" data-buscar aria-label="Buscar"></div>
-      <nav class="filtros" aria-label="Filtrar">${filtro("mias", "Mías")}${filtro("todas", "Todas")}${filtro("atrasadas", "Atrasadas")}${admin ? filtro("revisar", "Por revisar") : ""}${filtro("hechas", "Hechas")}</nav>
+      ${barraFiltros(d, query, { placeholder: "Buscar por equipo, tag o persona" })}
+      <nav class="filtros" aria-label="Filtrar">${filtro("mias", "Mías")}${filtro("todas", "Todas")}${filtro("atrasadas", "Atrasadas")}${puede(yo, "revisar") ? filtro("revisar", "Por revisar") : ""}${filtro("hechas", "Hechas")}</nav>
       <div data-resultados>${grupos.length
         ? grupos.map(([t, g]) => `<section class="seccion"><h2>${t} <small>${g.length}</small></h2><ul class="lista">${g.map((i) => filaInspeccion(d, i, hoy, { mostrarQuien: f !== "mias" })).join("")}</ul></section>`).join("")
-        : vacio(buscar ? "Nada con eso." : f === "atrasadas" ? "Nada atrasado." : f === "mias" ? "No tienes inspecciones asignadas." : "No hay inspecciones.", admin && !buscar ? `<a class="boton chico" href="#/asignar">${icono("mas1")}Asignar una</a>` : "")}</div>`,
+        : vacio(buscar || fam ? "Nada con ese filtro." : f === "atrasadas" ? "Nada atrasado." : f === "mias" ? "No tienes inspecciones asignadas." : "No hay inspecciones.", admin && !buscar ? `<a class="boton chico" href="#/asignar">${icono("mas1")}Asignar una</a>` : "")}</div>`,
     montar(m) {
-      const campo = m.querySelector("[data-buscar]");
-      let reloj = null;
-      campo.addEventListener("input", () => {
-        clearTimeout(reloj);
-        reloj = setTimeout(() => {
-          const q = new URLSearchParams({ f, ...(campo.value ? { b: campo.value } : {}) });
-          history.replaceState(null, "", `#/inspecciones?${q}`);
-          // se redibuja solo la lista (el campo conserva el foco y lo escrito)
-          const v = vistaInspecciones({ d: api.obtener(), yo, hoy, query: q });
-          const tmp = document.createElement("div");
-          tmp.innerHTML = v.html;
-          m.querySelector("[data-resultados]").replaceWith(tmp.querySelector("[data-resultados]"));
-        }, 160);
-      });
+      montarFiltros(m, d, { ruta: "inspecciones", alCambiar: (q) => {
+        const v = vistaInspecciones({ d: api.obtener(), yo, hoy, query: q });
+        const tmp = document.createElement("div");
+        tmp.innerHTML = v.html;
+        m.querySelector("[data-resultados]").replaceWith(tmp.querySelector("[data-resultados]"));
+        m.querySelector("nav.filtros").replaceWith(tmp.querySelector("nav.filtros"));
+      } });
     },
   };
 }
@@ -77,53 +74,60 @@ export function vistaInspecciones({ d, yo, hoy, query }) {
 const REPETIR = [[0, "Una sola vez"], [1, "Cada día"], [7, "Cada semana"], [15, "Cada 15 días"], [30, "Cada mes"], [60, "Cada 2 meses"]];
 
 export function vistaAsignar({ d, yo, hoy, query, ir }) {
-  if (!esAdmin(yo)) return { titulo: "Asignar", atras: "#/tablero", html: vacio("Las inspecciones las asigna el administrador.") };
+  if (!puede(yo, "asignar")) return { titulo: "Asignar", atras: "#/tablero", html: vacio("Asignar inspecciones no está entre tus permisos: lo da el administrador.") };
   const activos = d.equipos.filter((e) => e.activo);
-  const colectores = activos.filter((e) => e.tipo === "colector");
-  const procesos = activos.filter((e) => e.tipo !== "colector");
+  const colectores = activos.filter((e) => e.tipo === "colector" && !e.padre_id);
   const plInicial = query.get("plantilla");
-  const eqInicial = query.get("equipo") ?? (plantilla(d, plInicial)?.tipo_equipo ? "colectores" : plantilla(d, plInicial)?.equipo_id) ?? procesos[0]?.id;
+  let modo = query.get("equipo") === "colectores" || plantilla(d, plInicial)?.tipo_equipo ? "colectores" : "equipo";
+  let eqId = modo === "equipo" ? (query.get("equipo") ?? plantilla(d, plInicial)?.equipo_id ?? "") : "";
   const elegidosInicial = new Set((query.get("equipos") ?? "").split(",").filter(Boolean));
   const vence = query.get("vence") ?? hoy;
-  const opcionesPlantilla = (eqId, elegida) => {
-    const ps = eqId === "colectores" ? d.plantillas.filter((p) => p.tipo_equipo === "colector") : d.plantillas.filter((p) => p.equipo_id === eqId);
+  const tareas = []; // { id, titulo, equipo_id }
+  const plantillasDe = () => (modo === "colectores" ? d.plantillas.filter((p) => p.tipo_equipo === "colector") : d.plantillas.filter((p) => p.equipo_id === eqId));
+  const opcionesPlantilla = (elegida) => {
+    const ps = plantillasDe();
     return ps.length
       ? ps.map((p) => `<option value="${esc(p.id)}" ${p.id === elegida ? "selected" : ""}>${esc(p.nombre)}${p.cuando === "parada" ? " (en parada)" : ""} · ${plural(p.items.length, "revisión", "revisiones")}</option>`).join("")
-      : `<option value="">Este equipo no tiene plantillas</option>`;
+      : `<option value="">${modo === "equipo" && !eqId ? "Primero elige el equipo" : "Este equipo no tiene plantillas"}</option>`;
   };
   const porArea = Object.entries(colectores.reduce((a, e) => ((a[e.area || "Sin área"] ??= []).push(e), a), {}));
   const listaColectores = () => `<div class="elegir-equipos" data-colectores>${porArea.map(([area, xs]) => `
       <div class="grupo"><span>${esc(area)}</span><button type="button" data-todos="${esc(area)}">Todos</button></div>
       ${xs.map((e) => `<label><input type="checkbox" value="${esc(e.id)}" data-area="${esc(area)}" ${elegidosInicial.size === 0 || elegidosInicial.has(e.id) ? "checked" : ""}>
         <span><b class="mono">${esc(e.tag || "—")}</b> ${esc(e.nombre)}</span></label>`).join("")}`).join("")}</div>`;
+  const subequipos = () => (eqId ? d.equipos.filter((e) => e.padre_id === eqId && e.activo) : []);
+  const htmlTareas = () => tareas.length ? `<ul class="lista-tareas" style="margin-top:8px">${tareas.map((t, k) => `<li><span class="check-tarea" aria-hidden="true"></span>
+      <span class="que"><b>${esc(t.titulo)}</b>${t.equipo_id ? `<small><span>${esc(nombreCompleto(d, t.equipo_id))}</span></small>` : ""}</span>
+      <span class="lado"><button type="button" class="boton-icono" data-quitar-tarea="${k}" aria-label="Quitar la tarea">${icono("mal")}</button></span></li>`).join("")}</ul>` : "";
   return {
     titulo: "Asignar inspección",
     atras: "#/inspecciones",
     viva: false,
     html: `<div class="cabeza"><div><h1>Asignar inspección</h1>
-        <p class="bajada">Le aparece en su tablero y le llega un aviso. Si se repite, al terminarla queda programada la siguiente.</p></div></div>
-      <form class="panel" id="form-asignar" novalidate style="max-width:720px">
+        <p class="bajada">Le aparece en su tablero y le llega un aviso. Si se repite, al terminarla queda programada la siguiente (con las tareas que no se hicieron).</p></div></div>
+      <form class="panel" id="form-asignar" novalidate style="max-width:760px">
+        ${colectores.length ? `<div class="segmento vista" role="group" aria-label="Qué se inspecciona" data-modo>
+          <button type="button" data-m="equipo" aria-pressed="${modo === "equipo"}">${icono("equipos")}Un equipo</button>
+          <button type="button" data-m="colectores" aria-pressed="${modo === "colectores"}">${icono("colector")}Ronda de colectores</button></div>` : ""}
         <div class="rejilla-campos dos">
-          <div class="campo"><label for="a-equipo">Equipo</label>
-            <select id="a-equipo">
-              ${colectores.length ? `<option value="colectores" ${eqInicial === "colectores" ? "selected" : ""}>Ronda de colectores (${colectores.length})</option>` : ""}
-              ${Object.entries(procesos.reduce((a, e) => ((a[e.area || "Sin área"] ??= []).push(e), a), {})).map(([area, xs]) => `<optgroup label="${esc(area)}">
-                ${xs.map((e) => `<option value="${esc(e.id)}" ${e.id === eqInicial ? "selected" : ""}>${esc(nombreEquipo(e))}</option>`).join("")}</optgroup>`).join("")}
-            </select></div>
-          <div class="campo"><label for="a-plantilla">Qué revisar</label>
-            <select id="a-plantilla">${opcionesPlantilla(eqInicial, plInicial)}</select></div>
+          <div class="campo" data-zona-equipo ${modo === "equipo" ? "" : "hidden"}><span class="rotulo">Equipo</span>${campoEquipo(d, { id: "a-equipo", valor: eqId, titulo: "Qué equipo", placeholder: "Elegir el equipo", soloArriba: true })}</div>
+          <div class="campo"><label for="a-plantilla">Qué revisar</label><select id="a-plantilla">${opcionesPlantilla(plInicial)}</select></div>
         </div>
-        <div class="campo" data-zona-colectores ${eqInicial === "colectores" ? "" : "hidden"}>
+        <div class="campo" data-zona-colectores ${modo === "colectores" ? "" : "hidden"}>
           <span class="rotulo">Qué colectores <small data-cuantos></small></span>${listaColectores()}</div>
         <div class="rejilla-campos dos">
-          <div class="campo"><label for="a-quien">A quién</label>
-            <select id="a-quien">${d.personas.filter((p) => p.activo).map((p) => `<option value="${esc(p.id)}" ${p.id === query.get("quien") ? "selected" : ""}>${esc(etiquetaPersona(p, yo))}</option>`).join("")}</select></div>
-          <div class="campo"><label for="a-vence">Para cuándo</label>
-            <input id="a-vence" type="date" value="${esc(vence)}" min="${sumarDias(hoy, -30)}"></div>
+          <div class="campo"><label for="a-quien">A quién</label><select id="a-quien">${opcionesQuien(d, yo, query.get("quien") ?? "")}</select>
+            <span class="ayuda">A un turno: le toca a quien esté de turno y le llega a todos sus jefes.</span></div>
+          <div class="campo"><label for="a-vence">Para cuándo</label><input id="a-vence" type="date" value="${esc(vence)}" min="${sumarDias(hoy, -30)}"></div>
           <div class="campo"><label for="a-repetir">Se repite</label>
             <select id="a-repetir">${REPETIR.map(([n, t]) => `<option value="${n}">${t}</option>`).join("")}</select>
             <span class="ayuda" id="a-sugerida"></span></div>
         </div>
+        <div class="campo"><span class="rotulo">Tareas <small>(opcional: lo que tiene que hacer además de las revisiones)</small></span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><input type="text" id="a-tarea" placeholder="Por ejemplo: medir la holgura en el punto 3" style="flex:1 1 260px" enterkeyhint="done">
+            <select id="a-tarea-sub" style="flex:0 1 220px" ${subequipos().length ? "" : "hidden"}><option value="">Todo el equipo</option>${subequipos().map((e) => `<option value="${esc(e.id)}">${esc(e.tag ? `${e.tag} · ${e.nombre}` : e.nombre)}</option>`).join("")}</select>
+            <button type="button" class="boton chico" data-agregar-tarea>${icono("mas1")}Agregar</button></div>
+          <div data-tareas>${htmlTareas()}</div></div>
         <div class="campo"><label for="a-nota">Nota para quien la hace <small>(opcional)</small></label>
           <textarea id="a-nota" placeholder="Por ejemplo: aprovechar el paro del viernes"></textarea></div>
         <p class="error-form" role="alert" hidden style="color:var(--rojo);font-weight:600"></p>
@@ -131,32 +135,69 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
       </form>`,
     montar(m) {
       const f = m.querySelector("#form-asignar");
-      const selEq = f.querySelector("#a-equipo"), selPl = f.querySelector("#a-plantilla"), selRep = f.querySelector("#a-repetir");
+      const selPl = f.querySelector("#a-plantilla"), selRep = f.querySelector("#a-repetir");
       const zona = f.querySelector("[data-zona-colectores]");
-      const contar = () => {
-        const n = zona.querySelectorAll("input:checked").length;
-        f.querySelector("[data-cuantos]").textContent = `(${n} de ${colectores.length})`;
-      };
+      const contar = () => { const n = zona.querySelectorAll("input:checked").length; f.querySelector("[data-cuantos]").textContent = `(${n} de ${colectores.length})`; };
       const sugerir = () => {
         const p = plantilla(d, selPl.value);
         const n = p?.frecuencia_dias ?? 0;
         selRep.value = String(REPETIR.find(([k]) => k === n) ? n : 0);
         f.querySelector("#a-sugerida").textContent = p?.frecuencia_dias ? `La plantilla sugiere cada ${p.frecuencia_dias === 1 ? "día" : `${p.frecuencia_dias} días`}.` : "";
       };
-      selEq.addEventListener("change", () => {
-        selPl.innerHTML = opcionesPlantilla(selEq.value);
-        zona.hidden = selEq.value !== "colectores";
-        sugerir();
-      });
-      selPl.addEventListener("change", sugerir);
-      zona.addEventListener("change", contar);
-      zona.addEventListener("click", (e) => {
-        const b = e.target.closest("[data-todos]");
+      const pintarSub = () => {
+        const sel = f.querySelector("#a-tarea-sub");
+        const subs = subequipos();
+        sel.hidden = !subs.length;
+        sel.innerHTML = `<option value="">Todo el equipo</option>${subs.map((e) => `<option value="${esc(e.id)}">${esc(e.tag ? `${e.tag} · ${e.nombre}` : e.nombre)}</option>`).join("")}`;
+      };
+      f.addEventListener("click", (e) => {
+        const b = e.target.closest("button");
         if (!b) return;
-        const cajas = [...zona.querySelectorAll(`input[data-area="${CSS.escape(b.dataset.todos)}"]`)];
-        const todas = cajas.every((c) => c.checked);
-        cajas.forEach((c) => (c.checked = !todas));
-        contar();
+        if (b.dataset.m) {
+          modo = b.dataset.m;
+          b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+          f.querySelector("[data-zona-equipo]").hidden = modo !== "equipo";
+          zona.hidden = modo !== "colectores";
+          selPl.innerHTML = opcionesPlantilla();
+          sugerir();
+        }
+        if (b.dataset.todos) {
+          const cajas = [...zona.querySelectorAll(`input[data-area="${CSS.escape(b.dataset.todos)}"]`)];
+          const todas = cajas.every((c) => c.checked);
+          cajas.forEach((c) => (c.checked = !todas));
+          contar();
+        }
+        if (b.hasAttribute("data-agregar-tarea")) agregarTarea();
+        if (b.dataset.quitarTarea != null) { tareas.splice(Number(b.dataset.quitarTarea), 1); f.querySelector("[data-tareas]").innerHTML = htmlTareas(); }
+      });
+      const agregarTarea = () => {
+        const i = f.querySelector("#a-tarea");
+        const titulo = i.value.trim();
+        if (!titulo) return i.focus();
+        tareas.push({ id: crypto.randomUUID(), titulo, equipo_id: f.querySelector("#a-tarea-sub").value || null });
+        i.value = "";
+        f.querySelector("[data-tareas]").innerHTML = htmlTareas();
+        i.focus();
+      };
+      f.querySelector("#a-tarea").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); agregarTarea(); } });
+      f.addEventListener("change", (e) => {
+        if (e.target.id === "a-equipo") {
+          eqId = e.target.value;
+          // si se eligió un colector desde el selector, es una ronda de ese colector
+          if (equipoDe(d, eqId)?.tipo === "colector") {
+            modo = "colectores";
+            zona.querySelectorAll("input").forEach((c) => (c.checked = c.value === eqId));
+            f.querySelectorAll("[data-m]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.m === "colectores")));
+            f.querySelector("[data-zona-equipo]").hidden = true;
+            zona.hidden = false;
+            contar();
+          }
+          selPl.innerHTML = opcionesPlantilla();
+          sugerir();
+          pintarSub();
+        }
+        if (e.target.id === "a-plantilla") sugerir();
+        if (e.target.closest?.("[data-colectores]")) contar();
       });
       contar();
       sugerir();
@@ -164,25 +205,29 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
         e.preventDefault();
         const err = f.querySelector(".error-form");
         const fallo = (t) => { err.hidden = false; err.textContent = t; };
-        if (!selPl.value) return fallo("Este equipo no tiene plantillas: crea una en Equipos.");
-        const equipos = selEq.value === "colectores" ? [...zona.querySelectorAll("input:checked")].map((c) => c.value) : undefined;
+        if (modo === "equipo" && !eqId) return fallo("Elige el equipo.");
+        if (!selPl.value) return fallo("Este equipo no tiene plantillas: crea una en su ficha (Equipos).");
+        const equipos = modo === "colectores" ? [...zona.querySelectorAll("input:checked")].map((c) => c.value) : undefined;
         if (equipos && !equipos.length) return fallo("Elige por lo menos un colector.");
+        if (!f["a-quien"].value) return fallo("Elige a quién se le asigna.");
+        const pendiente = f.querySelector("#a-tarea").value.trim();
+        if (pendiente) tareas.push({ id: crypto.randomUUID(), titulo: pendiente, equipo_id: f.querySelector("#a-tarea-sub").value || null });
         const boton = f.querySelector("button[type=submit]");
         boton.disabled = true;
-        const datos = { id: crypto.randomUUID(), plantilla_id: selPl.value, asignada_a: f["a-quien"].value, vence: f["a-vence"].value, repetir_dias: Number(selRep.value) || null, nota: f["a-nota"].value, equipos };
+        const datos = { id: crypto.randomUUID(), plantilla_id: selPl.value, asignada_a: f["a-quien"].value, vence: f["a-vence"].value, repetir_dias: Number(selRep.value) || null,
+          nota: f["a-nota"].value, equipos, tareas };
         try {
           await api.escribir("inspecciones", datos);
           const dd = api.obtener();
           const insp = dd.inspecciones.find((i) => i.id === datos.id) ?? { ...datos, equipo_id: plantilla(dd, datos.plantilla_id)?.equipo_id ?? equipos?.[0] };
-          const quien = persona(dd, datos.asignada_a);
           const r = await dialogo({
             titulo: "Asignada",
-            html: `<p>${esc(queInspeccion(dd, insp))} · ${esc(plantilla(dd, datos.plantilla_id)?.nombre)} para ${esc(quien?.turno ? `Turno ${quien.turno}` : quien?.nombre)}, para el ${esc(fechaCorta(datos.vence))}.
-              ${quien?.id === yo.id ? "" : "Le aparece en su tablero y le llega un aviso."}</p>`,
+            html: `<p>${esc(queInspeccion(dd, insp))} · ${esc(plantilla(dd, datos.plantilla_id)?.nombre)} para ${esc(paraQuien(dd, datos.asignada_a))}, para el ${esc(fechaCorta(datos.vence))}${tareas.length ? `, con ${plural(tareas.length, "tarea", "tareas")}` : ""}.
+              ${datos.asignada_a === yo.id ? "" : "Le aparece en su tablero y le llega un aviso."}</p>`,
             botones: [{ texto: "Asignar otra", valor: "otra" }, { texto: "Avisar por WhatsApp", valor: "wa", icono: "whatsapp" }, { texto: "Listo", valor: "listo", clase: "primario" }],
           });
           if (r === "wa") abrirWhatsApp(mensajeAsignacion(dd, insp));
-          if (r === "otra") ir(`#/asignar?equipo=${encodeURIComponent(selEq.value)}&vence=${datos.vence}`);
+          if (r === "otra") ir(`#/asignar?vence=${datos.vence}`);
           else ir("#/tablero?v=inspecciones");
         } catch (x) {
           fallo(x.sinRed ? "Para asignar hace falta señal. Prueba cuando tengas conexión." : x.message);
@@ -196,7 +241,8 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
 function mensajeAsignacion(d, insp) {
   const pl = plantilla(d, insp.plantilla_id);
   const url = `${location.origin}${location.pathname}#/inspeccion/${encodeURIComponent(insp.id)}`;
-  return `Te asigné una inspección: ${queInspeccion(d, insp)} · ${pl?.nombre}, para el ${fechaCorta(insp.vence)}.${insp.nota ? `\nNota: ${insp.nota}` : ""}\n${url}`;
+  const ts = (d.tareas ?? []).filter((t) => t.inspeccion_id === insp.id);
+  return `Te asigné una inspección: ${queInspeccion(d, insp)} · ${pl?.nombre}, para el ${fechaCorta(insp.vence)}.${ts.length ? `\nTareas: ${ts.map((t) => t.titulo).join("; ")}.` : ""}${insp.nota ? `\nNota: ${insp.nota}` : ""}\n${url}`;
 }
 
 export function abrirWhatsApp(texto) {
@@ -209,7 +255,32 @@ export function vistaInspeccion(ctx) {
   const { d, param } = ctx;
   const insp = d.inspecciones.find((i) => i.id === param);
   if (!insp) return { titulo: "No está", atras: "#/inspecciones", html: vacio("Esa inspección no existe: puede que la hayan borrado.", `<a class="boton" href="#/inspecciones">Ver las inspecciones</a>`) };
-  return insp.estado === "hecha" ? verHecha(ctx, insp) : llenar(ctx, insp);
+  return insp.estado === "hecha" ? verHecha(ctx, insp) : puede(ctx.yo, "editar") ? llenar(ctx, insp) : porHacer(ctx, insp);
+}
+
+/** Una pendiente vista por alguien de solo ver: qué se va a revisar, de quién es y para cuándo. */
+function porHacer({ d, yo, hoy, ir }, insp) {
+  const items = plantilla(d, insp.plantilla_id)?.items ?? [];
+  const ids = equiposDe(insp);
+  return {
+    titulo: plantilla(d, insp.plantilla_id)?.nombre ?? "Inspección",
+    tituloCorto: ids.length > 1 ? "Ronda de colectores" : equipo(d, ids[0])?.nombre ?? "Inspección",
+    atras: "#/tablero?v=inspecciones",
+    html: `${cabeceraInspeccion(d, insp, hoy)}
+      <div class="hoja-insp">
+        <div><p style="margin:0 4px 12px;color:var(--tinta-3)">${icono("candado", "ico chico")} Todavía no se ha hecho. La llena ${esc(nombreCorto(d, insp.asignada_a))}; tú la ves.</p>
+          <ul class="resultados">${porSubequipo(items).map(([sub, its]) => `${sub ? `<li class="titulo-equipo" style="font-size:14px">${esc(equipo(d, sub)?.tag ? `${equipo(d, sub).tag} · ` : "")}<span style="font-family:var(--letra)">${esc(equipo(d, sub)?.nombre ?? "")}</span></li>` : ""}${its.map((it) => `<li><span class="que">${esc(it.texto)}</span><span class="valor">${it.tipo === "medida" ? `<span class="ayuda">${esc(textoRango(it))}</span>` : ""}</span></li>`).join("")}`).join("")}</ul></div>
+        <aside class="panel">${datosInspeccion(d, insp)}
+          ${puede(yo, "asignar") ? `<div class="herramientas-item">
+            <button type="button" class="boton chico" data-accion="recordar">${icono("campana")}Recordar</button>
+            <button type="button" class="boton chico" data-accion="fecha">${icono("calendario")}Cambiar fecha</button>
+            <button type="button" class="boton chico peligro" data-accion="borrar">${icono("basura")}Borrar</button></div>` : ""}
+        </aside>
+      </div>`,
+    montar(m) {
+      m.addEventListener("click", (e) => { const b = e.target.closest("[data-accion]"); if (b) accionesAdmin(b, d, insp, ir); });
+    },
+  };
 }
 
 function cabeceraInspeccion(d, insp, hoy) {
@@ -287,7 +358,13 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
   const clave = (eqId, itId) => `${eqId}|${itId}`;
   for (const e of ids) for (const it of items) R[clave(e, it.id)] ??= { resultado: null, valor: "", texto: "", fotos: [], hallazgo: null, manual: false };
   let paso = Math.min(guardado?.paso ?? 0, ids.length - 1);
-  const guardar = () => api.borrador.guardar(insp.id, { respuestas: R, paso });
+  // las tareas que el asignador le agregó; «en sitio» (QR escaneado, también desde la pantalla del QR)
+  const tareas = (d.tareas ?? []).filter((t) => t.inspeccion_id === insp.id && t.estado !== "hecha").sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+  const T = guardado?.tareas ?? {};
+  for (const t of tareas) T[t.id] ??= { hecha: false, nota: "" };
+  const verificaciones = () => api.borrador.leer(insp.id)?.verificaciones ?? [];
+  const guardar = () => api.borrador.guardar(insp.id, { respuestas: R, paso, tareas: T, verificaciones: verificaciones() });
+  const pedirFirmaAqui = pl?.pedir_firma === 1 || (pl?.pedir_firma !== 0 && d.ajustes?.pedir_firma !== false);
   const esMia = insp.asignada_a === yo.id;
 
   const htmlHallazgo = (eqId, it, r) => {
@@ -363,11 +440,16 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
   };
   const pasos = () => ids.map((e, k) => `<button type="button" data-paso="${k}" ${k === paso ? 'aria-current="true"' : ""}>
       <i class="estado-paso ${estadoEquipo(e)}"></i>${esc(equipo(d, e)?.tag || equipo(d, e)?.nombre || `#${k + 1}`)}</button>`).join("");
+  const enSitio = () => verificaciones().map((v) => `<span class="en-sitio" style="margin:0 6px 6px 0">${icono("sitio", "ico", { lleno: true })}${esc(equipo(d, v.equipo_id)?.tag || equipo(d, v.equipo_id)?.nombre || "")} · ${esc(fechaHora(v.en).split(", ")[1])}</span>`).join("");
   const cuerpoPaso = () => {
     const e = ids[paso], eq = equipo(d, e);
     return `${ronda ? `<div class="colector-actual"><h2>${esc(eq?.tag || "")}</h2><span>${esc(eq?.nombre ?? "")}${eq?.sirve_a ? ` · ${esc(eq.sirve_a)}` : ""}</span>
         <span style="margin-left:auto">${paso + 1} de ${ids.length}</span></div>` : ""}
-      ${items.length ? `<ol class="items">${items.map((it) => htmlItem(e, it)).join("")}</ol>` : vacio("Esta plantilla no tiene revisiones. Edítala en Equipos.")}
+      ${paso === 0 && tareas.length ? `<div class="tareas-insp"><div class="seccion-sub" style="margin:8px 10px 4px">${icono("tareas")}Tareas que te dejaron <small style="font-weight:500;color:var(--tinta-3)">${tareas.length}</small></div>
+        <ul class="lista-tareas">${tareas.map((t) => `<li data-tarea-insp="${esc(t.id)}"><button type="button" class="check-tarea" role="checkbox" aria-checked="${!!T[t.id]?.hecha}" aria-label="Hecha: ${esc(t.titulo)}">${CHECK}</button>
+          <span class="que"><b>${esc(t.titulo)}</b><small>${t.equipo_id && t.equipo_id !== e ? `<span>${esc(nombreCompleto(d, t.equipo_id))}</span>` : ""}${t.detalle ? `<span>${esc(t.detalle)}</span>` : ""}</small>
+            <input type="text" data-nota-tarea placeholder="Cómo quedó (opcional)" value="${esc(T[t.id]?.nota ?? "")}" ${T[t.id]?.hecha ? "" : "hidden"} style="margin-top:8px;min-height:40px"></span><span></span></li>`).join("")}</ul></div>` : ""}
+      ${items.length ? `<ol class="items">${porSubequipo(items).map(([sub, its]) => `${sub ? `<li class="seccion-sub">${icono("subequipo")}${equipo(d, sub)?.tag ? `<span class="tag">${esc(equipo(d, sub).tag)}</span>` : ""}${esc(equipo(d, sub)?.nombre ?? "Subequipo")}</li>` : ""}${its.map((it) => htmlItem(e, it)).join("")}`).join("")}</ol>` : vacio("Esta plantilla no tiene revisiones. Edítala en Equipos.")}
       ${ronda ? `<div class="herramientas-item" style="margin-top:14px;justify-content:space-between">
         <button type="button" class="boton" data-paso="${paso - 1}" ${paso === 0 ? "disabled" : ""}>${icono("flecha")}Anterior</button>
         ${paso < ids.length - 1 ? `<button type="button" class="boton primario" data-paso="${paso + 1}">Siguiente: ${esc(equipo(d, ids[paso + 1])?.tag || "")}${icono("derecha")}</button>` : ""}</div>` : ""}`;
@@ -391,7 +473,9 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
           </div>
         </div>
         <aside class="panel">${datosInspeccion(d, insp)}
-          ${esAdmin(yo) ? `<div class="herramientas-item">
+          <div data-en-sitio>${enSitio()}</div>
+          <button type="button" class="boton chico" data-qr>${icono("escanear")}Escanear el QR del equipo</button>
+          ${puede(yo, "asignar") ? `<div class="herramientas-item">
             <button type="button" class="boton chico" data-accion="recordar">${icono("campana")}Recordar</button>
             <button type="button" class="boton chico" data-accion="fecha">${icono("calendario")}Cambiar fecha</button>
             <button type="button" class="boton chico" data-accion="avisar">${icono("whatsapp")}WhatsApp</button>
@@ -439,6 +523,29 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
         const b = e.target.closest("button");
         if (!b) return;
         if (b.dataset.paso != null) return irAPaso(Number(b.dataset.paso));
+        const filaTarea = b.closest("[data-tarea-insp]");
+        if (filaTarea && b.classList.contains("check-tarea")) {
+          const x = T[filaTarea.dataset.tareaInsp];
+          x.hecha = !x.hecha;
+          b.setAttribute("aria-checked", String(x.hecha));
+          filaTarea.querySelector("[data-nota-tarea]").hidden = !x.hecha;
+          navigator.vibrate?.(x.hecha ? [8, 30, 8] : 8);
+          guardar();
+          return;
+        }
+        if (b.hasAttribute("data-qr")) {
+          const t = await escanear({ ayuda: "Apunta al QR pegado en el equipo: queda registrado que pasaste por ahí." });
+          if (!t) return;
+          const id = equipoDelQr(d, t);
+          const vale = id && (ids.includes(id) || ids.includes(equipo(d, id)?.padre_id));
+          if (!vale) return aviso(id ? `Ese QR es de ${nombreCompleto(d, id)}, que no está en esta inspección.` : "Ese QR no es de un equipo de la bitácora.", { error: true });
+          const b2 = api.borrador.leer(insp.id) ?? {};
+          api.borrador.guardar(insp.id, { ...b2, respuestas: R, paso, tareas: T, verificaciones: [...(b2.verificaciones ?? []).filter((v) => v.equipo_id !== id), { equipo_id: id, en: new Date().toISOString() }] });
+          m.querySelector("[data-en-sitio]").innerHTML = enSitio();
+          navigator.vibrate?.(12);
+          aviso(`En sitio: ${nombreCompleto(d, id)}.`, { icono: "sitio" });
+          return;
+        }
         const li = b.closest("[data-item]");
         if (b.dataset.resultado) {
           const { r } = zonaItem(li);
@@ -470,6 +577,7 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
 
       m.addEventListener("input", (e) => {
         const t = e.target;
+        if (t.hasAttribute("data-nota-tarea")) { T[t.closest("[data-tarea-insp]").dataset.tareaInsp].nota = t.value; guardar(); return; }
         const li = t.closest("[data-item]");
         if (!li) return;
         const { eqId, it, r } = zonaItem(li);
@@ -547,14 +655,23 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
           const r = R[clave(eqId, it.id)];
           if (r.resultado !== "mal") continue;
           const tag = equipo(d, eqId)?.tag;
-          hallazgos.push({ ...r.hallazgo, equipo_id: eqId, item: it.texto, descripcion: (r.hallazgo?.descripcion || `${ronda && tag ? `${tag}: ` : ""}${sugerenciaHallazgo(it, r)}`).trim(), fotos: r.fotos });
+          hallazgos.push({ ...r.hallazgo, equipo_id: it.subequipo_id && equipo(d, it.subequipo_id)?.padre_id === eqId ? it.subequipo_id : eqId, item: it.texto, descripcion: (r.hallazgo?.descripcion || `${ronda && tag ? `${tag}: ` : ""}${sugerenciaHallazgo(it, r)}`).trim(), fotos: r.fotos });
         }
-        const ok = await dialogo({
-          titulo: "¿Terminar la inspección?",
-          html: `<p>${plural(avance().total, "revisión", "revisiones")}${ronda ? ` en ${plural(ids.length, "colector", "colectores")}` : ""}${hallazgos.length ? `, con ${plural(hallazgos.length, "hallazgo", "hallazgos")}` : ", todo bien"}. Después no se puede cambiar.</p>`,
-          botones: [{ texto: "Seguir revisando", valor: false }, { texto: "Terminar", valor: true, clase: "primario" }],
-        });
-        if (!ok) return;
+        const resumenTxt = `${plural(avance().total, "revisión", "revisiones")}${ronda ? ` en ${plural(ids.length, "colector", "colectores")}` : ""}${hallazgos.length ? `, con ${plural(hallazgos.length, "hallazgo", "hallazgos")}` : ", todo bien"}${tareas.length ? `; ${Object.values(T).filter((x) => x.hecha).length} de ${plural(tareas.length, "tarea hecha", "tareas hechas")}` : ""}. Después no se puede cambiar.`;
+        let firma = null;
+        if (pedirFirmaAqui) {
+          // la firma es la confirmación: un paso menos
+          const png = await pedirFirma({ nombre: yo.nombre, texto: `${resumenTxt} Firma para terminar.` });
+          if (!png) return;
+          try { firma = await api.guardarMedio(png, "firma.png"); } catch (x) { aviso(`No se pudo guardar la firma: ${x.message}`, { error: true }); return; }
+        } else {
+          const ok = await dialogo({
+            titulo: "¿Terminar la inspección?",
+            html: `<p>${resumenTxt}</p>`,
+            botones: [{ texto: "Seguir revisando", valor: false }, { texto: "Terminar", valor: true, clase: "primario" }],
+          });
+          if (!ok) return;
+        }
         boton.disabled = true;
         const respuestas = [];
         for (const eqId of ids) for (const it of items) {
@@ -563,7 +680,10 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
         }
         try {
           // se guarda en el aparato y se intenta mandar; se espera hasta 8 s para poder decir si ya llegó
-          const envio = api.encolar(`inspecciones/${encodeURIComponent(insp.id)}/hecha`, { hecha_en: new Date().toISOString(), respuestas, hallazgos });
+          const envio = api.encolar(`inspecciones/${encodeURIComponent(insp.id)}/hecha`, {
+            hecha_en: new Date().toISOString(), respuestas, hallazgos, firma, firma_nombre: firma ? yo.nombre : null, verificaciones: verificaciones(),
+            tareas: tareas.map((t) => ({ id: t.id, hecha: !!T[t.id]?.hecha, nota: T[t.id]?.nota ?? "" })),
+          });
           await Promise.race([envio, new Promise((ok2) => setTimeout(ok2, 8000))]);
         } catch (x) {
           boton.disabled = false;
@@ -575,7 +695,7 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
         const resumen = resumenWhatsApp(d, insp, items, respuestas, hallazgos, yo);
         const r = await dialogo({
           titulo: "Inspección terminada",
-          html: `<p>${enviado ? "Ya llegó al servidor." : "No hay señal: quedó guardada en este aparato y se envía sola cuando vuelva la conexión."}${hallazgos.length ? ` Se anotaron ${plural(hallazgos.length, "hallazgo", "hallazgos")}.` : ""}</p>`,
+          html: `<p>${enviado ? "Ya llegó al servidor." : navigator.onLine === false ? "No hay señal: quedó guardada en este aparato y se envía sola cuando vuelva la conexión." : "Quedó guardada en este aparato y se termina de enviar sola."}${hallazgos.length === 1 ? " Se anotó 1 hallazgo." : hallazgos.length ? ` Se anotaron ${hallazgos.length} hallazgos.` : ""}</p>`,
           botones: [{ texto: "Avisar por WhatsApp", valor: "wa", icono: "whatsapp" }, { texto: "Ver el resumen", valor: "ver", clase: "primario" }],
         });
         if (r === "wa") abrirWhatsApp(resumen);
@@ -584,6 +704,14 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
       return () => parar?.();
     },
   };
+}
+
+const CHECK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/></svg>`;
+/** Las revisiones agrupadas por subequipo, en el orden en que aparecen (las del equipo entero primero). */
+function porSubequipo(items) {
+  const grupos = new Map([[null, []]]);
+  for (const it of items) (grupos.get(it.subequipo_id ?? null) ?? grupos.set(it.subequipo_id, []).get(it.subequipo_id)).push(it);
+  return [...grupos.entries()].filter(([, xs]) => xs.length);
 }
 
 function sugerenciaHallazgo(it, r) {
@@ -631,8 +759,9 @@ function verHecha({ d, yo, hoy }, insp) {
     return `<li><span class="que">${esc(it.texto)}</span><span class="valor">${valor} ${res}</span>
       ${r.texto ? `<p class="nota">${esc(r.texto)}</p>` : ""}${galeria(r.fotos ?? [])}</li>`;
   };
+  const tareasDe = (d.tareas ?? []).filter((t) => t.inspeccion_id === insp.id || (t.estado === "hecha" && t.hecha_en === insp.hecha_en && t.hecha_por === insp.hecha_por));
   const resumen = `${plural(items.filter((i) => i.tipo !== "texto").length * ids.length, "revisión", "revisiones")}${ronda ? ` en ${plural(ids.length, "colector", "colectores")}` : ""}, ${hallazgos.length ? plural(hallazgos.length, "hallazgo", "hallazgos") : "sin hallazgos"}`;
-  const admin = esAdmin(yo);
+  const admin = puede(yo, "revisar");
   return {
     titulo: plantilla(d, insp.plantilla_id)?.nombre ?? "Inspección",
     tituloCorto: ronda ? "Ronda de colectores" : equipo(d, ids[0])?.nombre ?? "Inspección",
@@ -643,12 +772,18 @@ function verHecha({ d, yo, hoy }, insp) {
           ${insp.revisada_en ? `<div class="visto-bueno" style="margin-bottom:14px">${icono("visto")}<div><b>Visto bueno de ${esc(nombre(d, insp.revisada_por))}</b>
             <span>${esc(fechaHora(insp.revisada_en))}${insp.revision_nota ? ` · ${esc(insp.revision_nota)}` : ""}</span></div></div>` : ""}
           <p style="margin:0 4px 12px;color:var(--tinta-3)">${resumen}.</p>
-          <ul class="resultados">${ids.map((e) => `${ronda ? `<li class="titulo-equipo">${esc(equipo(d, e)?.tag ?? "")} <span style="font-family:var(--letra);font-weight:500;color:var(--tinta-3)">${esc(equipo(d, e)?.nombre ?? "")}</span></li>` : ""}${items.map((it) => fila(e, it)).join("")}`).join("")}</ul>
+          ${(insp.verificaciones ?? []).length ? `<div style="margin:0 0 12px">${insp.verificaciones.map((v) => `<span class="en-sitio" style="margin:0 6px 6px 0">${icono("sitio", "ico", { lleno: true })}En sitio: ${esc(equipo(d, v.equipo_id)?.tag || equipo(d, v.equipo_id)?.nombre || "")} · ${esc(fechaHora(v.en))}</span>`).join("")}</div>` : ""}
+          ${tareasDe.length ? `<section class="seccion" style="margin-top:0"><h2>Tareas <small>${tareasDe.filter((t) => t.estado === "hecha").length} de ${tareasDe.length} hechas</small></h2>
+            <ul class="lista-tareas">${tareasDe.map((t) => `<li class="${t.estado === "hecha" ? "hecha" : ""}"><span class="check-tarea" role="img" aria-label="${t.estado === "hecha" ? "Hecha" : "Sin hacer"}" aria-checked="${t.estado === "hecha"}">${CHECK}</span>
+              <a class="que" href="#/tarea/${encodeURIComponent(t.id)}"><b>${esc(t.titulo)}</b>${t.nota_cierre ? `<small><span>${esc(t.nota_cierre)}</span></small>` : t.estado !== "hecha" ? `<small><span>Pasó a la siguiente inspección</span></small>` : ""}</a><span></span></li>`).join("")}</ul></section>` : ""}
+          <ul class="resultados">${ids.map((e) => `${ronda ? `<li class="titulo-equipo">${esc(equipo(d, e)?.tag ?? "")} <span style="font-family:var(--letra);font-weight:500;color:var(--tinta-3)">${esc(equipo(d, e)?.nombre ?? "")}</span></li>` : ""}${porSubequipo(items).map(([sub, its]) => `${sub ? `<li class="titulo-equipo" style="font-size:14px">${esc(equipo(d, sub)?.tag ? `${equipo(d, sub).tag} · ` : "")}<span style="font-family:var(--letra)">${esc(equipo(d, sub)?.nombre ?? "")}</span></li>` : ""}${its.map((it) => fila(e, it)).join("")}`).join("")}`).join("")}</ul>
           ${hallazgos.length ? `<section class="seccion"><h2>Hallazgos</h2><ul class="lista">${hallazgos.map((h) => `<li><a class="fila" href="#/hallazgo/${encodeURIComponent(h.id)}">
             <span class="titulo">${esc(h.descripcion)}</span><span class="detalle">${ronda ? `<span class="mono">${esc(equipo(d, h.equipo_id)?.tag ?? "")}</span>` : ""}${h.responsable_id ? `<span>A cargo: ${esc(nombreCorto(d, h.responsable_id))}</span>` : ""}</span>
             <span class="lado">${marcaPrioridad(h.prioridad)}</span></a></li>`).join("")}</ul></section>` : ""}
         </div>
         <aside class="panel">${datosInspeccion(d, insp)}
+          ${insp.firma ? `<div><span class="rotulo">Firma</span><div class="firma-img" style="margin-top:6px"><img src="${esc(api.urlMedio(insp.firma))}" alt="Firma de ${esc(insp.firma_nombre ?? "")}"></div>
+            <div class="ayuda">${esc(insp.firma_nombre ?? nombre(d, insp.hecha_por))}</div></div>` : ""}
           ${admin && !insp._sinEnviar ? (insp.revisada_en
             ? `<button type="button" class="boton chico" data-accion="quitar-visto">Quitar el visto bueno</button>`
             : `<button type="button" class="boton verde" data-accion="visto">${icono("visto")}Dar el visto bueno</button>`) : ""}

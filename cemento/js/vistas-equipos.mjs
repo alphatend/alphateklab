@@ -1,11 +1,14 @@
 // Equipos (los de proceso, por área: la «parte seccionada»), la ficha de un equipo o colector (cómo vienen sus
 // medidas, lo pendiente, sus hallazgos y su reporte) y el editor de plantillas (de un equipo o la común de colectores).
-import { esc, icono, plural, numero, fechaCorta, diaDe, normal, haceCuanto } from "./util.mjs";
+import { esc, icono, plural, numero, fechaCorta, fechaHora, diaDe, normal, haceCuanto } from "./util.mjs";
 import * as api from "./api.mjs";
 import {
-  aviso, dialogo, confirmar, vacio, equipo, plantilla, filaInspeccion, filaHallazgo, nombreEquipo, marcaTag, equiposDe, esAdmin, chispa,
+  puede, aviso, dialogo, confirmar, vacio, equipo, plantilla, filaInspeccion, filaHallazgo, nombreEquipo, marcaTag, equiposDe, esAdmin, chispa,
 } from "./ui.mjs";
 import { fueraDeRango, textoRango } from "./vistas-inspecciones.mjs";
+import { familia, nombreCompleto, leerLista, campoEquipo, barraFiltros, montarFiltros, enFiltro } from "./componentes.mjs";
+import { enCurso, tarjetaEnCurso, montarEnCurso, disponibilidad, duracion } from "./vistas-paros.mjs";
+import { filaTarea, montarChecks } from "./vistas-tareas.mjs";
 
 // ------------------------------------------------------------------------------- medidas en el tiempo
 
@@ -45,21 +48,24 @@ function tendencia({ it, puntos }) {
 export const areasDe = (d) => [...new Set(d.equipos.map((e) => e.area).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
 export function vistaEquipos({ d, yo, hoy, query }) {
-  const admin = esAdmin(yo);
+  const admin = puede(yo, "equipos");
   const buscar = query.get("b") ?? "";
   const archivados = query.get("archivados") === "1";
-  const xs = d.equipos.filter((e) => e.tipo !== "colector" && (archivados ? !e.activo : e.activo)
-    && (!buscar || normal(`${e.tag} ${e.nombre} ${e.area} ${e.nota}`).includes(normal(buscar))));
+  const xs = d.equipos.filter((e) => e.tipo !== "colector" && !e.padre_id && (archivados ? !e.activo : e.activo)
+    && (!buscar || normal(`${e.tag} ${e.nombre} ${e.area} ${e.nota} ${d.equipos.filter((x) => x.padre_id === e.id).map((x) => `${x.tag} ${x.nombre}`).join(" ")}`).includes(normal(buscar))));
   const porArea = {};
   for (const e of xs) (porArea[e.area || "Sin área"] ??= []).push(e);
   const tarjeta = (e) => {
+    const fam = familia(d, e.id);
     const pend = d.inspecciones.filter((i) => i.estado === "pendiente" && equiposDe(i).includes(e.id));
     const atr = pend.filter((i) => i.vence < hoy).length;
-    const abiertos = d.hallazgos.filter((h) => h.equipo_id === e.id && h.estado !== "cerrado");
+    const abiertos = d.hallazgos.filter((h) => fam.has(h.equipo_id) && h.estado !== "cerrado");
+    const subs = d.equipos.filter((x) => x.padre_id === e.id && x.activo).length;
+    const parado = enCurso(d).some((p) => fam.has(p.equipo_id));
     const altas = abiertos.filter((h) => h.prioridad === "alta").length;
     const ult = d.inspecciones.filter((i) => i.estado === "hecha" && equiposDe(i).includes(e.id)).sort((a, b) => (b.hecha_en ?? "").localeCompare(a.hecha_en ?? ""))[0];
     return `<a class="equipo" href="#/equipo/${encodeURIComponent(e.id)}">
-      <div class="arriba">${marcaTag(e.tag)}<span class="area">${esc(e.nota || "")}</span></div>
+      <div class="arriba">${marcaTag(e.tag)}${parado ? `<span class="marca parado">${icono("paros")}Parado</span>` : ""}<span class="area">${esc(subs ? plural(subs, "subequipo", "subequipos") : e.nota || "")}</span></div>
       <h3>${esc(e.nombre)}</h3>
       <div class="estado-equipo">
         <span>${pend.length ? plural(pend.length, "inspección pendiente", "inspecciones pendientes") : "Nada pendiente"}${atr ? ` · <span class="malo">${atr} atrasada${atr === 1 ? "" : "s"}</span>` : ""}</span>
@@ -71,7 +77,8 @@ export function vistaEquipos({ d, yo, hoy, query }) {
     titulo: "Equipos",
     html: `<div class="cabeza"><div><h1>Equipos</h1>
         <p class="bajada">Por área. En cada uno, qué se revisa (sus plantillas), cómo vienen las medidas y su reporte. Los colectores de polvo están en <a href="#/colectores">Colectores</a>.</p></div>
-        ${admin ? `<div class="acciones"><button type="button" class="boton primario" data-accion="nuevo">${icono("mas1")}Agregar equipo</button></div>` : ""}</div>
+        <div class="acciones">${admin ? `<button type="button" class="boton primario" data-accion="nuevo">${icono("mas1")}Agregar equipo</button>` : ""}
+          <a class="boton" href="#/etiquetas?de=todos">${icono("escanear")}Etiquetas QR</a></div></div>
       <div class="tablero-barra">
         <div class="buscador" style="flex:1 1 260px;max-width:420px">${icono("buscar")}<input type="search" placeholder="Buscar por nombre, tag o área" value="${esc(buscar)}" data-buscar aria-label="Buscar"></div>
         <nav class="filtros" style="margin:0"><a href="#/equipos" ${archivados ? "" : 'aria-current="true"'}>En uso</a><a href="#/equipos?archivados=1" ${archivados ? 'aria-current="true"' : ""}>Archivados</a></nav>
@@ -104,12 +111,12 @@ export function vistaEquipos({ d, yo, hoy, query }) {
 export async function editarEquipo(d, eq) {
   const colector = eq.tipo === "colector";
   const r = await dialogo({
-    titulo: eq.id ? `Editar ${colector ? "colector" : "equipo"}` : `Agregar ${colector ? "colector" : "equipo"}`,
+    titulo: eq.id ? `Editar ${eq.padre_id ? "subequipo" : colector ? "colector" : "equipo"}` : `Agregar ${eq.padre_id ? `subequipo de ${equipo(d, eq.padre_id)?.nombre ?? ""}` : colector ? "colector" : "equipo"}`,
     html: `<datalist id="areas-lista">${areasDe(d).map((a) => `<option value="${esc(a)}">`).join("")}</datalist>
       <div class="rejilla-campos dos">
         <div class="campo"><label for="e-tag">Tag ${colector ? "" : "<small>(opcional)</small>"}</label><input id="e-tag" type="text" value="${esc(eq.tag ?? "")}" autocapitalize="characters" spellcheck="false" placeholder="${colector ? "Por ejemplo: 431-FM-01" : "Por ejemplo: 541-RM-01"}"></div>
         <div class="campo"><label for="e-nombre">Nombre</label><input id="e-nombre" type="text" value="${esc(eq.nombre ?? "")}" placeholder="${colector ? "Filtro de mangas del separador" : "Horomill"}"></div>
-        <div class="campo"><label for="e-area">Área</label><input id="e-area" type="text" list="areas-lista" value="${esc(eq.area ?? "")}" placeholder="Molienda de cemento"></div>
+        ${eq.padre_id ? "" : `<div class="campo"><label for="e-area">Área</label><input id="e-area" type="text" list="areas-lista" value="${esc(eq.area ?? "")}" placeholder="Molienda de cemento"></div>`}
         ${colector ? `<div class="campo"><label for="e-sirve">A qué le sirve <small>(opcional)</small></label><input id="e-sirve" type="text" value="${esc(eq.sirve_a ?? "")}" placeholder="Separador del Horomill"></div>` : ""}
       </div>
       <div class="campo"><label for="e-nota">Nota <small>(opcional)</small></label><input id="e-nota" type="text" value="${esc(eq.nota ?? "")}" placeholder="${colector ? "Número de mangas, fabricante…" : "Fabricante, modelo…"}"></div>
@@ -122,7 +129,7 @@ export async function editarEquipo(d, eq) {
         const err = velo.querySelector(".error-form");
         if (!v("#e-nombre").trim() && !v("#e-tag").trim()) { err.hidden = false; err.textContent = "Ponle un nombre o un tag."; return false; }
         try {
-          await api.escribir("equipos", { id: eq.id, tipo: eq.tipo ?? "proceso", tag: v("#e-tag"), nombre: v("#e-nombre"), area: v("#e-area"), sirve_a: v("#e-sirve"), nota: v("#e-nota"), activo: eq.activo !== false, orden: eq.orden });
+          await api.escribir("equipos", { id: eq.id, tipo: eq.tipo ?? "proceso", padre_id: eq.padre_id ?? null, tag: v("#e-tag"), nombre: v("#e-nombre"), area: v("#e-area"), sirve_a: v("#e-sirve"), nota: v("#e-nota"), activo: eq.activo !== false, orden: eq.orden });
           aviso(eq.id ? "Guardado." : `${colector ? "Colector" : "Equipo"} agregado.`);
         } catch (x) {
           err.hidden = false;
@@ -151,36 +158,73 @@ export async function editarEquipo(d, eq) {
 export function vistaEquipo({ d, yo, hoy, param }) {
   const eq = equipo(d, param);
   if (!eq) return { titulo: "No está", atras: "#/equipos", html: vacio("Ese equipo no existe.") };
-  const admin = esAdmin(yo);
+  const admin = puede(yo, "equipos");
   const colector = eq.tipo === "colector";
-  const ps = colector ? d.plantillas.filter((p) => p.tipo_equipo === "colector") : d.plantillas.filter((p) => p.equipo_id === eq.id);
-  const suyas = d.inspecciones.filter((i) => equiposDe(i).includes(eq.id));
+  const padre = eq.padre_id ? equipo(d, eq.padre_id) : null;
+  const fam = familia(d, eq.id);
+  const hijos = d.equipos.filter((e) => e.padre_id === eq.id && e.activo);
+  const ps = padre ? [] : colector ? d.plantillas.filter((p) => p.tipo_equipo === "colector") : d.plantillas.filter((p) => p.equipo_id === eq.id);
+  // un subequipo se revisa en las plantillas del padre que tienen revisiones suyas
+  const seRevisaEn = padre ? d.plantillas.filter((p) => p.items.some((it) => it.subequipo_id === eq.id)) : [];
+  const suyas = d.inspecciones.filter((i) => equiposDe(i).some((x) => fam.has(x) || x === eq.padre_id && padre));
   const pendientes = suyas.filter((i) => i.estado === "pendiente").sort((a, b) => a.vence.localeCompare(b.vence));
   const hechas = suyas.filter((i) => i.estado === "hecha").sort((a, b) => (b.hecha_en ?? "").localeCompare(a.hecha_en ?? ""));
-  const hall = d.hallazgos.filter((h) => h.equipo_id === eq.id);
+  const hall = d.hallazgos.filter((h) => fam.has(h.equipo_id));
   const abiertos = hall.filter((h) => h.estado !== "cerrado");
+  const tareas = (d.tareas ?? []).filter((t) => t.estado !== "hecha" && fam.has(t.equipo_id));
   const ss = series(d, eq.id);
-  const atras = colector ? "#/colectores" : "#/equipos";
+  const atras = padre ? `#/equipo/${encodeURIComponent(padre.id)}` : colector ? "#/colectores" : "#/equipos";
+  const curso = enCurso(d).filter((p) => fam.has(p.equipo_id));
+  const disp = !colector && !padre ? disponibilidad(d, eq.id, Date.now() - 30 * 86400e3, Date.now()) : null;
+  const paros = (d.paros ?? []).filter((p) => fam.has(p.equipo_id) && Date.parse(p.inicio) > Date.now() - 90 * 86400e3).sort((a, b) => b.inicio.localeCompare(a.inicio));
+  const lab = d.ajustes?.lab?.[eq.id] ? (d.laboratorio ?? []).filter((x) => x.equipo_id === eq.id).sort((a, b) => a.en.localeCompare(b.en)) : null;
   return {
-    titulo: eq.tag ? `${eq.tag} · ${eq.nombre}` : eq.nombre,
+    titulo: nombreCompleto(d, eq.id),
     tituloCorto: eq.tag || eq.nombre,
     atras,
-    html: `<div class="cabeza"><div><div class="migas"><a href="${atras}">${colector ? "Colectores" : "Equipos"}</a><span>· ${esc(eq.area || "Sin área")}</span></div>
+    html: `<div class="cabeza"><div><div class="migas"><a href="${colector ? "#/colectores" : "#/equipos"}">${colector ? "Colectores" : "Equipos"}</a>
+          ${padre ? `<span>·</span><a href="#/equipo/${encodeURIComponent(padre.id)}">${esc(padre.tag || padre.nombre)}</a>` : `<span>· ${esc(eq.area || "Sin área")}</span>`}</div>
         <h1>${eq.tag ? `<span class="mono">${esc(eq.tag)}</span> ` : ""}${esc(eq.nombre)}</h1>
-        <p class="bajada">${[eq.sirve_a ? `Sirve a: ${esc(eq.sirve_a)}.` : "", esc(eq.nota ?? ""), eq.activo ? "" : "<b>Archivado.</b>"].filter(Boolean).join(" ")}</p></div>
-        <div class="acciones">${admin && eq.activo ? `<a class="boton primario" href="#/asignar?${colector ? `equipo=colectores&equipos=${encodeURIComponent(eq.id)}` : `equipo=${encodeURIComponent(eq.id)}`}">${icono("mas1")}Asignar</a>` : ""}
-          <a class="boton" href="#/nuevo-hallazgo?equipo=${encodeURIComponent(eq.id)}">${icono("hallazgos")}Hallazgo</a>
+        <p class="bajada">${[padre ? `Subequipo de ${esc(padre.nombre)}.` : "", eq.sirve_a ? `Sirve a: ${esc(eq.sirve_a)}.` : "", esc(eq.nota ?? ""), eq.activo ? "" : "<b>Archivado.</b>"].filter(Boolean).join(" ")}</p></div>
+        <div class="acciones">${puede(yo, "asignar") && eq.activo && !padre ? `<a class="boton primario" href="#/asignar?${colector ? `equipo=colectores&equipos=${encodeURIComponent(eq.id)}` : `equipo=${encodeURIComponent(eq.id)}`}">${icono("mas1")}Asignar</a>` : ""}
+          ${puede(yo, "editar") ? `<a class="boton" href="#/nuevo-hallazgo?equipo=${encodeURIComponent(eq.id)}">${icono("hallazgos")}Hallazgo</a>
+          <a class="boton" href="#/tarea/nueva?equipo=${encodeURIComponent(eq.id)}">${icono("tareas")}Tarea</a>` : ""}
           <a class="boton" href="#/reportes?alcance=${encodeURIComponent(`equipo:${eq.id}`)}&plantilla=equipo">${icono("reportes")}Reporte</a>
+          <a class="boton plano" href="#/etiquetas?de=${encodeURIComponent(`equipo:${eq.id}`)}">${icono("escanear")}QR</a>
           ${admin ? `<button class="boton plano" data-accion="editar">${icono("lapiz")}Editar</button>` : ""}</div></div>
+      ${curso.map((p) => tarjetaEnCurso(d, p)).join("")}
       <dl class="ficha-cifras">
         <div><dt>Pendientes</dt><dd>${pendientes.length}${pendientes.some((i) => i.vence < hoy) ? ` <small style="color:var(--rojo)">${pendientes.filter((i) => i.vence < hoy).length} atrasadas</small>` : ""}</dd></div>
         <div><dt>Hallazgos abiertos</dt><dd>${abiertos.length}${abiertos.some((h) => h.prioridad === "alta") ? ` <small style="color:var(--rojo)">${abiertos.filter((h) => h.prioridad === "alta").length} altas</small>` : ""}</dd></div>
-        <div><dt>Inspecciones hechas</dt><dd>${hechas.length}</dd></div>
-        <div><dt>La última</dt><dd style="font-size:19px">${hechas[0] ? esc(haceCuanto(hechas[0].hecha_en, hoy)) : "—"}</dd></div>
+        ${disp ? `<div><dt>Disponibilidad 30 días</dt><dd style="${disp.disp < 0.9 ? "color:var(--rojo)" : disp.disp < 0.97 ? "color:var(--naranja)" : ""}">${numero(disp.disp * 100, 1)}<small>%</small></dd></div>` : `<div><dt>Tareas abiertas</dt><dd>${tareas.length}</dd></div>`}
+        <div><dt>La última inspección</dt><dd style="font-size:19px">${hechas[0] ? esc(haceCuanto(hechas[0].hecha_en, hoy)) : "—"}</dd></div>
       </dl>
-      ${ss.length ? `<section class="seccion"><h2>Cómo vienen las medidas</h2><div class="lista">${ss.map(tendencia).join("")}</div></section>` : ""}
-      ${pendientes.length ? `<section class="seccion"><h2>Pendientes <small>${pendientes.length}</small></h2><ul class="lista">${pendientes.map((i) => filaInspeccion(d, i, hoy)).join("")}</ul></section>` : ""}
+      ${!padre && !colector ? `<section class="seccion"><h2>Subequipos <small>${hijos.length || ""}</small></h2>
+        ${hijos.length ? `<ul class="lista">${hijos.map((h) => {
+          const n = d.hallazgos.filter((x) => x.equipo_id === h.id && x.estado !== "cerrado").length;
+          return `<li><a class="fila con-icono" href="#/equipo/${encodeURIComponent(h.id)}"><span class="icono-fila gris">${icono("subequipo")}</span>
+            <span class="titulo">${h.tag ? `<span class="mono">${esc(h.tag)}</span> · ` : ""}${esc(h.nombre)}</span>
+            <span class="detalle">${n ? `<span style="color:var(--rojo)">${plural(n, "hallazgo abierto", "hallazgos abiertos")}</span>` : "<span>Sin hallazgos abiertos</span>"}</span>
+            <span class="lado horizontal">${icono("derecha", "ico chevron")}</span></a></li>`;
+        }).join("")}</ul>` : vacio("Las partes donde se encuentran las fallas: elevador, bandas, separador, ventilador… Así cada hallazgo queda en su parte.")}
+        ${admin ? `<div class="herramientas-item" style="margin-top:10px"><button type="button" class="boton chico" data-accion="sub-uno">${icono("mas1")}Agregar subequipo</button>
+          <button type="button" class="boton chico plano" data-accion="sub-lista">${icono("lista")}Pegar una lista</button></div>` : ""}</section>` : ""}
+      ${tareas.length ? `<section class="seccion"><h2>Tareas abiertas <small>${tareas.length}</small></h2><ul class="lista-tareas">${tareas.map((t) => filaTarea(d, t, hoy)).join("")}</ul></section>` : ""}
+      ${pendientes.length ? `<section class="seccion"><h2>Inspecciones pendientes <small>${pendientes.length}</small></h2><ul class="lista">${pendientes.map((i) => filaInspeccion(d, i, hoy)).join("")}</ul></section>` : ""}
       ${abiertos.length ? `<section class="seccion"><h2>Hallazgos abiertos <small>${abiertos.length}</small></h2><ul class="lista">${abiertos.map((h) => filaHallazgo(d, h, hoy)).join("")}</ul></section>` : ""}
+      ${ss.length ? `<section class="seccion"><h2>Cómo vienen las medidas</h2><div class="lista">${ss.map(tendencia).join("")}</div></section>` : ""}
+      ${lab ? `<section class="seccion"><h2>Laboratorio <small><a href="#/laboratorio?m=${encodeURIComponent(eq.id)}">ver todo</a></small></h2>
+        <div class="kpis-app">${(d.ajustes.lab[eq.id] ?? []).map((p) => { const vs = lab.filter((x) => x.valores?.[p.id] != null); const v = vs.at(-1)?.valores[p.id];
+          const fuera = v != null && ((p.min != null && v < p.min) || (p.max != null && v > p.max));
+          return `<div class="kpi ${v == null ? "" : fuera ? "malo" : "bueno"}"><span class="rotulo-kpi">${esc(p.nombre)}</span><span class="valor-kpi">${v == null ? "—" : numero(v, 2)}<small>${esc(p.unidad ?? "")}</small></span>
+            <span class="pie-kpi">${vs.length ? esc(haceCuanto(vs.at(-1).en, hoy)) : "sin muestras"}</span></div>`; }).join("")}</div></section>` : ""}
+      ${paros.length ? `<section class="seccion"><h2>Paros <small>últimos 90 días</small></h2><ul class="lista">${paros.slice(0, 8).map((p) => `<li><a class="fila" href="#/paro/${encodeURIComponent(p.id)}">
+          <span class="titulo">${p.tipo === "programado" ? "Programado" : esc(p.causa || "No programado")} <small>· ${esc(nombreCompleto(d, p.equipo_id))}</small></span>
+          <span class="detalle"><span>${esc(fechaHora(p.inicio))}</span><span>${p.fin ? duracion((Date.parse(p.fin) - Date.parse(p.inicio)) / 3600e3) : "en curso"}</span></span>
+          <span class="lado">${icono("derecha", "ico chevron")}</span></a></li>`).join("")}</ul></section>` : ""}
+      ${padre ? `<section class="seccion"><h2>Se revisa en</h2>${seRevisaEn.length ? `<ul class="lista">${seRevisaEn.map((p) => `<li><a class="fila" href="#/plantilla/${encodeURIComponent(p.id)}"><span class="titulo">${esc(p.nombre)} <small>· ${esc(padre.nombre)}</small></span>
+          <span class="detalle"><span>${plural(p.items.filter((it) => it.subequipo_id === eq.id).length, "revisión de este subequipo", "revisiones de este subequipo")}</span></span><span class="lado">${icono("derecha", "ico chevron")}</span></a></li>`).join("")}</ul>`
+          : vacio(`Ninguna revisión de las plantillas de ${esc(padre.nombre)} es de este subequipo todavía. Al editar una plantilla, a cada revisión se le elige su subequipo.`)}</section>` : `
       <section class="seccion"><h2>${colector ? "Qué se revisa (común a los colectores)" : "Plantillas"} <small>${ps.length || ""}</small></h2>
         ${ps.length ? `<ul class="lista">${ps.map((p) => `<li><a class="fila" href="#/plantilla/${encodeURIComponent(p.id)}">
           <span class="titulo">${esc(p.nombre)} <small>· ${p.cuando === "parada" ? "en parada" : "en marcha"}</small></span>
@@ -188,14 +232,44 @@ export function vistaEquipo({ d, yo, hoy, param }) {
             ${p.items.some((x) => x.tipico) ? `<span class="tipico">rangos típicos por confirmar</span>` : ""}</span>
           <span class="lado">${icono("derecha", "ico chevron")}</span></a></li>`).join("")}</ul>` : vacio("Todavía no tiene plantillas.")}
         ${admin ? `<p style="margin:10px 4px"><a class="boton chico" href="#/plantilla/nueva?${colector ? "tipo=colector" : `equipo=${encodeURIComponent(eq.id)}`}">${icono("mas1")}Nueva plantilla</a></p>` : ""}
-      </section>
+      </section>`}
       ${hechas.length ? `<section class="seccion"><h2>Inspecciones hechas <small>${hechas.length}</small></h2><ul class="lista">${hechas.slice(0, 12).map((i) => filaInspeccion(d, i, hoy)).join("")}</ul>
-        ${hechas.length > 12 ? `<p class="pie-seccion">Las ${hechas.length} están en el <a href="#/reportes?alcance=${encodeURIComponent(`equipo:${eq.id}`)}&plantilla=equipo&p=todo">reporte del equipo</a>.</p>` : ""}</section>` : ""}
-      ${hall.length > abiertos.length ? `<p class="pie-seccion" style="margin-top:18px"><a href="#/hallazgos?f=todos&equipo=${encodeURIComponent(eq.id)}">Todos sus hallazgos (${hall.length})</a></p>` : ""}`,
+        ${hechas.length > 12 ? `<p class="pie-seccion">Todas están en el <a href="#/reportes?alcance=${encodeURIComponent(`equipo:${eq.id}`)}&plantilla=equipo&p=todo">reporte del equipo</a>.</p>` : ""}</section>` : ""}
+      ${hall.length > abiertos.length ? `<p class="pie-seccion" style="margin-top:18px"><a href="#/hallazgos?f=todos&eq=${encodeURIComponent(eq.id)}">Todos sus hallazgos (${hall.length})</a></p>` : ""}`,
     montar(m) {
-      m.querySelector('[data-accion="editar"]')?.addEventListener("click", () => editarEquipo(d, eq));
+      montarChecks(m, d);
+      const fin = montarEnCurso(m);
+      m.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-accion]");
+        if (!b) return;
+        if (b.dataset.accion === "editar") editarEquipo(d, eq);
+        if (b.dataset.accion === "sub-uno") editarEquipo(d, { tipo: "proceso", padre_id: eq.id, area: eq.area });
+        if (b.dataset.accion === "sub-lista") subequiposPegados(d, eq);
+      });
+      return fin;
     },
   };
+}
+
+/** Varios subequipos de una vez, pegando una lista (tag; nombre). */
+async function subequiposPegados(d, padre) {
+  await dialogo({
+    titulo: `Subequipos de ${padre.nombre}`,
+    ancho: true,
+    html: `<div class="campo"><label for="s-lista">Uno por línea: <b>tag</b>; nombre</label>
+        <textarea id="s-lista" style="min-height:150px;font-family:var(--mono);font-size:15px" spellcheck="false" placeholder="EL1; Elevador de cangilones&#10;BC1; Banda transportadora BC1&#10;SEP1; Separador"></textarea>
+        <span class="ayuda">Se puede copiar de Excel (tag y nombre). Si el tag ya existe, se actualiza.</span></div>
+      <p class="error-form" role="alert" hidden style="color:var(--rojo);font-weight:600"></p>`,
+    botones: [{ texto: "Cancelar", valor: null }, { texto: "Agregar", valor: true, clase: "primario", alElegir: async (v) => {
+      const xs = leerLista(v.querySelector("#s-lista").value).map((x) => ({ tag: x.tag, nombre: x.nombre }));
+      const err = v.querySelector(".error-form");
+      if (!xs.length) { err.hidden = false; err.textContent = "Escribe por lo menos un subequipo."; return false; }
+      try {
+        const r = await api.escribir("equipos/varios", { padre_id: padre.id, tipo: padre.tipo, area: padre.area, equipos: xs });
+        aviso(`${plural(r.creados, "subequipo agregado", "subequipos agregados")}${r.actualizados ? ` y ${plural(r.actualizados, "actualizado", "actualizados")}` : ""}.`);
+      } catch (x) { err.hidden = false; err.textContent = x.sinRed ? "Para esto hace falta señal." : x.message; return false; }
+    } }],
+  });
 }
 
 // ------------------------------------------------------------------------------- editar una plantilla
@@ -211,8 +285,9 @@ export function vistaPlantilla({ d, yo, param, query, ir }) {
   const eqId = deColectores ? null : original?.equipo_id ?? query.get("equipo") ?? d.equipos[0]?.id;
   const eq = eqId ? equipo(d, eqId) : null;
   const volver = deColectores ? "#/colectores" : `#/equipo/${encodeURIComponent(eqId)}`;
-  const admin = esAdmin(yo);
+  const admin = puede(yo, "equipos");
   const dis = admin ? "" : "disabled";
+  const subs = eqId ? d.equipos.filter((x) => x.padre_id === eqId && x.activo) : [];
   const P = structuredClone(original ?? { equipo_id: eqId, tipo_equipo: deColectores ? "colector" : null, nombre: "", cuando: "marcha", frecuencia_dias: 7, items: [{ id: `item-${Date.now()}`, tipo: "ok", texto: "", ayuda: "", foto: "" }] });
   const htmlItem = (it, k) => `<li class="editor-item" data-k="${k}">
       <div class="rejilla-campos dos">
@@ -225,6 +300,8 @@ export function vistaPlantilla({ d, yo, param, query, ir }) {
         <div class="campo"><label for="i-max-${k}">Máximo</label><input id="i-max-${k}" type="text" inputmode="decimal" data-c="max" value="${esc(it.max ?? "")}" ${dis}></div>
       </div>${it.tipico ? `<p class="tipico">Rango típico de libro: confírmalo o cámbialo por el de la planta.</p>` : it.min == null && it.max == null ? `<p class="ayuda">Sin rango: no se marca solo cuando se sale. Ponle uno cuando lo tengas.</p>` : ""}` : ""}
       <div class="rejilla-campos dos">
+        ${subs.length ? `<div class="campo"><label for="i-s-${k}">De qué parte</label><select id="i-s-${k}" data-c="subequipo_id" ${dis}><option value="">Todo el equipo</option>
+          ${subs.map((x) => `<option value="${esc(x.id)}" ${x.id === it.subequipo_id ? "selected" : ""}>${esc(x.tag ? `${x.tag} · ${x.nombre}` : x.nombre)}</option>`).join("")}</select></div>` : ""}
         <div class="campo"><label for="i-a-${k}">Ayuda para quien revisa</label><input id="i-a-${k}" type="text" data-c="ayuda" value="${esc(it.ayuda ?? "")}" ${dis}></div>
         ${it.tipo !== "texto" ? `<div class="campo"><label for="i-f-${k}">Foto</label><select id="i-f-${k}" data-c="foto" ${dis}>${FOTO.map(([v, t]) => `<option value="${v}" ${(it.foto ?? "") === v ? "selected" : ""}>${t}</option>`).join("")}</select></div>` : ""}
       </div>
@@ -249,6 +326,9 @@ export function vistaPlantilla({ d, yo, param, query, ir }) {
             <option value="parada" ${P.cuando === "parada" ? "selected" : ""}>Con el equipo parado</option></select></div>
           <div class="campo"><label for="p-frec">Cada cuántos días (sugerido)</label><input id="p-frec" type="number" min="1" max="365" value="${esc(P.frecuencia_dias ?? "")}" ${dis}>
             <span class="ayuda">Es lo que se propone al asignarla. Ajústalo con lo que vayas viendo.</span></div>
+          <div class="campo"><label for="p-firma">Firma al terminar</label><select id="p-firma" ${dis}>
+            <option value="" ${P.pedir_firma == null ? "selected" : ""}>Lo que diga Ajustes (${d.ajustes?.pedir_firma === false ? "no" : "sí"})</option>
+            <option value="1" ${P.pedir_firma === 1 ? "selected" : ""}>Siempre</option><option value="0" ${P.pedir_firma === 0 ? "selected" : ""}>No pedirla</option></select></div>
         </div></div>
         <h2 style="margin:0 4px 10px">Revisiones</h2>
         <ol class="editor-items">${P.items.map(htmlItem).join("")}</ol>
@@ -268,12 +348,15 @@ export function vistaPlantilla({ d, yo, param, query, ir }) {
         const li = t.closest("[data-k]");
         if (li && t.dataset.c) {
           const it = P.items[Number(li.dataset.k)];
-          it[t.dataset.c] = t.value;
+          it[t.dataset.c] = t.dataset.c === "subequipo_id" ? t.value || undefined : t.value;
           if (t.dataset.c === "min" || t.dataset.c === "max") it.tipico = false;
         }
         marcar();
       });
-      f.addEventListener("change", (e) => { if (e.target.dataset.c === "tipo") repintar(); });
+      f.addEventListener("change", (e) => {
+        if (e.target.dataset.c === "tipo") repintar();
+        if (e.target.dataset.c === "subequipo_id") { P.items[Number(e.target.closest("[data-k]").dataset.k)].subequipo_id = e.target.value || undefined; marcar(); }
+      });
       f.addEventListener("click", async (e) => {
         const b = e.target.closest("button");
         if (!b) return;
@@ -308,6 +391,7 @@ export function vistaPlantilla({ d, yo, param, query, ir }) {
         P.nombre = f["p-nombre"].value.trim();
         P.cuando = f["p-cuando"].value;
         P.frecuencia_dias = Number(f["p-frec"].value) || null;
+        P.pedir_firma = f["p-firma"].value === "" ? null : f["p-firma"].value === "1";
         if (!P.nombre) { aviso("Ponle un nombre a la plantilla.", { error: true }); f["p-nombre"].focus(); return; }
         if (P.items.some((it) => !String(it.texto).trim())) { aviso("Hay revisiones sin nombre: escríbelo o quítalas.", { error: true }); return; }
         if (P.items.some((it) => it.tipo === "medida" && [it.min, it.max].some((v) => v !== "" && v != null && !Number.isFinite(Number(v))))) { aviso("Un mínimo o máximo no es un número.", { error: true }); return; }

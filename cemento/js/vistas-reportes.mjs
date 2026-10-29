@@ -11,6 +11,9 @@ import {
 } from "./ui.mjs";
 import { fueraDeRango, textoRango } from "./vistas-inspecciones.mjs";
 import { libroXlsx, TIPO_XLSX } from "./xlsx.mjs";
+import { nombreCompleto } from "./componentes.mjs";
+import { disponibilidad, duracion } from "./vistas-paros.mjs";
+import { paraQuien, TEXTO_ESTADO_TAREA } from "./vistas-tareas.mjs";
 
 /** Lunes de la semana de un día (AAAA-MM-DD). */
 function lunes(dia) {
@@ -40,9 +43,10 @@ export function periodo(query, hoy, d) {
 export function alcanceDe(d, valor = "planta") {
   const [tipo, ...resto] = valor.split(":");
   const arg = resto.join(":");
-  if (tipo === "area") return { valor, texto: arg, ids: new Set(d.equipos.filter((e) => e.area === arg).map((e) => e.id)) };
-  if (tipo === "equipo") return { valor, texto: nombreEquipo(equipo(d, arg)), ids: new Set([arg]), uno: equipo(d, arg) };
-  if (tipo === "colectores") return { valor, texto: "Colectores de polvo", ids: new Set(d.equipos.filter((e) => e.tipo === "colector").map((e) => e.id)) };
+  const conHijos = (ids) => new Set([...ids, ...d.equipos.filter((e) => ids.has(e.padre_id)).map((e) => e.id)]);
+  if (tipo === "area") return { valor, texto: arg, ids: conHijos(new Set(d.equipos.filter((e) => e.area === arg).map((e) => e.id))) };
+  if (tipo === "equipo") return { valor, texto: nombreCompleto(d, arg), ids: conHijos(new Set([arg])), uno: equipo(d, arg) };
+  if (tipo === "colectores") return { valor, texto: "Colectores de polvo", ids: conHijos(new Set(d.equipos.filter((e) => e.tipo === "colector").map((e) => e.id))) };
   return { valor: "planta", texto: d.ajustes?.planta || "Toda la planta", ids: new Set(d.equipos.map((e) => e.id)), planta: true };
 }
 
@@ -62,21 +66,34 @@ export function calcularReporte(d, desde, hasta, hoy, alcance = alcanceDe(d)) {
   const progHechas = programadas.filter((i) => i.estado === "hecha").length;
   const cierres = cerrados.map((h) => diasEntre(diaDe(h.creado), diaDe(h.cerrado)));
   const cierreMedio = cierres.length ? cierres.reduce((a, b) => a + b, 0) / cierres.length : null;
-  const equipos = d.equipos.filter((e) => alcance.ids.has(e.id) && (e.activo || ins.some((i) => equiposDe(i).includes(e.id)) || hall.some((h) => h.equipo_id === e.id)));
-  const porEquipo = equipos.map((e) => ({
-    e,
-    hechas: hechas.filter((i) => equiposDe(i).includes(e.id)).length,
-    atrasadas: atrasadas.filter((i) => equiposDe(i).includes(e.id)).length,
-    nuevos: nuevos.filter((h) => h.equipo_id === e.id).length,
-    abiertos: abiertos.filter((h) => h.equipo_id === e.id).length,
-  }));
+  // por equipo de arriba (lo de sus subequipos suma al padre)
+  const fam = (e) => new Set([e.id, ...d.equipos.filter((x) => x.padre_id === e.id).map((x) => x.id)]);
+  const equipos = d.equipos.filter((e) => !e.padre_id && alcance.ids.has(e.id) && (e.activo || ins.some((i) => equiposDe(i).includes(e.id)) || hall.some((h) => fam(e).has(h.equipo_id))));
+  const ms0 = Date.parse(desde + "T05:00:00Z"), ms1 = Math.min(Date.parse(hasta + "T05:00:00Z") + 86400e3, Date.now());
+  const porEquipo = equipos.map((e) => {
+    const f = fam(e);
+    return {
+      e,
+      hechas: hechas.filter((i) => equiposDe(i).includes(e.id)).length,
+      atrasadas: atrasadas.filter((i) => equiposDe(i).includes(e.id)).length,
+      nuevos: nuevos.filter((h) => f.has(h.equipo_id)).length,
+      abiertos: abiertos.filter((h) => f.has(h.equipo_id)).length,
+      disp: e.tipo === "colector" ? null : disponibilidad(d, e.id, ms0, ms1),
+    };
+  });
+  const paros = (d.paros ?? []).filter((p) => p.tipo === "no_programado" && alcance.ids.has(p.equipo_id) && Date.parse(p.inicio) < ms1 && Date.parse(p.fin ?? new Date().toISOString()) > ms0)
+    .sort((a, b) => a.inicio.localeCompare(b.inicio));
+  const tareasHechas = (d.tareas ?? []).filter((t) => t.estado === "hecha" && enRango(diaDe(t.hecha_en)) && (!t.equipo_id || alcance.ids.has(t.equipo_id)) && (alcance.planta || t.equipo_id));
+  const tareasAtrasadas = (d.tareas ?? []).filter((t) => t.estado !== "hecha" && t.vence && t.vence < corte && (!t.equipo_id || alcance.ids.has(t.equipo_id)) && (alcance.planta || t.equipo_id));
+  const conDisp = porEquipo.filter((x) => x.disp);
+  const dispProm = conDisp.length ? conDisp.reduce((s, x) => s + x.disp.disp, 0) / conDisp.length : null;
   const porPersona = d.personas.map((p) => {
-    const asig = programadas.filter((i) => i.asignada_a === p.id);
+    const asig = programadas.filter((i) => i.asignada_a === p.id || (p.turno && i.asignada_a === `turno:${p.turno}` && (i.estado !== "hecha" || i.hecha_por === p.id)));
     const h = asig.filter((i) => i.estado === "hecha").length;
     return { p, asignadas: asig.length, hechas: h, pct: asig.length ? h / asig.length : null };
   }).filter((x) => x.asignadas);
   return {
-    programadas, hechas, aTiempo, atrasadas, nuevos, cerrados, abiertos, progHechas, porEquipo, porPersona, cierreMedio,
+    programadas, hechas, aTiempo, atrasadas, nuevos, cerrados, abiertos, progHechas, porEquipo, porPersona, cierreMedio, paros, tareasHechas, tareasAtrasadas, dispProm,
     cumplimiento: programadas.length ? progHechas / programadas.length : null,
     aTiempoPct: hechas.length ? aTiempo.length / hechas.length : null,
   };
@@ -139,6 +156,26 @@ function tablaHechas(d, xs) {
       <td>${esc(nombreCorto(d, i.hecha_por))}</td><td class="n">${d.hallazgos.filter((h) => h.inspeccion_id === i.id).length}</td><td>${i.revisada_en ? esc(nombreCorto(d, i.revisada_por)) : "—"}</td></tr>`).join("")}</tbody></table>`;
 }
 
+function tablaParos(d, r) {
+  if (!r.paros.length) return `<p class="vacio-doc">Ningún paro no programado en el período.</p>`;
+  return `<table class="tabla"><thead><tr><th>Inicio</th><th>Equipo</th><th>Causa</th><th>Qué pasó</th><th class="n">Duración</th></tr></thead><tbody>
+    ${r.paros.map((p) => `<tr><td>${esc(fechaHora(p.inicio))}</td><td>${esc(nombreCompleto(d, p.equipo_id))}</td><td>${esc(p.causa ?? "")}</td><td>${esc(p.descripcion ?? "")}</td>
+      <td class="n">${p.fin ? duracion((Date.parse(p.fin) - Date.parse(p.inicio)) / 3600e3) : "en curso"}</td></tr>`).join("")}</tbody></table>`;
+}
+function tablaDisponibilidad(r) {
+  const xs = r.porEquipo.filter((x) => x.disp);
+  if (!xs.length) return "";
+  return `<table class="tabla"><thead><tr><th>Equipo</th><th class="n">Paros</th><th class="n">Horas paradas</th><th class="n">Disponibilidad</th></tr></thead><tbody>
+    ${xs.map((x) => `<tr><td>${esc(nombreEquipo(x.e))}</td><td class="n">${x.disp.eventos}</td><td class="n">${numero(x.disp.paradas, 1)}</td>
+      <td class="n ${x.disp.disp < 0.95 ? "fuera" : ""}">${numero(x.disp.disp * 100, 1)} %</td></tr>`).join("")}</tbody></table>`;
+}
+function tablaTareas(d, xs, titulo) {
+  if (!xs.length) return "";
+  return `<h2>${titulo}</h2><table class="tabla"><thead><tr><th>Tarea</th><th>Equipo</th><th>A cargo</th><th>${titulo.startsWith("Tareas hechas") ? "Hecha" : "Vencía"}</th></tr></thead><tbody>
+    ${xs.map((t) => `<tr><td>${esc(t.titulo)}${t.nota_cierre ? `<br><small>${esc(t.nota_cierre)}</small>` : ""}</td><td>${t.equipo_id ? esc(nombreCompleto(d, t.equipo_id)) : ""}</td>
+      <td>${esc(t.estado === "hecha" ? nombreCorto(d, t.hecha_por) : paraQuien(d, t.asignada_a))}</td><td>${esc(t.estado === "hecha" ? fechaCorta(diaDe(t.hecha_en)) : fechaCorta(t.vence))}</td></tr>`).join("")}</tbody></table>`;
+}
+
 function tablaAtrasadas(d, xs) {
   return `<table class="tabla"><thead><tr><th>Equipo</th><th>Inspección</th><th>A cargo</th><th>Vencía</th></tr></thead><tbody>
     ${xs.map((i) => `<tr><td>${esc(queInspeccion(d, i))}</td><td>${esc(plantilla(d, i.plantilla_id)?.nombre ?? "")}</td><td>${esc(nombreCorto(d, i.asignada_a))}</td><td>${esc(fechaCorta(i.vence))}</td></tr>`).join("")}</tbody></table>`;
@@ -157,6 +194,8 @@ function docFormal(d, yo, hoy, per, al, r, o) {
     ${r.abiertos.filter((h) => !r.nuevos.includes(h)).length ? `<h2>Siguen abiertos de antes</h2>${tablaHallazgos(d, r.abiertos.filter((h) => !r.nuevos.includes(h)).sort((a, b) => ORDEN[a.prioridad] - ORDEN[b.prioridad]), false)}` : ""}
     ${r.atrasadas.length ? `<h2>Inspecciones atrasadas</h2>${tablaAtrasadas(d, r.atrasadas)}` : ""}
     <h2>Inspecciones hechas</h2>${tablaHechas(d, r.hechas)}
+    ${r.porEquipo.some((x) => x.disp) ? `<h2>Disponibilidad y paros</h2>${tablaDisponibilidad(r)}${r.paros.length ? `<p style="margin:10px 0 4px"><b>Paros no programados</b></p>${tablaParos(d, r)}` : ""}` : ""}
+    ${tablaTareas(d, r.tareasAtrasadas, "Tareas atrasadas")}${tablaTareas(d, r.tareasHechas, "Tareas hechas en el período")}
     ${firmas(yo)}${pie(d, yo)}</article>`;
 }
 
@@ -167,16 +206,25 @@ function hojaEquipo(d, e, hechas, per, r, o) {
   const medidas = filas.filter((x) => x.it.tipo === "medida" && x.r.valor != null);
   const malas = filas.filter((x) => x.it.tipo !== "medida" && x.r.resultado === "mal");
   const notas = filas.filter((x) => x.r.texto && x.it.tipo === "texto");
-  const hall = [...r.nuevos, ...r.abiertos.filter((h) => !r.nuevos.includes(h))].filter((h) => h.equipo_id === e.id);
+  const fam = new Set([e.id, ...d.equipos.filter((x) => x.padre_id === e.id).map((x) => x.id)]);
+  const hall = [...r.nuevos, ...r.abiertos.filter((h) => !r.nuevos.includes(h))].filter((h) => fam.has(h.equipo_id));
+  const paros = r.paros.filter((p) => fam.has(p.equipo_id));
+  const disp = r.porEquipo.find((x) => x.e.id === e.id)?.disp;
   const pend = r.atrasadas.filter((i) => equiposDe(i).includes(e.id));
   return `<h2>${e.tag ? `<span class="tag-doc">${esc(e.tag)}</span>` : ""}${esc(e.nombre)}</h2>
-    <p class="sub-doc">${esc([e.area, e.sirve_a ? `sirve a ${e.sirve_a}` : "", plural(mias.length, "inspección en el período", "inspecciones en el período")].filter(Boolean).join(" · "))}</p>
+    <p class="sub-doc">${esc([e.area, e.sirve_a ? `sirve a ${e.sirve_a}` : "", plural(mias.length, "inspección en el período", "inspecciones en el período"),
+      disp ? `disponibilidad ${numero(disp.disp * 100, 1)} %` : ""].filter(Boolean).join(" · "))}</p>
+    ${mias.length ? `<table class="tabla"><thead><tr><th>Fecha</th><th>Inspección</th><th>Hizo</th><th>En sitio (QR)</th><th>Firma</th></tr></thead><tbody>
+      ${mias.map((i) => { const v = (i.verificaciones ?? []).find((x) => fam.has(x.equipo_id)); return `<tr><td>${esc(fechaCorta(diaDe(i.hecha_en)))}</td><td>${esc(plantilla(d, i.plantilla_id)?.nombre ?? "")}</td>
+        <td>${esc(nombreCorto(d, i.hecha_por))}</td><td>${v ? `✓ ${esc(fechaHora(v.en).split(", ")[1])}` : "—"}</td>
+        <td>${i.firma ? `<img src="${esc(api.urlMedio(i.firma))}" alt="Firma" style="height:26px">` : "—"}</td></tr>`; }).join("")}</tbody></table>` : ""}
     ${medidas.length ? `<table class="tabla"><thead><tr><th>Fecha</th><th>Medida</th><th class="n">Valor</th><th>Rango</th></tr></thead><tbody>
       ${medidas.map((x) => `<tr><td>${esc(fechaCorta(diaDe(x.i.hecha_en)))}</td><td>${esc(x.it.texto)}</td><td class="n ${x.fuera ? "fuera" : ""}">${numero(x.r.valor, 2)} ${esc(x.it.unidad ?? "")}</td>
         <td>${esc(textoRango(x.it).replace(/^Rango: /, ""))}</td></tr>`).join("")}</tbody></table>` : ""}
     ${malas.length ? `<p style="margin-top:8px"><b>Revisiones con problema:</b> ${malas.map((x) => `${esc(x.it.texto)} (${esc(fechaCorta(diaDe(x.i.hecha_en)))}${x.r.texto ? `: ${esc(x.r.texto)}` : ""})`).join("; ")}.</p>${malas.map((x) => fotos(x.r.fotos, o.fotos)).join("")}` : ""}
     ${notas.length ? `<p style="margin-top:8px"><b>Observaciones:</b> ${notas.map((x) => `${esc(x.r.texto)} (${esc(fechaCorta(diaDe(x.i.hecha_en)))})`).join(" · ")}</p>` : ""}
     ${hall.length ? `<p style="margin:10px 0 4px"><b>Hallazgos</b></p>${tablaHallazgos(d, hall.sort((a, b) => ORDEN[a.prioridad] - ORDEN[b.prioridad]), o.fotos)}` : ""}
+    ${paros.length ? `<p style="margin:10px 0 4px"><b>Paros no programados</b></p>${tablaParos(d, { paros })}` : ""}
     ${pend.length ? `<p style="margin-top:8px;color:#c2000f"><b>Atrasadas:</b> ${pend.map((i) => `${esc(plantilla(d, i.plantilla_id)?.nombre ?? "")}, vencía el ${esc(fechaCorta(i.vence))} (${esc(nombreCorto(d, i.asignada_a))})`).join("; ")}.</p>` : ""}
     ${!mias.length && !hall.length && !pend.length ? `<p class="vacio-doc">Sin inspecciones ni hallazgos en el período.</p>` : ""}`;
 }
@@ -212,7 +260,7 @@ function docEjecutivo(d, yo, hoy, per, al, r) {
   return `<article class="documento ejecutivo">${membrete(d, yo, hoy, "Resumen ejecutivo")}
     <h1>Resumen ejecutivo</h1><p class="sub-doc">${esc(al.texto)} · ${esc(fechaLarga(per.desde))} al ${esc(fechaLarga(per.hasta))}</p>
     ${kpis([[pct(r.cumplimiento), "cumplimiento de lo programado"], [pct(r.aTiempoPct), "hechas a tiempo"], [r.abiertos.length, "hallazgos abiertos"],
-      [r.cierreMedio == null ? "—" : `${numero(r.cierreMedio, 1)} d`, "cierre promedio de hallazgos"]])}
+      [r.dispProm == null ? (r.cierreMedio == null ? "—" : `${numero(r.cierreMedio, 1)} d`) : `${numero(r.dispProm * 100, 1)} %`, r.dispProm == null ? "cierre promedio de hallazgos" : "disponibilidad promedio"]])}
     <p>${esc(parrafoResumen(r, per))}</p>
     ${r.porPersona.length ? `<h2>Cumplimiento por persona</h2>${barras(r.porPersona.map((x) => ({ t: x.p.turno ? `Turno ${x.p.turno}` : x.p.nombre, v: x.pct ?? 0, etiqueta: `${x.hechas}/${x.asignadas}`, color: x.pct < 0.8 ? "#ff9500" : null })))}` : ""}
     ${porEquipo.length ? `<h2>Hallazgos nuevos por equipo</h2>${barras(porEquipo.map((x) => ({ t: x.e.tag || x.e.nombre, v: x.nuevos })))}` : ""}
@@ -277,7 +325,7 @@ async function copiar(texto, que = "Copiado") {
 export function excelDe(d, per, al, hoy) {
   const r = calcularReporte(d, per.desde, per.hasta, hoy, al);
   const eqTag = (id) => equipo(d, id)?.tag ?? "";
-  const eqNom = (id) => equipo(d, id)?.nombre ?? "";
+  const eqNom = (id) => nombreCompleto(d, id);
   const eqArea = (id) => equipo(d, id)?.area ?? "";
   const filas = filasRespuestas(d, r.hechas, al.ids);
   const enRango = (dia) => dia && dia >= per.desde && dia <= per.hasta;
@@ -293,11 +341,11 @@ export function excelDe(d, per, al, hoy) {
     { nombre: "Inspecciones", columnas: [
       { titulo: "Vence", tipo: "fecha" }, { titulo: "Estado" }, { titulo: "Equipo(s)", ancho: 30 }, { titulo: "Tags", ancho: 22 }, { titulo: "Área", ancho: 22 }, { titulo: "Inspección", ancho: 28 },
       { titulo: "Asignada a", ancho: 22 }, { titulo: "Hecha el", tipo: "fechahora" }, { titulo: "Hecha por", ancho: 22 }, { titulo: "A tiempo" }, { titulo: "Hallazgos", tipo: "entero" },
-      { titulo: "Visto bueno", ancho: 18 }, { titulo: "Nota", ancho: 40 }, { titulo: "Id", ancho: 12 }],
+      { titulo: "Visto bueno", ancho: 18 }, { titulo: "Firmada" }, { titulo: "En sitio (QR)" }, { titulo: "Nota", ancho: 40 }, { titulo: "Id", ancho: 12 }],
       filas: ins.map((i) => [i.vence, i.estado === "hecha" ? "Hecha" : i.vence < hoy ? "Atrasada" : "Pendiente", queInspeccion(d, i), equiposDe(i).map(eqTag).filter(Boolean).join(", "),
         eqArea(equiposDe(i)[0]), plantilla(d, i.plantilla_id)?.nombre ?? "", nombre(d, i.asignada_a), i.hecha_en ?? null, i.hecha_por ? nombre(d, i.hecha_por) : "",
         i.estado === "hecha" ? (diaDe(i.hecha_en) <= i.vence ? "Sí" : "No") : "", i.estado === "hecha" ? d.hallazgos.filter((h) => h.inspeccion_id === i.id).length : null,
-        i.revisada_en ? nombre(d, i.revisada_por) : "", i.nota ?? "", i.id]) },
+        i.revisada_en ? nombre(d, i.revisada_por) : "", i.estado === "hecha" ? (i.firma ? "Sí" : "No") : "", i.estado === "hecha" ? ((i.verificaciones ?? []).length ? "Sí" : "No") : "", i.nota ?? "", i.id]) },
     { nombre: "Mediciones", columnas: [
       { titulo: "Fecha", tipo: "fechahora" }, { titulo: "Tag", ancho: 14 }, { titulo: "Equipo", ancho: 28 }, { titulo: "Área", ancho: 22 }, { titulo: "Medida", ancho: 36 },
       { titulo: "Valor", tipo: "numero", decimales: 2 }, { titulo: "Unidad", ancho: 9 }, { titulo: "Mínimo", tipo: "numero", decimales: 2 }, { titulo: "Máximo", tipo: "numero", decimales: 2 },
@@ -319,8 +367,32 @@ export function excelDe(d, per, al, hoy) {
     { nombre: "Seguimientos", columnas: [{ titulo: "Fecha", tipo: "fechahora" }, { titulo: "Hallazgo", ancho: 10 }, { titulo: "Quién", ancho: 22 }, { titulo: "Pasó a", ancho: 14 }, { titulo: "Comentario", ancho: 60 }],
       filas: d.seguimientos.filter((s) => hall.some((h) => h.id === s.hallazgo_id)).map((s) => [s.fecha, numeroHallazgo(d.hallazgos.find((h) => h.id === s.hallazgo_id)), nombre(d, s.persona_id),
         s.estado ? TEXTO_ESTADO[s.estado] : "", s.texto ?? ""]) },
-    { nombre: "Equipos", columnas: [{ titulo: "Tag", ancho: 14 }, { titulo: "Nombre", ancho: 32 }, { titulo: "Tipo", ancho: 12 }, { titulo: "Área", ancho: 24 }, { titulo: "Sirve a", ancho: 28 }, { titulo: "Nota", ancho: 36 }, { titulo: "En uso" }],
-      filas: d.equipos.filter((e) => al.ids.has(e.id)).map((e) => [e.tag ?? "", e.nombre, e.tipo === "colector" ? "Colector" : "Proceso", e.area ?? "", e.sirve_a ?? "", e.nota ?? "", e.activo ? "Sí" : "No"]) },
+    { nombre: "Paros", columnas: [{ titulo: "Tipo", ancho: 14 }, { titulo: "Inicio", tipo: "fechahora" }, { titulo: "Fin", tipo: "fechahora" }, { titulo: "Horas", tipo: "numero", decimales: 2 },
+      { titulo: "Equipo", ancho: 32 }, { titulo: "Área", ancho: 22 }, { titulo: "Causa", ancho: 18 }, { titulo: "Qué pasó / qué se hace", ancho: 50 }, { titulo: "Anotó", ancho: 20 }],
+      filas: (d.paros ?? []).filter((p) => al.ids.has(p.equipo_id) && (diaDe(p.inicio) <= per.hasta && (diaDe(p.fin ?? new Date().toISOString()) >= per.desde)))
+        .sort((a, b) => a.inicio.localeCompare(b.inicio)).map((p) => [p.tipo === "programado" ? "Programado" : "No programado", p.inicio, p.fin,
+          p.fin ? (Date.parse(p.fin) - Date.parse(p.inicio)) / 3600e3 : null, nombreCompleto(d, p.equipo_id), eqArea(p.equipo_id), p.causa ?? "", p.descripcion ?? "", nombre(d, p.creado_por)]) },
+    { nombre: "Disponibilidad", columnas: [{ titulo: "Equipo", ancho: 32 }, { titulo: "Área", ancho: 22 }, { titulo: "Paros", tipo: "entero" }, { titulo: "Horas paradas", tipo: "numero", decimales: 1 },
+      { titulo: "Horas del período", tipo: "numero", decimales: 0 }, { titulo: "Disponibilidad", tipo: "porcentaje", decimales: 1 }, { titulo: "MTTR (h)", tipo: "numero", decimales: 1 }, { titulo: "MTBF (h)", tipo: "numero", decimales: 0 }],
+      filas: r.porEquipo.filter((x) => x.disp).map((x) => [nombreEquipo(x.e), x.e.area ?? "", x.disp.eventos, x.disp.paradas, x.disp.horas, x.disp.disp, x.disp.mttr, x.disp.mtbf]) },
+    { nombre: "Tareas", columnas: [{ titulo: "Tarea", ancho: 48 }, { titulo: "Estado", ancho: 12 }, { titulo: "Prioridad", ancho: 10 }, { titulo: "Equipo", ancho: 32 }, { titulo: "A cargo", ancho: 20 },
+      { titulo: "Pidió", ancho: 20 }, { titulo: "Creada", tipo: "fechahora" }, { titulo: "Vence", tipo: "fecha" }, { titulo: "Hecha", tipo: "fechahora" }, { titulo: "Hizo", ancho: 20 }, { titulo: "Cómo quedó", ancho: 40 }, { titulo: "De", ancho: 16 }],
+      filas: (d.tareas ?? []).filter((t) => (!t.equipo_id || al.ids.has(t.equipo_id)) && (al.planta || t.equipo_id) && (t.estado !== "hecha" || enRango(diaDe(t.hecha_en))))
+        .map((t) => [t.titulo, TEXTO_ESTADO_TAREA[t.estado], TEXTO_PRIORIDAD[t.prioridad] ?? "", t.equipo_id ? nombreCompleto(d, t.equipo_id) : "", paraQuien(d, t.asignada_a), nombre(d, t.creada_por),
+          t.creada, t.vence, t.hecha_en, t.hecha_por ? nombre(d, t.hecha_por) : "", t.nota_cierre ?? "", t.inspeccion_id ? "Inspección" : t.hallazgo_id ? "Hallazgo" : "Suelta"]) },
+    { nombre: "Laboratorio", columnas: [{ titulo: "Fecha", tipo: "fechahora" }, { titulo: "Molino", ancho: 28 }, { titulo: "Parámetro", ancho: 22 }, { titulo: "Valor", tipo: "numero", decimales: 2 },
+      { titulo: "Unidad", ancho: 9 }, { titulo: "Mínimo", tipo: "numero", decimales: 2 }, { titulo: "Máximo", tipo: "numero", decimales: 2 }, { titulo: "Fuera de rango" }, { titulo: "Quién", ancho: 20 }, { titulo: "Nota", ancho: 30 }],
+      filas: (d.laboratorio ?? []).filter((x) => al.ids.has(x.equipo_id) && enRango(diaDe(x.en))).flatMap((x) => Object.entries(x.valores ?? {}).map(([k, v]) => {
+        const p = (d.ajustes?.lab?.[x.equipo_id] ?? []).find((y) => y.id === k) ?? { nombre: k };
+        return [x.en, nombreCompleto(d, x.equipo_id), p.nombre, v, p.unidad ?? "", p.min ?? null, p.max ?? null, (p.min != null && v < p.min) || (p.max != null && v > p.max) ? "Sí" : "No", nombre(d, x.por), x.nota ?? ""];
+      })) },
+    { nombre: "Entregas de turno", columnas: [{ titulo: "Fecha", tipo: "fechahora" }, { titulo: "Turno", ancho: 8 }, { titulo: "Entregó", ancho: 22 }, { titulo: "Novedades", ancho: 60 }, { titulo: "Pendiente", ancho: 50 },
+      { titulo: "Equipos no en marcha", ancho: 40 }, { titulo: "Recibió", ancho: 22 }, { titulo: "Recibida", tipo: "fechahora" }],
+      filas: (d.entregas ?? []).filter((x) => enRango(diaDe(x.en))).sort((a, b) => a.en.localeCompare(b.en)).map((x) => [x.en, x.turno ?? "", nombre(d, x.de), x.novedades ?? "", x.pendientes ?? "",
+        (x.equipos ?? []).filter((y) => y.estado !== "marcha").map((y) => `${nombreCompleto(d, y.equipo_id)}: ${y.estado === "parado" ? "parado" : "con restricción"}${y.nota ? ` (${y.nota})` : ""}`).join("; "),
+        x.recibida_por ? nombre(d, x.recibida_por) : "", x.recibida_en]) },
+    { nombre: "Equipos", columnas: [{ titulo: "Tag", ancho: 14 }, { titulo: "Nombre", ancho: 32 }, { titulo: "Es parte de", ancho: 24 }, { titulo: "Tipo", ancho: 12 }, { titulo: "Área", ancho: 24 }, { titulo: "Sirve a", ancho: 28 }, { titulo: "Nota", ancho: 36 }, { titulo: "En uso" }],
+      filas: d.equipos.filter((e) => al.ids.has(e.id)).map((e) => [e.tag ?? "", e.nombre, e.padre_id ? nombreCompleto(d, e.padre_id) : "", e.tipo === "colector" ? "Colector" : "Proceso", e.area ?? "", e.sirve_a ?? "", e.nota ?? "", e.activo ? "Sí" : "No"]) },
   ], { autor: nombre(d, d.yo?.id), titulo: `Bitácora · ${al.texto}` });
 }
 
@@ -369,7 +441,7 @@ export function vistaReportes({ d, yo, hoy, query }) {
           <select id="r-alcance"><option value="planta" ${al.valor === "planta" ? "selected" : ""}>Toda la planta</option>
             ${d.equipos.some((e) => e.tipo === "colector") ? `<option value="colectores" ${al.valor === "colectores" ? "selected" : ""}>Colectores de polvo</option>` : ""}
             <optgroup label="Un área">${areas.map((a) => `<option value="area:${esc(a)}" ${al.valor === `area:${a}` ? "selected" : ""}>${esc(a)}</option>`).join("")}</optgroup>
-            <optgroup label="Un equipo">${d.equipos.filter((e) => e.activo || al.valor === `equipo:${e.id}`).map((e) => `<option value="equipo:${esc(e.id)}" ${al.valor === `equipo:${e.id}` ? "selected" : ""}>${esc(nombreEquipo(e))}</option>`).join("")}</optgroup>
+            <optgroup label="Un equipo">${d.equipos.filter((e) => !e.padre_id && (e.activo || al.valor === `equipo:${e.id}`)).map((e) => `<option value="equipo:${esc(e.id)}" ${al.valor === `equipo:${e.id}` ? "selected" : ""}>${esc(nombreEquipo(e))}</option>`).join("")}</optgroup>
           </select></div>
         <div class="campo"><label for="r-periodo">De cuándo</label>
           <select id="r-periodo">${PERIODOS.map(([id, t]) => `<option value="${id}" ${per.p === id ? "selected" : ""}>${t}</option>`).join("")}</select></div>
@@ -449,6 +521,7 @@ export function vistaReporteInspeccion({ d, yo, hoy, param }) {
         <td>${res(it, r)}</td><td>${esc(r?.texto ?? "")}${fotos(r?.fotos, true)}</td></tr>`;
     }).join("")}</tbody></table>`;
   const hizo = persona(d, insp.hecha_por);
+  const tareasDe = (d.tareas ?? []).filter((t) => t.inspeccion_id === insp.id || (t.estado === "hecha" && t.hecha_en === insp.hecha_en && t.hecha_por === insp.hecha_por));
   return {
     titulo: "Reporte de inspección",
     atras: `#/inspeccion/${encodeURIComponent(insp.id)}`,
@@ -460,8 +533,11 @@ export function vistaReporteInspeccion({ d, yo, hoy, param }) {
         ${insp.nota ? `<p><b>Nota de la asignación:</b> ${esc(insp.nota)}</p>` : ""}
         ${ids.map((e) => `${ids.length > 1 ? `<h2><span class="tag-doc">${esc(equipo(d, e)?.tag ?? "")}</span>${esc(equipo(d, e)?.nombre ?? "")}</h2>` : "<h2>Revisiones</h2>"}${tabla(e)}`).join("")}
         <h2>Hallazgos</h2>${hallazgos.length ? tablaHallazgos(d, hallazgos, true) : `<p>Sin hallazgos: todo bien.</p>`}
+        ${tareasDe.length ? `<h2>Tareas</h2><table class="tabla"><thead><tr><th>Tarea</th><th>Hecha</th><th>Cómo quedó</th></tr></thead><tbody>${tareasDe.map((t) => `<tr><td>${esc(t.titulo)}</td>
+          <td>${t.estado === "hecha" ? "Sí" : "No (pasó a la siguiente)"}</td><td>${esc(t.nota_cierre ?? "")}</td></tr>`).join("")}</tbody></table>` : ""}
+        ${(insp.verificaciones ?? []).length ? `<p style="margin-top:12px"><b>Verificado en sitio con el QR:</b> ${insp.verificaciones.map((v) => `${esc(nombreCompleto(d, v.equipo_id))} a las ${esc(fechaHora(v.en).split(", ")[1])}`).join("; ")}.</p>` : ""}
         ${insp.revisada_en ? `<p style="margin-top:14px"><b>Visto bueno:</b> ${esc(nombre(d, insp.revisada_por))}, ${esc(fechaHora(insp.revisada_en))}${insp.revision_nota ? `. ${esc(insp.revision_nota)}` : ""}</p>` : ""}
-        <div class="firmas"><div>Hizo: ${esc(hizo?.nombre ?? "")}${hizo?.puesto ? `<br>${esc(hizo.puesto)}` : ""}</div><div>Revisó${insp.revisada_en ? `: ${esc(nombre(d, insp.revisada_por))}` : ""}</div></div>
+        <div class="firmas"><div>${insp.firma ? `<img src="${esc(api.urlMedio(insp.firma))}" alt="Firma" style="height:46px;margin:-50px 0 4px">` : ""}Hizo: ${esc(hizo?.nombre ?? "")}${hizo?.puesto ? `<br>${esc(hizo.puesto)}` : ""}</div><div>Revisó${insp.revisada_en ? `: ${esc(nombre(d, insp.revisada_por))}` : ""}</div></div>
         ${pie(d, yo)}</article></div>`,
     montar(m) {
       m.querySelector('[data-accion="imprimir"]').addEventListener("click", () => print());

@@ -3,7 +3,7 @@
 // línea por colector, copiada de Excel o escrita: tag, nombre, área, a qué sirve).
 import { esc, icono, plural, numero, normal, haceCuanto, diasEntre, diaDe } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, dialogo, vacio, esAdmin, chispa, equiposDe } from "./ui.mjs";
+import { aviso, dialogo, vacio, esAdmin, puede, chispa, equiposDe } from "./ui.mjs";
 import { series, editarEquipo, areasDe } from "./vistas-equipos.mjs";
 import { fueraDeRango } from "./vistas-inspecciones.mjs";
 
@@ -12,19 +12,11 @@ function medidaClave(ss) {
   return ss.find((s) => s.it.id === "dp" || /diferencial|Δ ?p/i.test(s.it.texto)) ?? ss[0] ?? null;
 }
 
-/** Una línea por colector: separada por tabuladores (de Excel), punto y coma o comas. */
-export function leerLista(texto) {
-  return texto.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => {
-    const sep = l.includes("\t") ? "\t" : l.includes(";") ? ";" : ",";
-    const [tag = "", nombre = "", area = "", sirve_a = ""] = l.split(sep).map((x) => x.trim());
-    return { tag, nombre, area, sirve_a };
-  }).filter((x) => x.tag || x.nombre)
-    // la primera línea de una tabla de Excel suele ser el título de las columnas
-    .filter((x, k) => !(k === 0 && /^tag$/i.test(x.tag)));
-}
+export { leerLista } from "./componentes.mjs";
+import { leerLista } from "./componentes.mjs";
 
 export function vistaColectores({ d, yo, hoy, query }) {
-  const admin = esAdmin(yo);
+  const admin = puede(yo, "equipos");
   const buscar = query.get("b") ?? "";
   const f = query.get("f") ?? "todos";
   const todos = d.equipos.filter((e) => e.tipo === "colector" && e.activo);
@@ -66,7 +58,8 @@ export function vistaColectores({ d, yo, hoy, query }) {
           ${d.equipos.some((e) => e.tipo === "colector" && String(e.id).startsWith("demo-")) ? " Los de ejemplo (COL-0…) se quitan en Ajustes." : ""}</p></div>
         ${admin ? `<div class="acciones">
           <button type="button" class="boton" data-accion="agregar">${icono("mas1")}Agregar colectores</button>
-          ${todos.length && plRonda ? `<a class="boton primario" href="#/asignar?equipo=colectores&plantilla=${encodeURIComponent(plRonda.id)}">${icono("inspecciones")}Asignar ronda</a>` : ""}</div>` : ""}</div>
+          <a class="boton" href="#/etiquetas?de=colectores">${icono("escanear")}Etiquetas QR</a>
+          ${todos.length && plRonda && puede(yo, "asignar") ? `<a class="boton primario" href="#/asignar?equipo=colectores&plantilla=${encodeURIComponent(plRonda.id)}">${icono("inspecciones")}Asignar ronda</a>` : ""}</div>` : ""}</div>
       <dl class="ficha-cifras" style="margin-bottom:18px">
         <div><dt>Colectores</dt><dd>${todos.length}</dd></div>
         <div><dt>Con algo fuera</dt><dd style="${cuenta.problema ? "color:var(--rojo)" : ""}">${cuenta.problema}</dd></div>
