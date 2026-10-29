@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "Bitácora de proceso",
+  "short_name": "Bitácora",
+  "description": "Inspecciones de planta: rutas de revisión por equipo, hallazgos y reportes.",
+  "lang": "es-PA",
+  "start_url": "./#/inicio",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f2f2f7",
+  "theme_color": "#f2f2f7",
+  "icons": [
+    { "src": "iconos/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "iconos/icono-512-enmascarable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

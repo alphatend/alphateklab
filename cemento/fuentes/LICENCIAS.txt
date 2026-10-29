@@ -1,0 +1,3 @@
+La letra de la app es la del sistema de Apple (SF Pro) en el iPad, el iPhone y la Mac: Apple no permite distribuirla
+fuera de sus equipos, así que en Android y Windows se usa Inter, la más parecida.
+Inter — Rasmus Andersson, SIL Open Font License 1.1. Bajada de Google Fonts (subconjunto latino, variable 400–700).
