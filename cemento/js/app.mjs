@@ -387,9 +387,12 @@ if ("serviceWorker" in navigator && location.protocol === "https:" || location.h
       w?.addEventListener("statechange", () => w.state === "installed" && navigator.serviceWorker.controller && ofrecer(w));
     });
   }).catch(() => {});
+  // la primera vez que se instala, el service worker toma la página (clients.claim) y eso también avisa
+  // «controllerchange»: ahí no se recarga (se perdería lo que la persona esté escribiendo); solo en una actualización
+  const habiaControlador = !!navigator.serviceWorker?.controller;
   let recargando = false;
   navigator.serviceWorker?.addEventListener("controllerchange", () => {
-    if (recargando) return;
+    if (recargando || !habiaControlador) return;
     recargando = true;
     location.reload();
   });
