@@ -22,7 +22,7 @@ export function vistaTromp() {
       <td><button type="button" class="boton chico plano" data-quitar-fila aria-label="Quitar la fila ${k + 1}">${icono("mal")}</button></td></tr>`;
   return {
     titulo: "Curva de Tromp",
-    atras: "#/inicio",
+    atras: matchMedia("(max-width: 899px)").matches ? "#/mas" : null,
     viva: false,
     html: `<div class="cabeza"><div><h1>Curva de Tromp</h1>
         <p class="bajada">Con el tamizado de la alimentación, los finos y los gruesos del separador (% que pasa por cada malla), en el mismo muestreo.</p></div></div>
@@ -104,18 +104,18 @@ function grafico(r) {
   const y = (v) => mt + (1 - v) * (H - mt - mb);
   const camino = (campo) => pts.map((c, k) => `${k ? "L" : "M"}${x(c.tamano).toFixed(1)},${y(c[campo]).toFixed(1)}`).join("");
   const marcasX = [1, 2, 5, 10, 20, 50, 100, 200, 500].filter((v) => Math.log10(v) >= lo - 0.01 && Math.log10(v) <= hi + 0.01);
-  const rejilla = [0, 0.25, 0.5, 0.75, 1].map((v) => `<line x1="${ml}" x2="${W - mr}" y1="${y(v)}" y2="${y(v)}" stroke="#e5e5ea"/><text x="${ml - 8}" y="${y(v) + 4}" text-anchor="end" font-size="15" fill="#6c6c70">${v * 100}</text>`).join("");
-  const ejeX = marcasX.map((v) => `<line x1="${x(v)}" x2="${x(v)}" y1="${mt}" y2="${H - mb}" stroke="#f0f0f3"/><text x="${x(v)}" y="${H - mb + 18}" text-anchor="middle" font-size="15" fill="#6c6c70">${v}</text>`).join("");
-  const d50 = r.d50 ? `<line x1="${x(r.d50)}" x2="${x(r.d50)}" y1="${y(0.5)}" y2="${H - mb}" stroke="#007aff" stroke-dasharray="3 3"/>
-      <circle cx="${x(r.d50)}" cy="${y(0.5)}" r="4.5" fill="#007aff"/><text x="${x(r.d50) + 7}" y="${y(0.5) - 8}" font-size="15" font-weight="600" fill="#0a64d6">d50 ${numero(r.d50, 1)} µm</text>` : "";
+  const rejilla = [0, 0.25, 0.5, 0.75, 1].map((v) => `<line x1="${ml}" x2="${W - mr}" y1="${y(v)}" y2="${y(v)}" class="rejilla-g"/><text x="${ml - 8}" y="${y(v) + 4}" text-anchor="end" font-size="15" class="texto-g">${v * 100}</text>`).join("");
+  const ejeX = marcasX.map((v) => `<line x1="${x(v)}" x2="${x(v)}" y1="${mt}" y2="${H - mb}" class="rejilla-g" stroke-opacity=".6"/><text x="${x(v)}" y="${H - mb + 18}" text-anchor="middle" font-size="15" class="texto-g">${v}</text>`).join("");
+  const d50 = r.d50 ? `<line x1="${x(r.d50)}" x2="${x(r.d50)}" y1="${y(0.5)}" y2="${H - mb}" class="acento-g" stroke-dasharray="3 3"/>
+      <circle cx="${x(r.d50)}" cy="${y(0.5)}" r="4.5" class="acento-relleno"/><text x="${x(r.d50) + 7}" y="${y(0.5) - 8}" font-size="15" font-weight="600" class="acento-texto">d50 ${numero(r.d50, 1)} µm</text>` : "";
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Curva de Tromp: bypass ${numero(r.bypass * 100, 1)} %, corte d50 ${numero(r.d50, 1)} µm">
     ${ejeX}${rejilla}
-    <line x1="${ml}" x2="${W - mr}" y1="${y(r.bypass)}" y2="${y(r.bypass)}" stroke="#8e8e93" stroke-width="1.5" stroke-dasharray="5 4"/>
-    <path d="${camino("tromp")}" fill="none" stroke="#1c1c1e" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="${camino("corregida")}" fill="none" stroke="#007aff" stroke-width="2.5" stroke-linejoin="round"/>
-    ${pts.map((c) => `<circle cx="${x(c.tamano).toFixed(1)}" cy="${y(c.tromp).toFixed(1)}" r="3" fill="#1c1c1e"/>`).join("")}
+    <line x1="${ml}" x2="${W - mr}" y1="${y(r.bypass)}" y2="${y(r.bypass)}" class="bypass-g" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <path d="${camino("tromp")}" fill="none" class="linea-g" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="${camino("corregida")}" fill="none" class="acento-g" stroke-width="2.5" stroke-linejoin="round"/>
+    ${pts.map((c) => `<circle cx="${x(c.tamano).toFixed(1)}" cy="${y(c.tromp).toFixed(1)}" r="3" class="punto-g"/>`).join("")}
     ${d50}
-    <text x="${(ml + W - mr) / 2}" y="${H - 8}" text-anchor="middle" font-size="15" fill="#3c3c43">Tamaño de partícula (µm, escala logarítmica)</text>
-    <text x="16" y="${(mt + H - mb) / 2}" text-anchor="middle" font-size="15" fill="#3c3c43" transform="rotate(-90 16 ${(mt + H - mb) / 2})">% que va a gruesos</text>
+    <text x="${(ml + W - mr) / 2}" y="${H - 8}" text-anchor="middle" font-size="15" class="texto-g fuerte">Tamaño de partícula (µm, escala logarítmica)</text>
+    <text x="16" y="${(mt + H - mb) / 2}" text-anchor="middle" font-size="15" class="texto-g fuerte" transform="rotate(-90 16 ${(mt + H - mb) / 2})">% que va a gruesos</text>
   </svg>`;
 }

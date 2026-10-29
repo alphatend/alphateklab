@@ -1,32 +1,41 @@
-// Inspecciones: la lista, asignar una y llenarla (o verla, si ya está hecha).
-import { esc, icono, fechaCorta, fechaHora, sumarDias, plural, numero, diasEntre } from "./util.mjs";
+// Inspecciones: la lista, asignar una (o una ronda de varios colectores) y llenarla (o verla, si ya está hecha).
+import { esc, icono, fechaCorta, fechaHora, sumarDias, plural, numero, diasEntre, normal } from "./util.mjs";
 import * as api from "./api.mjs";
 import {
-  aviso, dialogo, confirmar, filaInspeccion, vacio, equipo, plantilla, persona, nombre, nombreCorto,
-  marcaVence, marcaPrioridad, galeria, botonesMedio, marcaSinEnviar,
+  aviso, dialogo, confirmar, filaInspeccion, vacio, equipo, plantilla, persona, nombre, nombreCorto, nombreEquipo, queInspeccion,
+  equiposDe, esAdmin, etiquetaPersona, marcaVence, marcaPrioridad, galeria, botonesMedio, marcaSinEnviar,
 } from "./ui.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
+
+const reducir = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ------------------------------------------------------------------------------- lista
 
 export function vistaInspecciones({ d, yo, hoy, query }) {
-  const esIng = yo.rol === "ingeniero";
-  const f = query.get("f") ?? (esIng ? "todas" : "mias");
+  const admin = esAdmin(yo);
+  const f = query.get("f") ?? (admin ? "todas" : "mias");
+  const buscar = query.get("b") ?? "";
   let xs = d.inspecciones;
   if (f === "mias") xs = xs.filter((i) => i.asignada_a === yo.id || i.hecha_por === yo.id);
   if (f === "atrasadas") xs = xs.filter((i) => i.estado === "pendiente" && i.vence < hoy);
   if (f === "hechas") xs = xs.filter((i) => i.estado === "hecha");
+  if (f === "revisar") xs = xs.filter((i) => i.estado === "hecha" && !i.revisada_en);
+  if (buscar) {
+    const b = normal(buscar);
+    xs = xs.filter((i) => normal(`${queInspeccion(d, i)} ${plantilla(d, i.plantilla_id)?.nombre} ${nombre(d, i.asignada_a)} ${equiposDe(i).map((e) => equipo(d, e)?.tag).join(" ")}`).includes(b));
+  }
   const pend = xs.filter((i) => i.estado === "pendiente").sort((a, b) => a.vence.localeCompare(b.vence));
   const grupos = [
     ["Atrasadas", pend.filter((i) => i.vence < hoy)],
     ["Hoy", pend.filter((i) => i.vence === hoy)],
     ["Próximas", pend.filter((i) => i.vence > hoy)],
-    ["Hechas", xs.filter((i) => i.estado === "hecha" && diasEntre((i.hecha_en ?? "").slice(0, 10) || hoy, hoy) <= 45)
+    ["Hechas", xs.filter((i) => i.estado === "hecha" && (f === "hechas" || f === "revisar" || buscar || diasEntre((i.hecha_en ?? "").slice(0, 10) || hoy, hoy) <= 45))
       .sort((a, b) => (b.hecha_en ?? "").localeCompare(a.hecha_en ?? ""))],
   ].filter(([, g]) => g.length);
   const cuenta = (filtro) => {
     if (filtro === "mias") return d.inspecciones.filter((i) => i.estado === "pendiente" && i.asignada_a === yo.id).length;
     if (filtro === "atrasadas") return d.inspecciones.filter((i) => i.estado === "pendiente" && i.vence < hoy).length;
+    if (filtro === "revisar") return d.inspecciones.filter((i) => i.estado === "hecha" && !i.revisada_en).length;
     return null;
   };
   const filtro = (id, texto) => {
@@ -35,13 +44,31 @@ export function vistaInspecciones({ d, yo, hoy, query }) {
   };
   return {
     titulo: "Inspecciones",
+    atras: matchMedia("(max-width: 899px)").matches ? "#/mas" : null,
     html: `<div class="cabeza"><div><h1>Inspecciones</h1>
-        <p class="bajada">${esIng ? "Las que asignaste a los jefes de turno y a ti." : "Las que te asignaron. Tócala para llenarla."}</p></div>
-        ${esIng ? `<div class="acciones"><a class="boton primario" href="#/asignar">${icono("mas1")}Asignar</a></div>` : ""}</div>
-      <nav class="filtros" aria-label="Filtrar">${filtro("mias", "Mías")}${filtro("todas", "Todas")}${filtro("atrasadas", "Atrasadas")}${filtro("hechas", "Hechas")}</nav>
-      ${grupos.length
+        <p class="bajada">${admin ? "Las que asignaste, de todos." : "Las que te asignaron. Tócala para llenarla."}</p></div>
+        ${admin ? `<div class="acciones"><a class="boton primario" href="#/asignar">${icono("mas1")}Asignar</a></div>` : ""}</div>
+      <div class="buscador" style="margin-bottom:12px;max-width:420px">${icono("buscar")}<input type="search" placeholder="Buscar por equipo, tag o persona" value="${esc(buscar)}" data-buscar aria-label="Buscar"></div>
+      <nav class="filtros" aria-label="Filtrar">${filtro("mias", "Mías")}${filtro("todas", "Todas")}${filtro("atrasadas", "Atrasadas")}${admin ? filtro("revisar", "Por revisar") : ""}${filtro("hechas", "Hechas")}</nav>
+      <div data-resultados>${grupos.length
         ? grupos.map(([t, g]) => `<section class="seccion"><h2>${t} <small>${g.length}</small></h2><ul class="lista">${g.map((i) => filaInspeccion(d, i, hoy, { mostrarQuien: f !== "mias" })).join("")}</ul></section>`).join("")
-        : vacio(f === "atrasadas" ? "Nada atrasado." : f === "mias" ? "No tienes inspecciones asignadas." : "No hay inspecciones.", esIng ? `<a class="boton chico" href="#/asignar">${icono("mas1")}Asignar una</a>` : "")}`,
+        : vacio(buscar ? "Nada con eso." : f === "atrasadas" ? "Nada atrasado." : f === "mias" ? "No tienes inspecciones asignadas." : "No hay inspecciones.", admin && !buscar ? `<a class="boton chico" href="#/asignar">${icono("mas1")}Asignar una</a>` : "")}</div>`,
+    montar(m) {
+      const campo = m.querySelector("[data-buscar]");
+      let reloj = null;
+      campo.addEventListener("input", () => {
+        clearTimeout(reloj);
+        reloj = setTimeout(() => {
+          const q = new URLSearchParams({ f, ...(campo.value ? { b: campo.value } : {}) });
+          history.replaceState(null, "", `#/inspecciones?${q}`);
+          // se redibuja solo la lista (el campo conserva el foco y lo escrito)
+          const v = vistaInspecciones({ d: api.obtener(), yo, hoy, query: q });
+          const tmp = document.createElement("div");
+          tmp.innerHTML = v.html;
+          m.querySelector("[data-resultados]").replaceWith(tmp.querySelector("[data-resultados]"));
+        }, 160);
+      });
+    },
   };
 }
 
@@ -50,75 +77,115 @@ export function vistaInspecciones({ d, yo, hoy, query }) {
 const REPETIR = [[0, "Una sola vez"], [1, "Cada día"], [7, "Cada semana"], [15, "Cada 15 días"], [30, "Cada mes"], [60, "Cada 2 meses"]];
 
 export function vistaAsignar({ d, yo, hoy, query, ir }) {
-  const eqInicial = query.get("equipo") ?? d.equipos[0]?.id;
+  if (!esAdmin(yo)) return { titulo: "Asignar", atras: "#/tablero", html: vacio("Las inspecciones las asigna el administrador.") };
+  const activos = d.equipos.filter((e) => e.activo);
+  const colectores = activos.filter((e) => e.tipo === "colector");
+  const procesos = activos.filter((e) => e.tipo !== "colector");
   const plInicial = query.get("plantilla");
+  const eqInicial = query.get("equipo") ?? (plantilla(d, plInicial)?.tipo_equipo ? "colectores" : plantilla(d, plInicial)?.equipo_id) ?? procesos[0]?.id;
+  const elegidosInicial = new Set((query.get("equipos") ?? "").split(",").filter(Boolean));
+  const vence = query.get("vence") ?? hoy;
   const opcionesPlantilla = (eqId, elegida) => {
-    const ps = d.plantillas.filter((p) => p.equipo_id === eqId);
+    const ps = eqId === "colectores" ? d.plantillas.filter((p) => p.tipo_equipo === "colector") : d.plantillas.filter((p) => p.equipo_id === eqId);
     return ps.length
       ? ps.map((p) => `<option value="${esc(p.id)}" ${p.id === elegida ? "selected" : ""}>${esc(p.nombre)}${p.cuando === "parada" ? " (en parada)" : ""} · ${plural(p.items.length, "revisión", "revisiones")}</option>`).join("")
       : `<option value="">Este equipo no tiene plantillas</option>`;
   };
+  const porArea = Object.entries(colectores.reduce((a, e) => ((a[e.area || "Sin área"] ??= []).push(e), a), {}));
+  const listaColectores = () => `<div class="elegir-equipos" data-colectores>${porArea.map(([area, xs]) => `
+      <div class="grupo"><span>${esc(area)}</span><button type="button" data-todos="${esc(area)}">Todos</button></div>
+      ${xs.map((e) => `<label><input type="checkbox" value="${esc(e.id)}" data-area="${esc(area)}" ${elegidosInicial.size === 0 || elegidosInicial.has(e.id) ? "checked" : ""}>
+        <span><b class="mono">${esc(e.tag || "—")}</b> ${esc(e.nombre)}</span></label>`).join("")}`).join("")}</div>`;
   return {
     titulo: "Asignar inspección",
     atras: "#/inspecciones",
     viva: false,
     html: `<div class="cabeza"><div><h1>Asignar inspección</h1>
-        <p class="bajada">Le llega en su lista. Si se repite, al terminarla queda programada la siguiente.</p></div></div>
-      <form class="panel" id="form-asignar" novalidate style="max-width:640px">
+        <p class="bajada">Le aparece en su tablero y le llega un aviso. Si se repite, al terminarla queda programada la siguiente.</p></div></div>
+      <form class="panel" id="form-asignar" novalidate style="max-width:720px">
         <div class="rejilla-campos dos">
           <div class="campo"><label for="a-equipo">Equipo</label>
-            <select id="a-equipo">${d.equipos.map((e) => `<option value="${esc(e.id)}" ${e.id === eqInicial ? "selected" : ""}>${esc(e.nombre)}</option>`).join("")}</select></div>
+            <select id="a-equipo">
+              ${colectores.length ? `<option value="colectores" ${eqInicial === "colectores" ? "selected" : ""}>Ronda de colectores (${colectores.length})</option>` : ""}
+              ${Object.entries(procesos.reduce((a, e) => ((a[e.area || "Sin área"] ??= []).push(e), a), {})).map(([area, xs]) => `<optgroup label="${esc(area)}">
+                ${xs.map((e) => `<option value="${esc(e.id)}" ${e.id === eqInicial ? "selected" : ""}>${esc(nombreEquipo(e))}</option>`).join("")}</optgroup>`).join("")}
+            </select></div>
           <div class="campo"><label for="a-plantilla">Qué revisar</label>
             <select id="a-plantilla">${opcionesPlantilla(eqInicial, plInicial)}</select></div>
+        </div>
+        <div class="campo" data-zona-colectores ${eqInicial === "colectores" ? "" : "hidden"}>
+          <span class="rotulo">Qué colectores <small data-cuantos></small></span>${listaColectores()}</div>
+        <div class="rejilla-campos dos">
           <div class="campo"><label for="a-quien">A quién</label>
-            <select id="a-quien">${d.personas.map((p) => `<option value="${esc(p.id)}">${esc(p.rol === "jefe" ? `${p.turno} (${p.nombre})` : `${p.nombre} (yo)`.replace(" (yo)", p.id === yo.id ? " (yo)" : ""))}</option>`).join("")}</select></div>
+            <select id="a-quien">${d.personas.filter((p) => p.activo).map((p) => `<option value="${esc(p.id)}" ${p.id === query.get("quien") ? "selected" : ""}>${esc(etiquetaPersona(p, yo))}</option>`).join("")}</select></div>
           <div class="campo"><label for="a-vence">Para cuándo</label>
-            <input id="a-vence" type="date" value="${hoy}" min="${sumarDias(hoy, -30)}"></div>
+            <input id="a-vence" type="date" value="${esc(vence)}" min="${sumarDias(hoy, -30)}"></div>
           <div class="campo"><label for="a-repetir">Se repite</label>
             <select id="a-repetir">${REPETIR.map(([n, t]) => `<option value="${n}">${t}</option>`).join("")}</select>
             <span class="ayuda" id="a-sugerida"></span></div>
         </div>
-        <div class="campo"><label for="a-nota">Nota para quien la hace <span style="font-weight:400;color:var(--tinta-3)">(opcional)</span></label>
-          <textarea id="a-nota" placeholder="Por ejemplo: aprovechar la parada del viernes"></textarea></div>
+        <div class="campo"><label for="a-nota">Nota para quien la hace <small>(opcional)</small></label>
+          <textarea id="a-nota" placeholder="Por ejemplo: aprovechar el paro del viernes"></textarea></div>
         <p class="error-form" role="alert" hidden style="color:var(--rojo);font-weight:600"></p>
         <div><button class="boton primario" type="submit">${icono("bien")}Asignar</button></div>
       </form>`,
     montar(m) {
       const f = m.querySelector("#form-asignar");
       const selEq = f.querySelector("#a-equipo"), selPl = f.querySelector("#a-plantilla"), selRep = f.querySelector("#a-repetir");
+      const zona = f.querySelector("[data-zona-colectores]");
+      const contar = () => {
+        const n = zona.querySelectorAll("input:checked").length;
+        f.querySelector("[data-cuantos]").textContent = `(${n} de ${colectores.length})`;
+      };
       const sugerir = () => {
         const p = plantilla(d, selPl.value);
         const n = p?.frecuencia_dias ?? 0;
-        const opcion = REPETIR.find(([k]) => k === n) ? n : 0;
-        selRep.value = String(opcion);
+        selRep.value = String(REPETIR.find(([k]) => k === n) ? n : 0);
         f.querySelector("#a-sugerida").textContent = p?.frecuencia_dias ? `La plantilla sugiere cada ${p.frecuencia_dias === 1 ? "día" : `${p.frecuencia_dias} días`}.` : "";
       };
-      selEq.addEventListener("change", () => { selPl.innerHTML = opcionesPlantilla(selEq.value); sugerir(); });
+      selEq.addEventListener("change", () => {
+        selPl.innerHTML = opcionesPlantilla(selEq.value);
+        zona.hidden = selEq.value !== "colectores";
+        sugerir();
+      });
       selPl.addEventListener("change", sugerir);
+      zona.addEventListener("change", contar);
+      zona.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-todos]");
+        if (!b) return;
+        const cajas = [...zona.querySelectorAll(`input[data-area="${CSS.escape(b.dataset.todos)}"]`)];
+        const todas = cajas.every((c) => c.checked);
+        cajas.forEach((c) => (c.checked = !todas));
+        contar();
+      });
+      contar();
       sugerir();
       f.addEventListener("submit", async (e) => {
         e.preventDefault();
         const err = f.querySelector(".error-form");
-        if (!selPl.value) { err.hidden = false; err.textContent = "Este equipo no tiene plantillas: crea una en Equipos."; return; }
+        const fallo = (t) => { err.hidden = false; err.textContent = t; };
+        if (!selPl.value) return fallo("Este equipo no tiene plantillas: crea una en Equipos.");
+        const equipos = selEq.value === "colectores" ? [...zona.querySelectorAll("input:checked")].map((c) => c.value) : undefined;
+        if (equipos && !equipos.length) return fallo("Elige por lo menos un colector.");
         const boton = f.querySelector("button[type=submit]");
         boton.disabled = true;
-        const datos = { id: crypto.randomUUID(), plantilla_id: selPl.value, asignada_a: f["a-quien"].value, vence: f["a-vence"].value, repetir_dias: Number(selRep.value) || null, nota: f["a-nota"].value };
+        const datos = { id: crypto.randomUUID(), plantilla_id: selPl.value, asignada_a: f["a-quien"].value, vence: f["a-vence"].value, repetir_dias: Number(selRep.value) || null, nota: f["a-nota"].value, equipos };
         try {
           await api.escribir("inspecciones", datos);
           const dd = api.obtener();
+          const insp = dd.inspecciones.find((i) => i.id === datos.id) ?? { ...datos, equipo_id: plantilla(dd, datos.plantilla_id)?.equipo_id ?? equipos?.[0] };
           const quien = persona(dd, datos.asignada_a);
-          const texto = mensajeAsignacion(dd, datos);
           const r = await dialogo({
             titulo: "Asignada",
-            html: `<p>${esc(equipo(dd, plantilla(dd, datos.plantilla_id)?.equipo_id)?.nombre)} para ${esc(quien?.rol === "jefe" ? quien.turno : quien?.nombre)}, para el ${esc(fechaCorta(datos.vence))}. Ya le aparece en su lista.</p>`,
+            html: `<p>${esc(queInspeccion(dd, insp))} · ${esc(plantilla(dd, datos.plantilla_id)?.nombre)} para ${esc(quien?.turno ? `Turno ${quien.turno}` : quien?.nombre)}, para el ${esc(fechaCorta(datos.vence))}.
+              ${quien?.id === yo.id ? "" : "Le aparece en su tablero y le llega un aviso."}</p>`,
             botones: [{ texto: "Asignar otra", valor: "otra" }, { texto: "Avisar por WhatsApp", valor: "wa", icono: "whatsapp" }, { texto: "Listo", valor: "listo", clase: "primario" }],
           });
-          if (r === "wa") abrirWhatsApp(texto);
-          if (r === "otra") ir(`#/asignar?equipo=${encodeURIComponent(selEq.value)}`);
-          else ir("#/inspecciones");
+          if (r === "wa") abrirWhatsApp(mensajeAsignacion(dd, insp));
+          if (r === "otra") ir(`#/asignar?equipo=${encodeURIComponent(selEq.value)}&vence=${datos.vence}`);
+          else ir("#/tablero?v=inspecciones");
         } catch (x) {
-          err.hidden = false;
-          err.textContent = x.sinRed ? "Para asignar hace falta señal. Prueba cuando tengas conexión." : x.message;
+          fallo(x.sinRed ? "Para asignar hace falta señal. Prueba cuando tengas conexión." : x.message);
           boton.disabled = false;
         }
       });
@@ -126,10 +193,10 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
   };
 }
 
-function mensajeAsignacion(d, datos) {
-  const pl = plantilla(d, datos.plantilla_id), eq = equipo(d, pl?.equipo_id);
-  const url = `${location.origin}${location.pathname}#/inspeccion/${encodeURIComponent(datos.id)}`;
-  return `Te asigné una inspección: ${eq?.nombre} · ${pl?.nombre}, para el ${fechaCorta(datos.vence)}.${datos.nota ? `\nNota: ${datos.nota}` : ""}\n${url}`;
+function mensajeAsignacion(d, insp) {
+  const pl = plantilla(d, insp.plantilla_id);
+  const url = `${location.origin}${location.pathname}#/inspeccion/${encodeURIComponent(insp.id)}`;
+  return `Te asigné una inspección: ${queInspeccion(d, insp)} · ${pl?.nombre}, para el ${fechaCorta(insp.vence)}.${insp.nota ? `\nNota: ${insp.nota}` : ""}\n${url}`;
 }
 
 export function abrirWhatsApp(texto) {
@@ -146,11 +213,12 @@ export function vistaInspeccion(ctx) {
 }
 
 function cabeceraInspeccion(d, insp, hoy) {
-  const eq = equipo(d, insp.equipo_id), pl = plantilla(d, insp.plantilla_id);
+  const ids = equiposDe(insp), pl = plantilla(d, insp.plantilla_id);
+  const eq = equipo(d, ids[0]);
   return `<div class="cabeza"><div>
-      <div class="migas"><a href="#/equipo/${encodeURIComponent(insp.equipo_id)}">${esc(eq?.nombre ?? "")}</a></div>
+      <div class="migas">${ids.length > 1 ? `<a href="#/colectores">Colectores</a>` : `<a href="#/equipo/${encodeURIComponent(ids[0])}">${esc(nombreEquipo(eq))}</a>`}</div>
       <h1>${esc(pl?.nombre ?? "Inspección")}</h1>
-      <p class="bajada">${pl?.cuando === "parada" ? "Con el equipo parado." : "Con el equipo en marcha."} ${esc(eq?.area ?? "")}</p>
+      <p class="bajada">${ids.length > 1 ? `${esc(queInspeccion(d, insp))}. ` : ""}${pl?.cuando === "parada" ? "Con el equipo parado." : "Con el equipo en marcha."} ${ids.length > 1 ? "" : esc(eq?.area ?? "")}</p>
     </div><div class="acciones">${insp._sinEnviar ? marcaSinEnviar() : marcaVence(insp, hoy)}</div></div>`;
 }
 
@@ -179,45 +247,73 @@ export function textoRango(item) {
   return "Sin rango definido todavía";
 }
 
+async function accionesAdmin(b, d, insp, ir) {
+  const id = encodeURIComponent(insp.id);
+  if (b.dataset.accion === "recordar") {
+    try {
+      const r = await api.escribir(`inspecciones/${id}/recordar`, {});
+      aviso(r.entregados ? `Recordatorio enviado a ${nombreCorto(d, insp.asignada_a)}.` : `Quedó en sus avisos de la app (${nombreCorto(d, insp.asignada_a)} no tiene notificaciones activadas).`);
+    } catch (x) { aviso(x.sinRed ? "Para recordar hace falta señal." : x.message, { error: true }); }
+  } else if (b.dataset.accion === "fecha") {
+    let nueva = null;
+    const ok = await dialogo({
+      titulo: "Cambiar la fecha",
+      html: `<div class="campo"><label for="nueva-fecha">Para cuándo</label><input id="nueva-fecha" type="date" value="${esc(insp.vence)}"></div>`,
+      botones: [{ texto: "Cancelar", valor: false }, { texto: "Cambiar", valor: true, clase: "primario", alElegir: (v) => { nueva = v.querySelector("#nueva-fecha").value; return !!nueva; } }],
+    });
+    if (!ok) return;
+    try { await api.escribir(`inspecciones/${id}/mover`, { vence: nueva }); aviso(`Ahora es para el ${fechaCorta(nueva)}.`); } catch (x) { aviso(x.sinRed ? "Hace falta señal." : x.message, { error: true }); }
+  } else if (b.dataset.accion === "avisar") abrirWhatsApp(mensajeAsignacion(d, insp));
+  else if (b.dataset.accion === "borrar") {
+    if (!(await confirmar("¿Borrar esta inspección?", "Se quita del tablero de quien la tiene asignada.", "Borrar", "peligro"))) return;
+    try {
+      await api.escribir(`inspecciones/${id}/borrar`, {});
+      api.borrador.borrar(insp.id);
+      aviso("Inspección borrada.");
+      ir("#/tablero?v=inspecciones");
+    } catch (x) { aviso(x.sinRed ? "Para borrar hace falta señal." : x.message, { error: true }); }
+  }
+}
+
 function llenar({ d, yo, hoy, dibujar, ir }, insp) {
   const pl = plantilla(d, insp.plantilla_id);
   const items = pl?.items ?? [];
-  const ingeniero = d.personas.find((p) => p.rol === "ingeniero");
+  const ids = equiposDe(insp);
+  const ronda = ids.length > 1;
+  const admin = d.personas.find((p) => p.rol === "admin" && p.activo);
   const guardado = api.borrador.leer(insp.id);
-  // estado de lo que se va llenando: item_id → respuesta
-  const R = guardado?.respuestas ?? {};
-  for (const it of items) R[it.id] ??= { resultado: null, valor: "", texto: "", fotos: [], hallazgo: null, manual: false };
-  const guardar = () => api.borrador.guardar(insp.id, { respuestas: R });
+  // lo que se va llenando: «equipo|item» → respuesta (un borrador de la versión anterior, sin equipo, no sirve)
+  const R = guardado?.respuestas && Object.keys(guardado.respuestas).every((k) => k.includes("|")) ? guardado.respuestas : {};
+  const clave = (eqId, itId) => `${eqId}|${itId}`;
+  for (const e of ids) for (const it of items) R[clave(e, it.id)] ??= { resultado: null, valor: "", texto: "", fotos: [], hallazgo: null, manual: false };
+  let paso = Math.min(guardado?.paso ?? 0, ids.length - 1);
+  const guardar = () => api.borrador.guardar(insp.id, { respuestas: R, paso });
   const esMia = insp.asignada_a === yo.id;
 
-  const htmlHallazgo = (it, r) => {
+  const htmlHallazgo = (eqId, it, r) => {
     if (r.resultado !== "mal") return "";
-    const h = (r.hallazgo ??= {
-      id: crypto.randomUUID(),
-      descripcion: "",
-      prioridad: "media",
-      accion: "",
-      responsable_id: yo.rol === "ingeniero" ? yo.id : ingeniero?.id ?? yo.id,
-    });
+    const h = (r.hallazgo ??= { id: crypto.randomUUID(), descripcion: "", prioridad: "media", accion: "", responsable_id: esAdmin(yo) ? yo.id : admin?.id ?? yo.id });
+    const k = esc(clave(eqId, it.id)).replace(/\|/g, "-");
     return `<div class="subhallazgo">
-      <p>${icono("hallazgos")}Se anota como hallazgo</p>
-      <div class="campo"><label for="hd-${esc(it.id)}">Qué se encontró</label>
-        <textarea id="hd-${esc(it.id)}" data-h="descripcion" placeholder="${esc(sugerenciaHallazgo(it, r))}">${esc(h.descripcion)}</textarea>
-        ${hayDictado ? `<div><button type="button" class="boton chico" data-dictar="hd-${esc(it.id)}">${icono("microfono")}Dictar</button></div>` : ""}</div>
-      <div class="campo"><span class="rotulo" id="hp-${esc(it.id)}">Prioridad</span>
-        <div class="segmento" role="group" aria-labelledby="hp-${esc(it.id)}">${["alta", "media", "baja"].map((p) => `<button type="button" data-prioridad="${p}" data-valor="${p}" aria-pressed="${h.prioridad === p}">${p === "alta" ? "Alta" : p === "media" ? "Media" : "Baja"}</button>`).join("")}</div></div>
+      <p>${icono("hallazgos")}Se anota como hallazgo${ronda ? ` de ${esc(equipo(d, eqId)?.tag || "este equipo")}` : ""}</p>
+      <div class="campo"><label for="hd-${k}">Qué se encontró</label>
+        <textarea id="hd-${k}" data-h="descripcion" placeholder="${esc(sugerenciaHallazgo(it, r))}">${esc(h.descripcion)}</textarea>
+        ${hayDictado ? `<div><button type="button" class="boton chico" data-dictar="hd-${k}">${icono("microfono")}Dictar</button></div>` : ""}</div>
+      <div class="campo"><span class="rotulo" id="hp-${k}">Prioridad</span>
+        <div class="segmento" role="group" aria-labelledby="hp-${k}">${["alta", "media", "baja"].map((p) => `<button type="button" data-prioridad="${p}" data-valor="${p}" aria-pressed="${h.prioridad === p}">${p === "alta" ? "Alta" : p === "media" ? "Media" : "Baja"}</button>`).join("")}</div></div>
       <div class="rejilla-campos dos">
-        <div class="campo"><label for="ha-${esc(it.id)}">Qué hay que hacer <span style="font-weight:400;color:var(--tinta-3)">(opcional)</span></label>
-          <input id="ha-${esc(it.id)}" type="text" data-h="accion" value="${esc(h.accion)}" placeholder="Por ejemplo: gestionar el reemplazo"></div>
-        <div class="campo"><label for="hr-${esc(it.id)}">A cargo de</label>
-          <select id="hr-${esc(it.id)}" data-h="responsable_id">${d.personas.map((p) => `<option value="${esc(p.id)}" ${p.id === h.responsable_id ? "selected" : ""}>${esc(p.rol === "jefe" ? p.turno : p.nombre)}</option>`).join("")}</select></div>
+        <div class="campo"><label for="ha-${k}">Qué hay que hacer <small>(opcional)</small></label>
+          <input id="ha-${k}" type="text" data-h="accion" value="${esc(h.accion)}" placeholder="Por ejemplo: gestionar el reemplazo"></div>
+        <div class="campo"><label for="hr-${k}">A cargo de</label>
+          <select id="hr-${k}" data-h="responsable_id">${d.personas.filter((p) => p.activo).map((p) => `<option value="${esc(p.id)}" ${p.id === h.responsable_id ? "selected" : ""}>${esc(etiquetaPersona(p, yo))}</option>`).join("")}</select></div>
       </div>
     </div>`;
   };
 
-  const htmlItem = (it, k) => {
-    const r = R[it.id];
-    const id = esc(it.id);
+  const htmlItem = (eqId, it) => {
+    const k = clave(eqId, it.id);
+    const r = R[k];
+    const id = esc(k).replace(/\|/g, "-");
     let control = "";
     if (it.tipo === "ok" || it.tipo === "medida") {
       const seg = `<div class="segmento" role="group" aria-label="Resultado">
@@ -228,53 +324,77 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
         const fuera = fueraDeRango(it, r.valor);
         control = `<div class="medida">
             <div class="con-unidad"><label class="oculto" for="v-${id}">Valor medido</label>
-              <input id="v-${id}" type="text" inputmode="decimal" autocomplete="off" data-valor-de="${id}" value="${esc(r.valor)}" placeholder="0">
+              <input id="v-${id}" type="text" inputmode="decimal" autocomplete="off" data-medida value="${esc(r.valor)}" placeholder="0">
               ${it.unidad ? `<span class="unidad">${esc(it.unidad)}</span>` : ""}</div>
-            <span class="rango${fuera ? " fuera" : ""}" data-rango="${id}">${fuera ? `Fuera de rango · ` : ""}${esc(textoRango(it))}${it.tipico && it.min == null && it.max == null ? "" : it.tipico ? " (típico)" : ""}</span>
+            <span class="rango${fuera ? " fuera" : ""}" data-rango>${fuera ? "Fuera de rango · " : ""}${esc(textoRango(it))}${it.tipico && (it.min != null || it.max != null) ? " (típico)" : ""}</span>
           </div>${seg}`;
       } else control = seg;
     }
-    return `<li class="item" data-item="${id}" id="item-${id}">
+    return `<li class="item" data-item="${esc(k)}" id="item-${id}">
       <div class="item-cabeza"><h3>${esc(it.texto)}</h3></div>
       ${it.ayuda ? `<p class="ayuda">${esc(it.ayuda)}</p>` : ""}
       ${control}
       <div class="campo"><label class="oculto" for="t-${id}">Nota</label>
-        <textarea id="t-${id}" data-texto-de="${id}" placeholder="${it.tipo === "texto" ? "Escribe o dicta…" : "Nota (opcional)"}" ${it.tipo === "texto" ? "" : 'style="min-height:58px"'}>${esc(r.texto)}</textarea></div>
+        <textarea id="t-${id}" data-texto placeholder="${it.tipo === "texto" ? "Escribe o dicta…" : "Nota (opcional)"}" ${it.tipo === "texto" ? "" : 'style="min-height:58px"'}>${esc(r.texto)}</textarea></div>
       <div class="herramientas-item">
-        ${botonesMedio(it.id)}
+        ${botonesMedio(k)}
         ${hayDictado ? `<button type="button" class="boton chico" data-dictar="t-${id}">${icono("microfono")}Dictar</button>` : ""}
-        ${it.foto === "siempre" ? `<span class="tipico" style="align-self:center">Lleva foto</span>` : it.foto === "pedir" && !r.fotos.length ? `<span style="align-self:center;color:var(--tinta-3);font-size:14px">Una foto ayuda</span>` : ""}
+        ${it.foto === "siempre" ? `<span class="tipico">Lleva foto</span>` : it.foto === "pedir" && !r.fotos.length ? `<span class="ayuda">Una foto ayuda</span>` : ""}
       </div>
-      <div data-galeria="${id}">${galeria(r.fotos, { quitar: true })}</div>
-      <div data-zona-hallazgo="${id}">${htmlHallazgo(it, r)}</div>
+      <div data-galeria>${galeria(r.fotos, { quitar: true })}</div>
+      <div data-zona-hallazgo>${htmlHallazgo(eqId, it, r)}</div>
     </li>`;
   };
 
+  const cuentan = items.filter((it) => it.tipo !== "texto");
+  const estadoEquipo = (eqId) => {
+    const hechos = cuentan.filter((it) => R[clave(eqId, it.id)].resultado).length;
+    const mal = cuentan.some((it) => R[clave(eqId, it.id)].resultado === "mal");
+    return hechos === cuentan.length ? (mal ? "mal" : "listo") : hechos ? "medio" : "";
+  };
   const avance = () => {
-    const cuentan = items.filter((it) => it.tipo !== "texto");
-    const hechos = cuentan.filter((it) => R[it.id].resultado).length;
-    const mal = cuentan.filter((it) => R[it.id].resultado === "mal").length;
-    return { hechos, total: cuentan.length, mal };
+    let hechos = 0, mal = 0;
+    for (const e of ids) for (const it of cuentan) {
+      const r = R[clave(e, it.id)];
+      if (r.resultado) hechos++;
+      if (r.resultado === "mal") mal++;
+    }
+    return { hechos, total: cuentan.length * ids.length, mal };
+  };
+  const pasos = () => ids.map((e, k) => `<button type="button" data-paso="${k}" ${k === paso ? 'aria-current="true"' : ""}>
+      <i class="estado-paso ${estadoEquipo(e)}"></i>${esc(equipo(d, e)?.tag || equipo(d, e)?.nombre || `#${k + 1}`)}</button>`).join("");
+  const cuerpoPaso = () => {
+    const e = ids[paso], eq = equipo(d, e);
+    return `${ronda ? `<div class="colector-actual"><h2>${esc(eq?.tag || "")}</h2><span>${esc(eq?.nombre ?? "")}${eq?.sirve_a ? ` · ${esc(eq.sirve_a)}` : ""}</span>
+        <span style="margin-left:auto">${paso + 1} de ${ids.length}</span></div>` : ""}
+      ${items.length ? `<ol class="items">${items.map((it) => htmlItem(e, it)).join("")}</ol>` : vacio("Esta plantilla no tiene revisiones. Edítala en Equipos.")}
+      ${ronda ? `<div class="herramientas-item" style="margin-top:14px;justify-content:space-between">
+        <button type="button" class="boton" data-paso="${paso - 1}" ${paso === 0 ? "disabled" : ""}>${icono("flecha")}Anterior</button>
+        ${paso < ids.length - 1 ? `<button type="button" class="boton primario" data-paso="${paso + 1}">Siguiente: ${esc(equipo(d, ids[paso + 1])?.tag || "")}${icono("derecha")}</button>` : ""}</div>` : ""}`;
   };
 
   return {
     titulo: pl?.nombre ?? "Inspección",
-    tituloCorto: equipo(d, insp.equipo_id)?.nombre ?? "Inspección",
-    atras: "#/inspecciones",
+    tituloCorto: ronda ? "Ronda de colectores" : equipo(d, ids[0])?.nombre ?? "Inspección",
+    atras: "#/tablero?v=inspecciones",
     viva: false,
     html: `${cabeceraInspeccion(d, insp, hoy)}
       <div class="hoja-insp">
         <div>
           ${!esMia ? `<p class="nota-asignacion" style="margin-bottom:12px">Está asignada a ${esc(nombreCorto(d, insp.asignada_a))}. Si la llenas tú, queda a tu nombre.</p>` : ""}
-          ${guardado ? `<p class="nota-asignacion" style="margin-bottom:12px">Seguiste donde la dejaste (${esc(fechaHora(guardado.guardado))}).</p>` : ""}
-          ${items.length ? `<ol class="items">${items.map(htmlItem).join("")}</ol>` : vacio("Esta plantilla no tiene revisiones. Edítala en Equipos.")}
-          <div class="pie-fijo vidrio">
-            <div class="avance" aria-live="polite"><span data-avance></span><div class="barra-avance"><i data-barra style="width:0"></i></div></div>
+          ${guardado && Object.keys(R).length ? `<p class="nota-asignacion azul" style="margin-bottom:12px">Seguiste donde la dejaste (${esc(fechaHora(guardado.guardado))}).</p>` : ""}
+          ${ronda ? `<nav class="ronda-pasos" aria-label="Colectores de la ronda" data-pasos>${pasos()}</nav>` : ""}
+          <div data-cuerpo>${cuerpoPaso()}</div>
+          <div class="pie-fijo">
+            <div class="avance" aria-live="polite"><span data-avance></span><div class="barra-avance"><i data-barra></i></div></div>
             <button type="button" class="boton primario" data-accion="terminar">${icono("bien")}Terminar</button>
           </div>
         </div>
         <aside class="panel">${datosInspeccion(d, insp)}
-          ${yo.rol === "ingeniero" ? `<div class="herramientas-item"><button type="button" class="boton chico" data-accion="avisar">${icono("whatsapp")}Avisar</button>
+          ${esAdmin(yo) ? `<div class="herramientas-item">
+            <button type="button" class="boton chico" data-accion="recordar">${icono("campana")}Recordar</button>
+            <button type="button" class="boton chico" data-accion="fecha">${icono("calendario")}Cambiar fecha</button>
+            <button type="button" class="boton chico" data-accion="avisar">${icono("whatsapp")}WhatsApp</button>
             <button type="button" class="boton chico peligro" data-accion="borrar">${icono("basura")}Borrar</button></div>` : ""}
         </aside>
       </div>`,
@@ -282,14 +402,34 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
       const pintarAvance = () => {
         const a = avance();
         m.querySelector("[data-avance]").innerHTML = `<b>${a.hechos} de ${a.total}</b><span class="largo"> revisadas</span>${a.mal ? ` · ${plural(a.mal, "hallazgo", "hallazgos")}` : ""}`;
-        m.querySelector("[data-barra]").style.width = `${a.total ? (100 * a.hechos) / a.total : 100}%`;
+        m.querySelector("[data-barra]").style.transform = `scaleX(${a.total ? a.hechos / a.total : 1})`;
+        const ps = m.querySelector("[data-pasos]");
+        if (ps) ids.forEach((e, k) => { const i = ps.children[k]?.querySelector(".estado-paso"); if (i) i.className = `estado-paso ${estadoEquipo(e)}`; });
       };
-      const repintarItem = (itemId, foco) => {
-        const it = items.find((x) => x.id === itemId);
-        const li = m.querySelector(`[data-item="${CSS.escape(itemId)}"]`);
-        const k = items.indexOf(it);
-        li.outerHTML = htmlItem(it, k);
-        if (foco) m.querySelector(`[data-item="${CSS.escape(itemId)}"] ${foco}`)?.focus();
+      const irAPaso = (k, alFinal) => {
+        paso = Math.max(0, Math.min(ids.length - 1, k));
+        guardar();
+        const cambiar = () => {
+          m.querySelector("[data-cuerpo]").innerHTML = cuerpoPaso();
+          const ps = m.querySelector("[data-pasos]");
+          ps.innerHTML = pasos();
+          ps.children[paso]?.scrollIntoView({ inline: "center", block: "nearest", behavior: reducir() ? "auto" : "smooth" });
+          pintarAvance();
+          alFinal?.();
+        };
+        if (document.startViewTransition && !reducir()) document.startViewTransition(cambiar).finished.catch(() => {});
+        else cambiar();
+        m.querySelector(".hoja-insp").scrollIntoView({ block: "start", behavior: "auto" });
+      };
+      const zonaItem = (li) => {
+        const [eqId, itId] = li.dataset.item.split("|");
+        return { eqId, it: items.find((x) => x.id === itId), r: R[li.dataset.item] };
+      };
+      const repintarItem = (li, foco) => {
+        const { eqId, it } = zonaItem(li);
+        const k = li.dataset.item;
+        li.outerHTML = htmlItem(eqId, it);
+        if (foco) m.querySelector(`[data-item="${CSS.escape(k)}"] ${foco}`)?.focus();
         pintarAvance();
       };
       pintarAvance();
@@ -298,25 +438,24 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
       m.addEventListener("click", async (e) => {
         const b = e.target.closest("button");
         if (!b) return;
+        if (b.dataset.paso != null) return irAPaso(Number(b.dataset.paso));
         const li = b.closest("[data-item]");
-        const itemId = li?.dataset.item;
         if (b.dataset.resultado) {
-          const r = R[itemId];
+          const { r } = zonaItem(li);
           r.resultado = r.resultado === b.dataset.resultado ? null : b.dataset.resultado;
           r.manual = true;
           if (r.resultado !== "mal") r.hallazgo = r.hallazgo && (r.hallazgo.descripcion || r.hallazgo.accion) ? r.hallazgo : null;
           guardar();
-          repintarItem(itemId, `[data-resultado="${b.dataset.resultado}"]`);
-          li.classList.remove("falta");
+          repintarItem(li, `[data-resultado="${b.dataset.resultado}"]`);
         } else if (b.dataset.prioridad) {
-          R[itemId].hallazgo.prioridad = b.dataset.prioridad;
+          zonaItem(li).r.hallazgo.prioridad = b.dataset.prioridad;
           guardar();
           b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
         } else if (b.dataset.quitar) {
-          const r = R[itemId];
+          const { r } = zonaItem(li);
           r.fotos = r.fotos.filter((x) => x !== b.dataset.quitar);
           guardar();
-          m.querySelector(`[data-galeria="${CSS.escape(itemId)}"]`).innerHTML = galeria(r.fotos, { quitar: true });
+          li.querySelector("[data-galeria]").innerHTML = galeria(r.fotos, { quitar: true });
         } else if (b.dataset.dictar) {
           if (parar) { parar(); parar = null; return; }
           const campo = m.querySelector(`#${CSS.escape(b.dataset.dictar)}`);
@@ -326,33 +465,17 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
             alError: (t) => aviso(t, { error: true }),
           });
         } else if (b.dataset.accion === "terminar") terminar(b);
-        else if (b.dataset.accion === "avisar") abrirWhatsApp(mensajeAsignacion(d, insp));
-        else if (b.dataset.accion === "borrar") {
-          if (!(await confirmar("¿Borrar esta inspección?", "Se quita de la lista de quien la tiene asignada.", "Borrar", "peligro"))) return;
-          try {
-            await api.escribir(`inspecciones/${encodeURIComponent(insp.id)}/borrar`, {});
-            api.borrador.borrar(insp.id);
-            aviso("Inspección borrada.");
-            ir("#/inspecciones");
-          } catch (x) {
-            aviso(x.sinRed ? "Para borrar hace falta señal." : x.message, { error: true });
-          }
-        }
+        else if (b.dataset.accion) accionesAdmin(b, d, insp, ir);
       });
 
       m.addEventListener("input", (e) => {
         const t = e.target;
-        if (t.dataset.textoDe) { R[t.dataset.textoDe].texto = t.value; guardar(); return; }
-        if (t.dataset.h) {
-          const itemId = t.closest("[data-item]").dataset.item;
-          R[itemId].hallazgo[t.dataset.h] = t.value;
-          guardar();
-          return;
-        }
-        if (t.dataset.valorDe) {
-          const itemId = t.dataset.valorDe;
-          const it = items.find((x) => x.id === itemId);
-          const r = R[itemId];
+        const li = t.closest("[data-item]");
+        if (!li) return;
+        const { eqId, it, r } = zonaItem(li);
+        if (t.hasAttribute("data-texto")) { r.texto = t.value; guardar(); return; }
+        if (t.dataset.h) { r.hallazgo[t.dataset.h] = t.value; guardar(); return; }
+        if (t.hasAttribute("data-medida")) {
           t.value = t.value.replace(",", ".").replace(/[^\d.\-]/g, "");
           r.valor = t.value;
           const fuera = fueraDeRango(it, r.valor);
@@ -360,14 +483,13 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
           if (!r.manual || antes == null) r.resultado = r.valor === "" ? null : fuera ? "mal" : "ok";
           if (fuera && r.resultado === "ok" && !r.manual) r.resultado = "mal";
           guardar();
-          const rango = m.querySelector(`[data-rango="${CSS.escape(itemId)}"]`);
+          const rango = li.querySelector("[data-rango]");
           rango.className = `rango${fuera ? " fuera" : ""}`;
           rango.textContent = `${fuera ? "Fuera de rango · " : ""}${textoRango(it)}${it.tipico && (it.min != null || it.max != null) ? " (típico)" : ""}`;
           if (r.resultado !== antes) {
-            const li = t.closest("[data-item]");
             li.querySelectorAll("[data-resultado]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.resultado === r.resultado)));
             if (r.resultado !== "mal" && r.hallazgo && !r.hallazgo.descripcion) r.hallazgo = null;
-            m.querySelector(`[data-zona-hallazgo="${CSS.escape(itemId)}"]`).innerHTML = htmlHallazgo(it, r);
+            li.querySelector("[data-zona-hallazgo]").innerHTML = htmlHallazgo(eqId, it, r);
             li.classList.remove("falta");
             pintarAvance();
           }
@@ -376,21 +498,20 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
 
       m.addEventListener("change", async (e) => {
         const t = e.target;
-        if (t.dataset.h === "responsable_id") {
-          R[t.closest("[data-item]").dataset.item].hallazgo.responsable_id = t.value;
-          guardar();
-        }
+        const li = t.closest("[data-item]");
+        if (t.dataset.h === "responsable_id") { zonaItem(li).r.hallazgo.responsable_id = t.value; guardar(); }
         if (t.dataset.medioDe && t.files?.length) {
-          const itemId = t.dataset.medioDe;
+          const k = t.dataset.medioDe;
           const archivos = [...t.files];
           t.value = "";
           for (const a of archivos) {
             try {
               const listo = await prepararArchivo(a);
               const id = await api.guardarMedio(listo, a.name);
-              R[itemId].fotos.push(id);
+              R[k].fotos.push(id);
               guardar();
-              m.querySelector(`[data-galeria="${CSS.escape(itemId)}"]`).innerHTML = galeria(R[itemId].fotos, { quitar: true });
+              const actual = m.querySelector(`[data-item="${CSS.escape(k)}"] [data-galeria]`);
+              if (actual) actual.innerHTML = galeria(R[k].fotos, { quitar: true });
             } catch (x) {
               aviso(x.message, { error: true });
             }
@@ -400,41 +521,50 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
 
       async function terminar(boton) {
         const faltan = [];
-        for (const it of items) {
-          const r = R[it.id];
-          let falta = false;
-          if (it.tipo !== "texto" && !r.resultado) falta = true;
-          if (it.tipo === "medida" && r.resultado && r.resultado !== "na" && r.valor === "") falta = true;
-          if (it.foto === "siempre" && r.resultado !== "na" && !r.fotos.length) falta = true;
-          m.querySelector(`[data-item="${CSS.escape(it.id)}"]`)?.classList.toggle("falta", falta);
-          if (falta) faltan.push(it);
+        for (const [k, eqId] of ids.entries()) {
+          for (const it of items) {
+            const r = R[clave(eqId, it.id)];
+            let falta = false;
+            if (it.tipo !== "texto" && !r.resultado) falta = true;
+            if (it.tipo === "medida" && r.resultado && r.resultado !== "na" && r.valor === "") falta = true;
+            if (it.foto === "siempre" && r.resultado !== "na" && !r.fotos.length) falta = true;
+            if (falta) faltan.push({ paso: k, clave: clave(eqId, it.id) });
+          }
         }
         if (faltan.length) {
-          aviso(`Falta${faltan.length === 1 ? "" : "n"} ${plural(faltan.length, "revisión", "revisiones")}: están marcadas en rojo.`, { error: true });
-          m.querySelector(`[data-item="${CSS.escape(faltan[0].id)}"]`)?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+          const marcar = () => {
+            for (const f of faltan) m.querySelector(`[data-item="${CSS.escape(f.clave)}"]`)?.classList.add("falta");
+            m.querySelector(`[data-item="${CSS.escape(faltan[0].clave)}"]`)?.scrollIntoView({ behavior: reducir() ? "auto" : "smooth", block: "center" });
+          };
+          const otros = ronda ? new Set(faltan.map((f) => f.paso)).size : 0;
+          aviso(`Falta${faltan.length === 1 ? "" : "n"} ${plural(faltan.length, "revisión", "revisiones")}${otros > 1 ? ` en ${otros} colectores` : ""}: están marcadas en rojo.`, { error: true });
+          if (faltan[0].paso !== paso) irAPaso(faltan[0].paso, marcar);
+          else marcar();
           return;
         }
-        const hallazgos = items
-          .filter((it) => R[it.id].resultado === "mal")
-          .map((it) => {
-            const r = R[it.id];
-            return { ...r.hallazgo, item: it.texto, descripcion: (r.hallazgo?.descripcion || sugerenciaHallazgo(it, r)).trim(), fotos: r.fotos };
-          });
+        const hallazgos = [];
+        for (const eqId of ids) for (const it of items) {
+          const r = R[clave(eqId, it.id)];
+          if (r.resultado !== "mal") continue;
+          const tag = equipo(d, eqId)?.tag;
+          hallazgos.push({ ...r.hallazgo, equipo_id: eqId, item: it.texto, descripcion: (r.hallazgo?.descripcion || `${ronda && tag ? `${tag}: ` : ""}${sugerenciaHallazgo(it, r)}`).trim(), fotos: r.fotos });
+        }
         const ok = await dialogo({
           titulo: "¿Terminar la inspección?",
-          html: `<p>${plural(avance().total, "revisión", "revisiones")}${hallazgos.length ? `, con ${plural(hallazgos.length, "hallazgo", "hallazgos")}` : ", todo bien"}. Después no se puede cambiar.</p>`,
+          html: `<p>${plural(avance().total, "revisión", "revisiones")}${ronda ? ` en ${plural(ids.length, "colector", "colectores")}` : ""}${hallazgos.length ? `, con ${plural(hallazgos.length, "hallazgo", "hallazgos")}` : ", todo bien"}. Después no se puede cambiar.</p>`,
           botones: [{ texto: "Seguir revisando", valor: false }, { texto: "Terminar", valor: true, clase: "primario" }],
         });
         if (!ok) return;
         boton.disabled = true;
-        const respuestas = items.map((it) => {
-          const r = R[it.id];
-          return { item_id: it.id, resultado: it.tipo === "texto" ? (r.texto ? "ok" : null) : r.resultado, valor: r.valor === "" ? null : Number(r.valor), texto: r.texto, fotos: r.fotos };
-        });
+        const respuestas = [];
+        for (const eqId of ids) for (const it of items) {
+          const r = R[clave(eqId, it.id)];
+          respuestas.push({ equipo_id: eqId, item_id: it.id, resultado: it.tipo === "texto" ? (r.texto ? "ok" : null) : r.resultado, valor: r.valor === "" ? null : Number(r.valor), texto: r.texto, fotos: r.fotos });
+        }
         try {
           // se guarda en el aparato y se intenta mandar; se espera hasta 8 s para poder decir si ya llegó
           const envio = api.encolar(`inspecciones/${encodeURIComponent(insp.id)}/hecha`, { hecha_en: new Date().toISOString(), respuestas, hallazgos });
-          await Promise.race([envio, new Promise((ok) => setTimeout(ok, 8000))]);
+          await Promise.race([envio, new Promise((ok2) => setTimeout(ok2, 8000))]);
         } catch (x) {
           boton.disabled = false;
           aviso(`No se pudo guardar: ${x.message}`, { error: true });
@@ -457,7 +587,7 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
 }
 
 function sugerenciaHallazgo(it, r) {
-  if (it.tipo === "medida" && r.valor !== "") {
+  if (it.tipo === "medida" && r.valor !== "" && r.valor != null) {
     const u = it.unidad ? ` ${it.unidad}` : "";
     const lim = it.max != null && Number(r.valor) > it.max ? ` (máximo ${numero(it.max, 2)}${u})` : it.min != null && Number(r.valor) < it.min ? ` (mínimo ${numero(it.min, 2)}${u})` : "";
     return `${it.texto}: ${numero(Number(r.valor), 2)}${u}${lim}`;
@@ -466,52 +596,84 @@ function sugerenciaHallazgo(it, r) {
 }
 
 function resumenWhatsApp(d, insp, items, respuestas, hallazgos, yo) {
-  const eq = equipo(d, insp.equipo_id), pl = plantilla(d, insp.plantilla_id);
-  const lineas = [`Inspección hecha: ${eq?.nombre} · ${pl?.nombre} (${yo.rol === "jefe" ? yo.turno : yo.nombre})`];
+  const pl = plantilla(d, insp.plantilla_id);
+  const lineas = [`Inspección hecha: ${queInspeccion(d, insp)} · ${pl?.nombre} (${yo.turno ? `Turno ${yo.turno}` : yo.nombre})`];
   if (!hallazgos.length) lineas.push("Todo bien.");
   for (const h of hallazgos) lineas.push(`⚠ ${h.descripcion} — prioridad ${h.prioridad}${h.accion ? `. Acción: ${h.accion}` : ""}`);
-  const medidas = items.filter((it) => it.tipo === "medida").map((it) => {
-    const r = respuestas.find((x) => x.item_id === it.id);
-    return r?.valor != null ? `${it.texto}: ${numero(r.valor, 2)} ${it.unidad ?? ""}`.trim() : null;
+  const ids = equiposDe(insp);
+  const medidas = respuestas.filter((r) => r.valor != null).map((r) => {
+    const it = items.find((x) => x.id === r.item_id);
+    if (it?.tipo !== "medida") return null;
+    const tag = ids.length > 1 ? `${equipo(d, r.equipo_id)?.tag ?? ""} ` : "";
+    return `${tag}${it.texto}: ${numero(r.valor, 2)} ${it.unidad ?? ""}`.trim();
   }).filter(Boolean);
-  if (medidas.length) lineas.push("", ...medidas);
+  if (medidas.length) lineas.push("", ...medidas.slice(0, 30));
   lineas.push("", `${location.origin}${location.pathname}#/inspeccion/${encodeURIComponent(insp.id)}`);
   return lineas.join("\n");
 }
 
 // ------------------------------------------------------------------------------- una inspección hecha
 
-function verHecha({ d, hoy }, insp) {
+function verHecha({ d, yo, hoy }, insp) {
   const items = insp.items ?? plantilla(d, insp.plantilla_id)?.items ?? [];
-  const resp = new Map((insp.respuestas ?? []).map((r) => [r.item_id, r]));
+  const ids = equiposDe(insp);
+  const ronda = ids.length > 1;
+  const resp = new Map((insp.respuestas ?? []).map((r) => [`${r.equipo_id ?? ids[0]}|${r.item_id}`, r]));
   const hallazgos = d.hallazgos.filter((h) => h.inspeccion_id === insp.id);
-  const fila = (it) => {
-    const r = resp.get(it.id) ?? {};
+  const fila = (eqId, it) => {
+    const r = resp.get(`${eqId}|${it.id}`) ?? {};
     const fuera = it.tipo === "medida" && fueraDeRango(it, r.valor);
     const res = it.tipo === "texto" ? "" : r.resultado === "ok" ? `<span class="marca ok">${icono("bien")}Bien</span>`
       : r.resultado === "mal" ? `<span class="marca alta">${icono("mal")}${it.tipo === "medida" ? "Problema" : "Mal"}</span>`
       : r.resultado === "na" ? `<span class="marca">${icono("na")}No aplica</span>` : `<span class="marca">Sin dato</span>`;
-    const valor = it.tipo === "medida" && r.valor != null ? `<span style="${fuera ? "color:var(--rojo)" : ""}">${numero(r.valor, 2)} ${esc(it.unidad ?? "")}</span>` : "";
+    const valor = it.tipo === "medida" && r.valor != null ? `<span class="${fuera ? "fuera" : ""}">${numero(r.valor, 2)} ${esc(it.unidad ?? "")}</span>` : "";
+    if (it.tipo === "texto" && !r.texto) return "";
     return `<li><span class="que">${esc(it.texto)}</span><span class="valor">${valor} ${res}</span>
       ${r.texto ? `<p class="nota">${esc(r.texto)}</p>` : ""}${galeria(r.fotos ?? [])}</li>`;
   };
-  const resumen = `${plural(items.filter((i) => i.tipo !== "texto").length, "revisión", "revisiones")}, ${hallazgos.length ? plural(hallazgos.length, "hallazgo", "hallazgos") : "sin hallazgos"}`;
+  const resumen = `${plural(items.filter((i) => i.tipo !== "texto").length * ids.length, "revisión", "revisiones")}${ronda ? ` en ${plural(ids.length, "colector", "colectores")}` : ""}, ${hallazgos.length ? plural(hallazgos.length, "hallazgo", "hallazgos") : "sin hallazgos"}`;
+  const admin = esAdmin(yo);
   return {
     titulo: plantilla(d, insp.plantilla_id)?.nombre ?? "Inspección",
-    tituloCorto: equipo(d, insp.equipo_id)?.nombre ?? "Inspección",
-    atras: "#/inspecciones",
+    tituloCorto: ronda ? "Ronda de colectores" : equipo(d, ids[0])?.nombre ?? "Inspección",
+    atras: "#/tablero?v=inspecciones",
     html: `${cabeceraInspeccion(d, insp, hoy)}
       <div class="hoja-insp">
         <div>
+          ${insp.revisada_en ? `<div class="visto-bueno" style="margin-bottom:14px">${icono("visto")}<div><b>Visto bueno de ${esc(nombre(d, insp.revisada_por))}</b>
+            <span>${esc(fechaHora(insp.revisada_en))}${insp.revision_nota ? ` · ${esc(insp.revision_nota)}` : ""}</span></div></div>` : ""}
           <p style="margin:0 4px 12px;color:var(--tinta-3)">${resumen}.</p>
-          <ul class="resultados">${items.map(fila).join("")}</ul>
+          <ul class="resultados">${ids.map((e) => `${ronda ? `<li class="titulo-equipo">${esc(equipo(d, e)?.tag ?? "")} <span style="font-family:var(--letra);font-weight:500;color:var(--tinta-3)">${esc(equipo(d, e)?.nombre ?? "")}</span></li>` : ""}${items.map((it) => fila(e, it)).join("")}`).join("")}</ul>
           ${hallazgos.length ? `<section class="seccion"><h2>Hallazgos</h2><ul class="lista">${hallazgos.map((h) => `<li><a class="fila" href="#/hallazgo/${encodeURIComponent(h.id)}">
-            <span class="titulo">${esc(h.descripcion)}</span><span class="detalle">${h.responsable_id ? `A cargo: ${esc(nombreCorto(d, h.responsable_id))}` : ""}</span>
+            <span class="titulo">${esc(h.descripcion)}</span><span class="detalle">${ronda ? `<span class="mono">${esc(equipo(d, h.equipo_id)?.tag ?? "")}</span>` : ""}${h.responsable_id ? `<span>A cargo: ${esc(nombreCorto(d, h.responsable_id))}</span>` : ""}</span>
             <span class="lado">${marcaPrioridad(h.prioridad)}</span></a></li>`).join("")}</ul></section>` : ""}
         </div>
         <aside class="panel">${datosInspeccion(d, insp)}
+          ${admin && !insp._sinEnviar ? (insp.revisada_en
+            ? `<button type="button" class="boton chico" data-accion="quitar-visto">Quitar el visto bueno</button>`
+            : `<button type="button" class="boton verde" data-accion="visto">${icono("visto")}Dar el visto bueno</button>`) : ""}
           <a class="boton" href="#/reporte/${encodeURIComponent(insp.id)}">${icono("imprimir")}Reporte para imprimir</a>
         </aside>
       </div>`,
+    montar(m) {
+      m.addEventListener("click", async (e) => {
+        const b = e.target.closest("[data-accion]");
+        if (!b) return;
+        const id = encodeURIComponent(insp.id);
+        if (b.dataset.accion === "visto") {
+          let nota = "";
+          const ok = await dialogo({
+            titulo: "Visto bueno",
+            html: `<p>${esc(nombreCorto(d, insp.hecha_por))} recibe un aviso.</p><div class="campo"><label for="nota-visto">Comentario <small>(opcional)</small></label>
+              <textarea id="nota-visto" style="min-height:70px" placeholder="Por ejemplo: bien la foto de la fuga"></textarea></div>`,
+            botones: [{ texto: "Cancelar", valor: false }, { texto: "Dar el visto bueno", valor: true, clase: "verde", alElegir: (v) => { nota = v.querySelector("#nota-visto").value; } }],
+          });
+          if (!ok) return;
+          try { await api.escribir(`inspecciones/${id}/revisar`, { nota }); aviso("Visto bueno dado.", { icono: "visto" }); } catch (x) { aviso(x.sinRed ? "Hace falta señal." : x.message, { error: true }); }
+        } else if (b.dataset.accion === "quitar-visto") {
+          try { await api.escribir(`inspecciones/${id}/revisar`, { quitar: true }); } catch (x) { aviso(x.sinRed ? "Hace falta señal." : x.message, { error: true }); }
+        }
+      });
+    },
   };
 }

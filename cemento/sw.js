@@ -1,12 +1,14 @@
-// El service worker: guarda la app en el aparato para que abra sin señal. Solo maneja los archivos de la app (mismo
-// origen); el servidor de datos (otro origen) lo maneja la app con su cola. VERSION la pone publicar.sh: al cambiar,
-// el aparato baja la versión nueva y la app ofrece «Actualizar» (no se cambia sola a mitad de una inspección).
-const VERSION = "2deba015f3";
+// El service worker: guarda la app en el aparato para que abra sin señal, y muestra las notificaciones (Web Push).
+// Solo maneja los archivos de la app (mismo origen); el servidor de datos (otro origen) lo maneja la app con su cola.
+// VERSION la pone publicar-web.sh: al cambiar, el aparato baja la versión nueva y la app ofrece «Actualizar» (no se
+// cambia sola a mitad de una inspección).
+const VERSION = "609633-1029";
 const CACHE = `bitacora-${VERSION}`;
 const ARCHIVOS = [
   "./", "./index.html", "./manifest.webmanifest", "./css/app.css",
-  "./js/app.mjs", "./js/api.mjs", "./js/ui.mjs", "./js/util.mjs", "./js/medios.mjs", "./js/tromp.mjs",
-  "./js/vistas-inspecciones.mjs", "./js/vistas-hallazgos.mjs", "./js/vistas-equipos.mjs", "./js/vistas-reportes.mjs", "./js/vistas-tromp.mjs",
+  "./js/app.mjs", "./js/api.mjs", "./js/ui.mjs", "./js/util.mjs", "./js/tema.mjs", "./js/medios.mjs", "./js/tromp.mjs", "./js/xlsx.mjs",
+  "./js/vistas-tablero.mjs", "./js/vistas-calendario.mjs", "./js/vistas-inspecciones.mjs", "./js/vistas-hallazgos.mjs", "./js/vistas-equipos.mjs",
+  "./js/vistas-colectores.mjs", "./js/vistas-reportes.mjs", "./js/vistas-tromp.mjs", "./js/vistas-ajustes.mjs",
   "./fuentes/inter-latin.woff2",
   "./iconos/icono-192.png", "./iconos/icono-512.png", "./iconos/icono-512-enmascarable.png", "./iconos/apple-touch-icon.png", "./iconos/favicon-64.png",
 ];
@@ -38,4 +40,34 @@ self.addEventListener("fetch", (e) => {
   e.respondWith(
     caches.match(e.request, { cacheName: CACHE, ignoreSearch: true }).then((r) => r || fetch(e.request)),
   );
+});
+
+// ---- notificaciones: el servidor manda { titulo, cuerpo, url, etiqueta }
+self.addEventListener("push", (e) => {
+  let d = {};
+  try { d = e.data?.json() ?? {}; } catch { d = { cuerpo: e.data?.text() }; }
+  e.waitUntil(self.registration.showNotification(d.titulo || "Bitácora de proceso", {
+    body: d.cuerpo || "",
+    icon: "./iconos/icono-192.png",
+    badge: "./iconos/favicon-64.png",
+    tag: d.etiqueta || undefined,
+    renotify: !!d.etiqueta,
+    data: { url: d.url || "#/tablero" },
+    lang: "es-PA",
+  }));
+});
+
+// al tocarla: si la app está abierta, va a esa pantalla; si no, la abre ahí
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = e.notification.data?.url || "#/tablero";
+  e.waitUntil((async () => {
+    const abiertas = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const app = abiertas.find((c) => c.url.startsWith(self.registration.scope));
+    if (app) {
+      app.postMessage({ tipo: "abrir", url });
+      return app.focus();
+    }
+    return self.clients.openWindow(new URL(url, self.registration.scope).href);
+  })());
 });

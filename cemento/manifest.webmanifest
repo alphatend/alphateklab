@@ -4,7 +4,7 @@
   "short_name": "Bitácora",
   "description": "Inspecciones de planta: rutas de revisión por equipo, hallazgos y reportes.",
   "lang": "es-PA",
-  "start_url": "./#/inicio",
+  "start_url": "./#/tablero",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
