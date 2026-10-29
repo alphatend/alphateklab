@@ -1,6 +1,6 @@
 // Reportes: el de la semana (o del período que se elija) para el jefe, y el de una inspección. Se imprimen o se
 // guardan en PDF con el diálogo de impresión, y el resumen se copia para mandarlo por WhatsApp o correo.
-import { esc, icono, fechaCorta, fechaLarga, fechaHora, sumarDias, diaDe, plural, numero } from "./util.mjs";
+import { esc, icono, fechaCorta, fechaLarga, fechaHora, sumarDias, diaDe, numero } from "./util.mjs";
 import { aviso, vacio, equipo, plantilla, nombre, nombreCorto, TEXTO_PRIORIDAD, TEXTO_ESTADO } from "./ui.mjs";
 import { urlMedio } from "./api.mjs";
 import { fueraDeRango } from "./vistas-inspecciones.mjs";
@@ -51,11 +51,11 @@ export function vistaReportes({ d, yo, hoy, query }) {
   const listaHallazgos = [...r.nuevos].sort((a, b) => orden[a.prioridad] - orden[b.prioridad]);
   const filtro = (id, texto) => `<a href="#/reportes?p=${id}" ${per.p === id ? 'aria-current="true"' : ""}>${texto}</a>`;
   const parrafo =
-    `Del ${fechaLarga(per.desde)} al ${fechaLarga(per.hasta)} se hicieron ${plural(r.hechas.length, "inspección", "inspecciones")}` +
+    `Del ${fechaLarga(per.desde)} al ${fechaLarga(per.hasta)} ${r.hechas.length === 1 ? "se hizo 1 inspección" : `se hicieron ${r.hechas.length} inspecciones`}` +
     (r.programadas.length ? `; de las ${r.programadas.length} programadas para el período se completaron ${r.progHechas} (${cumplimiento} %)` : "") +
-    (r.atrasadas.length ? ` y quedan ${plural(r.atrasadas.length, "atrasada", "atrasadas")}` : "") +
-    `. Se anotaron ${plural(r.nuevos.length, "hallazgo", "hallazgos")} y se cerraron ${r.cerrados.length}; ` +
-    (r.abiertos.length ? `quedan ${plural(r.abiertos.length, "abierto", "abiertos")}${altas.length ? `, ${plural(altas.length, "de prioridad alta", "de prioridad alta")}` : ""}.` : "no queda ninguno abierto.");
+    (r.atrasadas.length ? ` y ${r.atrasadas.length === 1 ? "queda 1 atrasada" : `quedan ${r.atrasadas.length} atrasadas`}` : "") +
+    `. ${r.nuevos.length === 1 ? "Se anotó 1 hallazgo" : `Se anotaron ${r.nuevos.length} hallazgos`} y ${r.cerrados.length === 1 ? "se cerró 1" : `se cerraron ${r.cerrados.length}`}; ` +
+    (r.abiertos.length ? `${r.abiertos.length === 1 ? "queda 1 abierto" : `quedan ${r.abiertos.length} abiertos`}${altas.length ? `, ${altas.length} de prioridad alta` : ""}.` : "no queda ninguno abierto.");
   const textoCopiar = [
     `Reporte de inspecciones — ${fechaCorta(per.desde)} al ${fechaCorta(per.hasta)}`,
     parrafo,
