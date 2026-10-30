@@ -172,7 +172,6 @@ function mostrarVista(r, fn, misma, anterior, esta) {
     setTimeout(() => main.classList.remove("entrando"), 700);
   }
   document.title = `${v.titulo} · ${nombreApp()}`;
-  document.getElementById("titulo-barra").textContent = v.tituloCorto ?? v.titulo;
   const volver = document.getElementById("volver");
   document.body.classList.toggle("en-detalle", !!v.atras);
   volver.hidden = !v.atras;
@@ -213,12 +212,10 @@ function armarArmazon() {
       </div>
     </aside>
     <div>
-      <header class="barra-sup vidrio">
-        <a class="volver" id="volver" href="#/tablero" hidden>${icono("flecha")}<span class="oculto">Atrás</span></a>
-        <div class="nombre-app" id="titulo-barra"></div>
-        <a class="senal" id="senal-barra" href="#/pendientes"></a>
-        <a class="boton-icono" href="#/avisos" id="campana-barra" aria-label="Avisos">${icono("campana")}</a>
-      </header>
+      <!-- en el teléfono no hay barra arriba (repetía el título que ya está grande debajo): en el detalle, «atrás» flota
+           como un círculo de vidrio; la señal sale solo cuando hay algo que decir; los avisos están en «Más» -->
+      <a class="volver-flotante vidrio" id="volver" href="#/tablero" hidden aria-label="Atrás">${icono("flecha")}</a>
+      <a class="senal senal-banda" id="senal-barra" href="#/pendientes" hidden></a>
       <main id="contenido" class="contenido" tabindex="-1"></main>
     </div>
     <div class="dock"><nav class="pestanas vidrio" aria-label="Secciones">${PESTANAS.map((n) => `<a href="#/${n.ruta}" data-seccion="${n.ruta}" class="${n.clase ?? ""}">${iconoNav(n.icono)}<span>${n.texto}</span></a>`).join("")}</nav>
@@ -288,7 +285,7 @@ function actualizarArmazon(r) {
   globo('[data-seccion="tablero"]', mias, `${mias} para hoy o atrasadas`);
   const tareasHoy = (d.tareas ?? []).filter((t) => t.estado !== "hecha" && (t.asignada_a === yo.id || t.asignada_a === turnoMio) && t.vence && t.vence <= hoy).length;
   globo('[data-seccion="tareas"]', tareasHoy, `${tareasHoy} tareas para hoy o atrasadas`);
-  globo('[data-seccion="avisos"], #campana-barra', nuevos, `${nuevos} avisos nuevos`);
+  globo('[data-seccion="avisos"]', nuevos, `${nuevos} avisos nuevos`);
   globo('.pestanas [data-seccion="mas"]', nuevos, `${nuevos} avisos nuevos`);
   const crea = opcionesCrear(yo, r).length > 0;
   document.querySelectorAll("[data-crear]").forEach((b) => { b.hidden = !crea; });
@@ -303,10 +300,10 @@ function pintarSenal() {
   const sin = navigator.onLine === false;
   const texto = rech ? `${plural(rech, "envío falló", "envíos fallaron")}` : n ? `${plural(n, "cosa", "cosas")} por enviar${sin ? " · sin señal" : ""}` : sin ? "Sin señal · todo guardado" : "Al día";
   for (const el of document.querySelectorAll(".senal")) {
-    el.className = `senal${sin || rech || n ? " sin" : ""}`;
+    el.classList.toggle("sin", !!(sin || rech || n));
     el.innerHTML = `${icono(sin ? "sinNube" : "nube")}<span>${texto}</span>`;
     el.setAttribute("aria-label", texto);
-    // en el teléfono el ícono de la nube solo aparece cuando hay algo que decir
+    // en el teléfono la franja solo aparece cuando hay algo que decir
     if (el.id === "senal-barra") el.hidden = !(sin || rech || n);
   }
 }

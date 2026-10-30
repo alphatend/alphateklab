@@ -156,22 +156,29 @@ p { margin: 0; }
 
 .armazon { min-height: 100dvh; }
 .riel { display: none; }
-.barra-sup {
-  position: sticky; top: 0; z-index: 20;
-  display: flex; align-items: center; gap: 6px;
-  min-height: 52px; padding: 6px 8px 6px 16px; padding-top: max(6px, env(safe-area-inset-top));
-  border-width: 0 0 0.5px; border-radius: 0; box-shadow: none;
+/* teléfono: sin barra arriba. El título grande de cada pantalla ya dice dónde se está; «atrás» flota en el detalle. */
+.volver-flotante {
+  position: fixed; z-index: 25; top: max(10px, calc(env(safe-area-inset-top) + 4px)); left: 12px;
+  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--tinte);
+  transition: transform var(--dur-respuesta) var(--resorte);
 }
-.barra-sup .nombre-app { font: 600 17px/1.2 var(--titulo); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.barra-sup .volver { color: var(--tinte); display: inline-flex; align-items: center; gap: 2px; min-height: 44px; margin-left: -8px; font-size: 17px; }
-.barra-sup .volver .ico { width: 26px; height: 26px; }
+.volver-flotante .ico { width: 24px; height: 24px; }
+.volver-flotante:active { transform: scale(0.9); }
+.volver-flotante:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+.volver-flotante[hidden] { display: none; }
+.senal-banda { margin: max(10px, calc(env(safe-area-inset-top) + 4px)) 16px 0; min-height: 40px; padding: 8px 12px; border-radius: 12px; background: var(--naranja-tinte); }
+.senal-banda[hidden] { display: none; }
+body.en-detalle .senal-banda { margin-left: 64px; min-height: 44px; }
 .boton-icono {
   position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 0;
   background: transparent; color: var(--tinte); cursor: pointer; transition: transform var(--dur-respuesta) var(--resorte), background-color var(--dur-respuesta);
 }
 .boton-icono:active { transform: scale(0.9); background: var(--relleno); }
 .boton-icono .globo { top: 4px; left: auto; right: 2px; }
-.contenido { padding: 14px 16px 140px; max-width: 1180px; margin: 0 auto; }
+.contenido { padding: max(14px, calc(env(safe-area-inset-top) + 8px)) 16px 140px; max-width: 1180px; margin: 0 auto; }
+/* en el detalle, lugar para el «atrás» flotante; con la franja de la señal arriba, esa fila ya lo deja */
+body.en-detalle .contenido { padding-top: calc(max(10px, calc(env(safe-area-inset-top) + 4px)) + 54px); }
+.senal-banda:not([hidden]) + .contenido, body.en-detalle .senal-banda:not([hidden]) + .contenido { padding-top: 14px; }
 .contenido.ancho { max-width: none; }
 #contenido:focus { outline: none; }
 
@@ -271,7 +278,8 @@ p { margin: 0; }
     .riel .marca-riel .sub { display: none; }
     .riel nav .grupo-nav { padding-top: 6px; }
   }
-  .barra-sup, .dock { display: none; }
+  .volver-flotante, .senal-banda, .dock { display: none !important; }
+  .contenido, body.en-detalle .contenido, .senal-banda:not([hidden]) + .contenido, body.en-detalle .senal-banda:not([hidden]) + .contenido { padding-top: 32px; }
   .crear-riel {
     display: flex; align-items: center; gap: 10px; min-height: 44px; margin: 0 2px 10px; padding: 0 12px; border-radius: 12px; border: 0; cursor: pointer;
     background: var(--tinte-suave); color: var(--tinte); font: 600 16px var(--letra); transition: transform var(--dur-respuesta) var(--resorte);
@@ -294,8 +302,7 @@ p { margin: 0; }
 .yo-riel > span:last-child { min-width: 0; }
 .senal { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--tinta-3); padding: 6px 10px; border-radius: 10px; }
 .senal.sin { color: var(--naranja); font-weight: 600; }
-.barra-sup .senal { padding: 0; width: 44px; height: 44px; justify-content: center; font-size: 0; }
-.barra-sup .senal:not(.sin) { color: var(--tinte); }
+
 .letra-inicial {
   width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none;
   background: linear-gradient(180deg, #a2a2a8, #7c7c82); color: #fff; font: 600 16px var(--titulo); letter-spacing: 0;
@@ -682,7 +689,13 @@ html.arrastrando, html.arrastrando * { cursor: grabbing !important; -webkit-user
 .datos-insp { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 15px; margin: 0; }
 .datos-insp dt { color: var(--tinta-3); }
 .datos-insp dd { margin: 0; font-weight: 600; min-width: 0; }
-.ronda-pasos { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 10px; margin: 0 -2px 6px; position: sticky; top: 58px; z-index: 5; }
+.ronda-pasos { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 10px; margin: 0 -2px 6px; position: sticky; top: 0; z-index: 5; }
+/* pegados arriba en el teléfono: debajo de la hora y, en el detalle, debajo del «atrás» flotante */
+@media (max-width: 899px) {
+  .ronda-pasos, .salida-reporte { top: max(0px, env(safe-area-inset-top)); }
+  .ronda-pasos { background: var(--fondo); margin-inline: -16px; padding-inline: 16px; padding-top: 6px; }
+  body.en-detalle .ronda-pasos, body.en-detalle .salida-reporte { top: calc(max(10px, calc(env(safe-area-inset-top) + 4px)) + 50px); }
+}
 @media (min-width: 900px) { .ronda-pasos { top: 0; } }
 .ronda-pasos::-webkit-scrollbar { display: none; }
 .ronda-pasos button {
@@ -853,7 +866,7 @@ html.arrastrando, html.arrastrando * { cursor: grabbing !important; -webkit-user
 .plantillas-pdf small { font-size: 13px; color: var(--tinta-3); line-height: 1.3; }
 .plantillas-pdf .mini { height: 54px; border-radius: 6px; background: #fff; box-shadow: inset 0 0 0 1px #e5e5ea; position: relative; overflow: hidden; }
 .plantillas-pdf .mini i { position: absolute; left: 8px; right: 8px; height: 4px; border-radius: 2px; background: #d1d1d6; }
-.salida-reporte { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; position: sticky; top: 58px; z-index: 5; padding: 8px 0; }
+.salida-reporte { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; position: sticky; top: 0; z-index: 5; padding: 8px 0; }
 /* pegada arriba, con su fondo: si no, los botones quedan encima del papel sin nada detrás */
 @media (max-width: 899px) {
   .salida-reporte { background: var(--fondo); margin-inline: -16px; padding: 8px 16px; box-shadow: 0 0.5px 0 var(--linea);
@@ -976,7 +989,7 @@ html.arrastrando, html.arrastrando * { cursor: grabbing !important; -webkit-user
 /* cada pieza de vidrio con su nombre (en un contenedor con nombre, el vidrio de adentro no desenfocaría lo de atrás) */
 .pestanas { view-transition-name: pestanas; }
 .crear-flotante { view-transition-name: crear; }
-.barra-sup { view-transition-name: barra; }
+.volver-flotante { view-transition-name: volver; }
 /* mientras dura (≈220 ms) el navegador no entrega toques, como iOS en sus transiciones: que sea corta */
 ::view-transition-old(root) { animation: 100ms cubic-bezier(0.4, 0, 1, 1) both vt-salir; }
 ::view-transition-new(root) { animation: 220ms var(--ease-salida) both vt-entrar; }
@@ -1255,3 +1268,11 @@ html.arrastrando, html.arrastrando * { cursor: grabbing !important; -webkit-user
 .hallazgo-cabeza h1 { overflow-wrap: anywhere; }
 [data-tarea-insp] .que { cursor: pointer; }
 .documento .tabla:focus-visible, .tabla-desliza:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+/* teléfono, en el detalle: lo que sube se desvanece antes de llegar al «atrás» flotante (como el borde de iOS 26) */
+@media (max-width: 899px) {
+  body.en-detalle::before {
+    content: ""; position: fixed; z-index: 4; inset: 0 0 auto; height: calc(max(10px, calc(env(safe-area-inset-top) + 4px)) + 64px);
+    background: linear-gradient(var(--fondo) 80%, transparent); pointer-events: none;
+  }
+}
+@media print { body.en-detalle::before { display: none; } }
