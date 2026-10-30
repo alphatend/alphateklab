@@ -102,6 +102,8 @@ export function montarEnCurso(m) {
   m.addEventListener("click", async (e) => {
     const b = e.target.closest("[data-termino]");
     if (!b) return;
+    const hora = new Date().toLocaleTimeString("es-PA", { hour: "numeric", minute: "2-digit", timeZone: "America/Panama" });
+    if (!(await confirmar("¿Ya arrancó?", `El paro queda terminado a las ${hora}. Si fue a otra hora, ábrelo y cámbiala.`, "Terminó"))) return;
     b.disabled = true;
     try {
       await api.encolar(`paros/${encodeURIComponent(b.dataset.termino)}`, { fin: new Date().toISOString() });
@@ -140,10 +142,16 @@ export function vistaParo({ d, yo, hoy, param, query, ir }) {
     viva: false,
     html: `<div class="cabeza no-imprimir"><div><div class="migas"><a href="#/paros">Paros</a><span>· ${tipo === "programado" ? "programado" : "no programado"}</span></div>
         <h1>${nuevo ? (tipo === "programado" ? "Programar un paro" : "Anotar un paro") : esc(nombreCompleto(d, P.equipo_id))}</h1>
-        ${!nuevo ? `<p class="bajada">${esc(fechaHora(P.inicio))}${P.fin ? ` → ${esc(fechaHora(P.fin))} · ${duracion(horasDentro(P, 0, Date.now()))}` : " · sigue parado"} · anotó ${esc(nombre(d, P.creado_por))}</p>` : ""}</div>
+        ${!nuevo ? `<p class="bajada">${esc(fechaHora(P.inicio))}${P.fin ? ` → ${esc(fechaHora(P.fin))} · ${duracion((Date.parse(P.fin) - Date.parse(P.inicio)) / H)}` : " · sigue parado"} · anotó ${esc(nombre(d, P.creado_por))}</p>` : ""}</div>
         ${p?._sinEnviar ? marcaSinEnviar() : ""}</div>
       <div class="hoja-insp no-imprimir">
-        <form class="panel" id="form-paro" novalidate>
+        ${!nuevo && !puedeCambiar ? `<div class="panel"><dl class="datos-insp">
+            <dt>Causa</dt><dd>${esc(P.causa || "—")}</dd>
+            <dt>${tipo === "programado" ? "Empieza" : "Paró"}</dt><dd>${esc(fechaHora(P.inicio))}</dd>
+            <dt>${tipo === "programado" ? "Termina" : "Arrancó"}</dt><dd>${P.fin ? esc(fechaHora(P.fin)) : "Sigue parado"}</dd></dl>
+            ${P.descripcion ? `<p class="texto-largo" style="margin:0">${esc(P.descripcion)}</p>` : ""}
+            ${tipo === "no_programado" && !P.fin && puede(yo, "editar") ? `<div><button type="button" class="boton primario" data-termino="${esc(P.id)}">${icono("play")}Terminó</button></div>` : ""}
+            <p class="ayuda">${icono("candado", "ico chico")} Lo cambia quien lo anotó o el administrador${tipo === "no_programado" && !P.fin && puede(yo, "editar") ? "; decir que terminó, cualquiera" : ""}.</p></div>` : `<form class="panel" id="form-paro" novalidate>
           <div class="rejilla-campos dos">
             <div class="campo"><span class="rotulo">Equipo</span>${campoEquipo(d, { id: "p-equipo", valor: P.equipo_id, titulo: "Qué equipo paró", placeholder: "Elegir el equipo" })}</div>
             <div class="campo"><label for="p-causa">Causa</label><select id="p-causa"><option value="">Elegir…</option>${(d.causas_paro ?? []).map((c) => `<option ${c === P.causa ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></div>
@@ -155,8 +163,8 @@ export function vistaParo({ d, yo, hoy, param, query, ir }) {
           <p class="error-form" role="alert" hidden style="color:var(--rojo);font-weight:600"></p>
           ${puedeCambiar ? `<div class="herramientas-item"><button class="boton primario" type="submit">${icono("bien")}${nuevo ? "Guardar" : "Guardar cambios"}</button>
             ${!nuevo && !P.fin ? `<button type="button" class="boton" data-ahora>${icono("play")}Terminó ahora</button>` : ""}
-            ${!nuevo ? `<button type="button" class="boton plano peligro" data-borrar>${icono("basura")}Borrar</button>` : ""}</div>` : `<p class="ayuda">Lo cambia quien lo anotó o el administrador.</p>`}
-        </form>
+            ${!nuevo ? `<button type="button" class="boton plano peligro" data-borrar>${icono("basura")}Borrar</button>` : ""}</div>` : ""}
+        </form>`}
         ${tipo === "programado" && !nuevo ? `<aside class="panel"><h2>Trabajos para este paro</h2>
           ${trabajos.length ? `<ul class="lista" style="box-shadow:none;background:var(--hundido)">${trabajos.map((h) => `<li><a class="fila" href="#/hallazgo/${encodeURIComponent(h.id)}"><span class="titulo">${esc(h.descripcion)}</span>
             <span class="detalle"><span class="mono">${numeroHallazgo(h)}</span><span>${esc(nombreCompleto(d, h.equipo_id))}</span></span><span class="lado">${h.estado === "cerrado" ? `<span class="marca ok">Hecho</span>` : marcaPrioridad(h.prioridad)}</span></a></li>`).join("")}</ul>`
@@ -167,6 +175,7 @@ export function vistaParo({ d, yo, hoy, param, query, ir }) {
       ${tipo === "programado" && !nuevo ? `<div class="hojas solo-imprimir">${docTrabajos()}</div>` : ""}`,
     montar(m) {
       const f = m.querySelector("#form-paro");
+      if (!f) return montarEnCurso(m);
       const instante = (v) => (v ? new Date(v).toISOString() : null);
       f.addEventListener("submit", async (e) => {
         e.preventDefault();

@@ -129,12 +129,19 @@ export function marcaVence(insp, hoy) {
 // ------------------------------------------------------------------------------- consultas comunes
 
 export const persona = (d, id) => d.personas.find((p) => p.id === id);
-export const nombre = (d, id) => persona(d, id)?.nombre ?? "—";
-/** «Turno A» para quien tiene turno; si no, el primer nombre. */
+/** El nombre completo; lo asignado a todo un turno, «Turno A (todo el turno)». */
+export const nombre = (d, id) => (String(id ?? "").startsWith("turno:") ? `Turno ${id.slice(6)} (todo el turno)` : persona(d, id)?.nombre ?? "—");
+/**
+ * El nombre de pila («Pedro»); si otra persona activa empieza igual (los de ejemplo: «Jefe de turno A», «…B»), el
+ * nombre completo. Lo de todo un turno, «Turno A». (Antes decía «Turno C» por la persona: con dos en el turno no se
+ * sabía quién.)
+ */
 export const nombreCorto = (d, id) => {
+  if (String(id ?? "").startsWith("turno:")) return `Turno ${id.slice(6)}`;
   const p = persona(d, id);
   if (!p) return "—";
-  return p.turno ? `Turno ${p.turno}` : p.nombre.split(" ")[0];
+  const pila = p.nombre.split(" ")[0];
+  return d.personas.some((x) => x.id !== p.id && x.activo && x.nombre.split(" ")[0] === pila) ? p.nombre : pila;
 };
 /** Para elegir a alguien: «Turno A · Jefe de turno A» o el nombre. */
 export const etiquetaPersona = (p, yo) => `${p.turno ? `Turno ${p.turno} · ` : ""}${p.nombre}${p.id === yo?.id ? " (yo)" : ""}`;
@@ -225,9 +232,10 @@ export function galeria(ids = [], { quitar = false } = {}) {
 
 /** Botones de foto: «Foto» abre la cámara; «Galería» deja elegir fotos o videos guardados. */
 export function botonesMedio(clave) {
-  return `<label class="boton chico" role="button" tabindex="0">${icono("camara")}Foto
+  // el control es el input (queda enfocable aunque no se vea); la etiqueta es lo que se toca
+  return `<label class="boton chico">${icono("camara")}Foto
       <input type="file" accept="image/*" capture="environment" data-medio-de="${esc(clave)}" class="oculto"></label>
-    <label class="boton chico" role="button" tabindex="0">${icono("galeria")}Galería
+    <label class="boton chico">${icono("galeria")}Galería
       <input type="file" accept="image/*,video/*" multiple data-medio-de="${esc(clave)}" class="oculto"></label>`;
 }
 

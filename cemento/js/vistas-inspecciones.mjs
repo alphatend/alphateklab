@@ -1,5 +1,5 @@
 // Inspecciones: la lista, asignar una (o una ronda de varios colectores) y llenarla (o verla, si ya está hecha).
-import { esc, icono, fechaCorta, fechaHora, sumarDias, plural, numero, diasEntre, normal } from "./util.mjs";
+import { esc, icono, fechaCorta, fechaHora, sumarDias, plural, numero, diasEntre, normal, leerNumero } from "./util.mjs";
 import * as api from "./api.mjs";
 import {
   aviso, dialogo, confirmar, filaInspeccion, vacio, equipo, plantilla, persona, nombre, nombreCorto, nombreEquipo, queInspeccion,
@@ -87,7 +87,7 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
   const opcionesPlantilla = (elegida) => {
     const ps = plantillasDe();
     return ps.length
-      ? ps.map((p) => `<option value="${esc(p.id)}" ${p.id === elegida ? "selected" : ""}>${esc(p.nombre)}${p.cuando === "parada" ? " (en parada)" : ""} · ${plural(p.items.length, "revisión", "revisiones")}</option>`).join("")
+      ? ps.map((p) => `<option value="${esc(p.id)}" ${p.id === elegida ? "selected" : ""}>${esc(p.nombre)}${p.cuando === "parada" ? " (en parada)" : ""} · ${plural(p.items.filter((x) => x.tipo !== "texto").length, "revisión", "revisiones")}</option>`).join("")
       : `<option value="">${modo === "equipo" && !eqId ? "Primero elige el equipo" : "Este equipo no tiene plantillas"}</option>`;
   };
   const porArea = Object.entries(colectores.reduce((a, e) => ((a[e.area || "Sin área"] ??= []).push(e), a), {}));
@@ -116,7 +116,7 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
         <div class="campo" data-zona-colectores ${modo === "colectores" ? "" : "hidden"}>
           <span class="rotulo">Qué colectores <small data-cuantos></small></span>${listaColectores()}</div>
         <div class="rejilla-campos dos">
-          <div class="campo"><label for="a-quien">A quién</label><select id="a-quien">${opcionesQuien(d, yo, query.get("quien") ?? "")}</select>
+          <div class="campo"><label for="a-quien">A quién</label><select id="a-quien">${opcionesQuien(d, yo, query.get("quien") ?? "", { elegir: true })}</select>
             <span class="ayuda">A un turno: le toca a quien esté de turno y le llega a todos sus jefes.</span></div>
           <div class="campo"><label for="a-vence">Para cuándo</label><input id="a-vence" type="date" value="${esc(vence)}" min="${sumarDias(hoy, -30)}"></div>
           <div class="campo"><label for="a-repetir">Se repite</label>
@@ -519,6 +519,11 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
       pintarAvance();
 
       let parar = null;
+      // tocar el texto de una tarea también la marca (como en Recordatorios), salvo el campo de la nota
+      m.addEventListener("click", (e) => {
+        const que = e.target.closest?.("[data-tarea-insp] .que");
+        if (que && !e.target.closest("input, textarea, a")) que.closest("[data-tarea-insp]").querySelector(".check-tarea")?.click();
+      });
       m.addEventListener("click", async (e) => {
         const b = e.target.closest("button");
         if (!b) return;
@@ -584,8 +589,9 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
         if (t.hasAttribute("data-texto")) { r.texto = t.value; guardar(); return; }
         if (t.dataset.h) { r.hallazgo[t.dataset.h] = t.value; guardar(); return; }
         if (t.hasAttribute("data-medida")) {
-          t.value = t.value.replace(",", ".").replace(/[^\d.\-]/g, "");
-          r.valor = t.value;
+          t.value = t.value.replace(/[^\d.,\-\s]/g, "");
+          const v = leerNumero(t.value, it);
+          r.valor = v == null ? "" : String(v);
           const fuera = fueraDeRango(it, r.valor);
           const antes = r.resultado;
           if (!r.manual || antes == null) r.resultado = r.valor === "" ? null : fuera ? "mal" : "ok";
@@ -593,7 +599,9 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
           guardar();
           const rango = li.querySelector("[data-rango]");
           rango.className = `rango${fuera ? " fuera" : ""}`;
-          rango.textContent = `${fuera ? "Fuera de rango · " : ""}${textoRango(it)}${it.tipico && (it.min != null || it.max != null) ? " (típico)" : ""}`;
+          // si escribió con coma o espacios, se dice cómo se entendió (4,650 → 4 650; 3,2 → 3.2)
+          const leido = v != null && t.value.trim() !== r.valor ? `Se guarda ${numero(v, 3)}${it.unidad ? ` ${it.unidad}` : ""} · ` : t.value.trim() && v == null ? "No es un número · " : "";
+          rango.textContent = `${leido}${fuera ? "Fuera de rango · " : ""}${textoRango(it)}${it.tipico && (it.min != null || it.max != null) ? " (típico)" : ""}`;
           if (r.resultado !== antes) {
             li.querySelectorAll("[data-resultado]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.resultado === r.resultado)));
             if (r.resultado !== "mal" && r.hallazgo && !r.hallazgo.descripcion) r.hallazgo = null;
@@ -725,7 +733,7 @@ function sugerenciaHallazgo(it, r) {
 
 function resumenWhatsApp(d, insp, items, respuestas, hallazgos, yo) {
   const pl = plantilla(d, insp.plantilla_id);
-  const lineas = [`Inspección hecha: ${queInspeccion(d, insp)} · ${pl?.nombre} (${yo.turno ? `Turno ${yo.turno}` : yo.nombre})`];
+  const lineas = [`Inspección hecha: ${queInspeccion(d, insp)} · ${pl?.nombre} (${yo.nombre}${yo.turno ? `, turno ${yo.turno}` : ""})`];
   if (!hallazgos.length) lineas.push("Todo bien.");
   for (const h of hallazgos) lineas.push(`⚠ ${h.descripcion} — prioridad ${h.prioridad}${h.accion ? `. Acción: ${h.accion}` : ""}`);
   const ids = equiposDe(insp);

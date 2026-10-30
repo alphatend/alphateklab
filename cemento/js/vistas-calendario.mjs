@@ -114,7 +114,7 @@ export function vistaCalendario({ d, yo, hoy, query }) {
           <a href="${enlace({ q: "mios" })}" ${quien === "mios" ? 'aria-current="true"' : ""}>Mío</a>
           <a href="${enlace({ q: "todos" })}" ${quien === "todos" ? 'aria-current="true"' : ""}>Todos</a></nav>
       </div>
-      <div class="mes" role="grid">${DIAS_CORTOS.map((x) => `<div class="dia-sem">${x}</div>`).join("")}${dias.map(celda).join("")}</div>
+      <div class="mes" role="group" aria-label="Días del mes">${DIAS_CORTOS.map((x) => `<div class="dia-sem">${x}</div>`).join("")}${dias.map(celda).join("")}</div>
       <div class="cal-telefono">
         <div class="cal-barra" style="margin-bottom:8px"><button type="button" class="boton-icono" data-semana="-7" aria-label="Semana anterior">${icono("flecha")}</button>
           <span style="flex:1;text-align:center;font-weight:600;color:var(--tinta-3)" data-rotulo-semana></span>

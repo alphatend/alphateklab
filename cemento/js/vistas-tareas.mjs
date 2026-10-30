@@ -3,7 +3,7 @@
 // funciona sin señal (entra a la cola). Se le asignan a una persona o a un turno entero.
 import { esc, icono, fechaCorta, fechaHora, plural, diasEntre, normal, numeroHallazgo, sumarDias } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, confirmar, vacio, persona, nombre, avatar, esAdmin, puede, etiquetaPersona, galeria, botonesMedio, marcaSinEnviar, TEXTO_PRIORIDAD } from "./ui.mjs";
+import { aviso, confirmar, vacio, persona, nombre, nombreCorto, avatar, esAdmin, puede, etiquetaPersona, galeria, botonesMedio, marcaSinEnviar, TEXTO_PRIORIDAD } from "./ui.mjs";
 import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, campoEquipo } from "./componentes.mjs";
 import { prepararArchivo } from "./medios.mjs";
 
@@ -15,14 +15,19 @@ export const esMia = (t, yo) => t.asignada_a === yo.id || (yo.turno && t.asignad
 /** ¿La puede cambiar? Las suyas (a él, a su turno, sin asignar o que pidió) con «editar»; las de otros, con «tareas». */
 export const puedeTocar = (yo, t) => puede(yo, "editar") && (!t || !t.asignada_a || esMia(t, yo) || t.creada_por === yo.id || puede(yo, "tareas"));
 /** «Turno A», «Eduardo» o «Sin asignar». */
-export const paraQuien = (d, v) => (!v ? "Sin asignar" : v.startsWith("turno:") ? `Turno ${v.slice(6)}` : (persona(d, v)?.turno ? `Turno ${persona(d, v).turno}` : nombre(d, v).split(" ")[0]));
+export const paraQuien = (d, v) => (!v ? "Sin asignar" : nombreCorto(d, v));
 
-/** Las opciones de «a quién»: yo, las personas y los turnos (sin el permiso «tareas», solo uno mismo y su turno). */
-export function opcionesQuien(d, yo, actual) {
-  const aOtros = puede(yo, "tareas");
-  const turnos = [...new Set(d.personas.filter((p) => p.activo && p.turno).map((p) => p.turno))].sort()
+/**
+ * Las opciones de «a quién»: las personas y los turnos (sin el permiso «tareas», solo uno mismo y su turno). Quien solo
+ * ve no sale: no podría llenarla ni cerrarla. `elegir`: empieza en «Elegir a quién…» (al asignar, que no caiga en nadie
+ * por descuido).
+ */
+export function opcionesQuien(d, yo, actual, { elegir = false } = {}) {
+  const aOtros = puede(yo, "tareas") || elegir;
+  const hacen = d.personas.filter((p) => p.activo && puede(p, "editar"));
+  const turnos = [...new Set(hacen.filter((p) => p.turno).map((p) => p.turno))].sort()
     .filter((t) => aOtros || t === yo.turno || actual === `turno:${t}`);
-  return `<optgroup label="Personas">${d.personas.filter((p) => p.activo && (aOtros || p.id === yo.id || p.id === actual)).map((p) => `<option value="${esc(p.id)}" ${p.id === actual ? "selected" : ""}>${esc(etiquetaPersona(p, yo))}</option>`).join("")}</optgroup>
+  return `${elegir ? `<option value="" ${actual ? "" : "selected"} disabled>Elegir a quién…</option>` : ""}<optgroup label="Personas">${hacen.filter((p) => aOtros || p.id === yo.id || p.id === actual).map((p) => `<option value="${esc(p.id)}" ${p.id === actual ? "selected" : ""}>${esc(etiquetaPersona(p, yo))}</option>`).join("")}</optgroup>
     ${turnos.length ? `<optgroup label="Todo un turno">${turnos.map((t) => `<option value="turno:${esc(t)}" ${actual === `turno:${t}` ? "selected" : ""}>Turno ${esc(t)} (le toca a quien esté)</option>`).join("")}</optgroup>` : ""}`;
 }
 

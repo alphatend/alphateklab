@@ -2,7 +2,7 @@
 // entrar con usuario y contraseña, la bandeja de avisos y lo que falta por enviar. Las demás vistas están en
 // vistas-*.mjs.
 import "./tema.mjs";
-import { esc, icono, iconoNav, hoyPanama, plural, fechaHora, haceCuanto } from "./util.mjs";
+import { esc, icono, iconoNav, hoyPanama, plural, fechaHora, haceCuanto, conPunto } from "./util.mjs";
 import * as api from "./api.mjs";
 import { aviso, confirmar, dialogo, vacio, persona, nombre, avatar, esAdmin, puede, cerrarHojas, nombrePerfil } from "./ui.mjs";
 import { vistaTablero } from "./vistas-tablero.mjs";
@@ -123,6 +123,9 @@ export async function dibujar({ forzar = false } = {}) {
   const { d, yo } = contexto();
   if (!yo) return dibujarEntrar();
   if (yo.debe_cambiar) return dibujarCambiarClave();
+  // recién entrando no hay pantalla de dónde venir: la primera se pone directo (en Safari la transición sobre el armazón
+  // vacío dejaba la pantalla en blanco unos segundos)
+  const primera = !armazonListo;
   if (!armazonListo) armarArmazon();
   actualizarArmazon(r);
   const misma = vistaActual && vistaActual.nombre === r.nombre && vistaActual.param === r.param && vistaActual.consulta === r.query.toString();
@@ -136,7 +139,7 @@ export async function dibujar({ forzar = false } = {}) {
   const pasar = () => mostrarVista(r, fn, misma, anterior, esta);
   // al cambiar de pantalla, la transición nativa del navegador (la mueve la tarjeta gráfica, a la frecuencia de la
   // pantalla); con «reducir movimiento», o donde no existe, el cambio es directo
-  if (!misma && document.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  if (!misma && !primera && document.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
     const t = document.startViewTransition(pasar);
     t.ready.catch(() => {});
     t.finished.catch(() => {});
@@ -178,6 +181,10 @@ function mostrarVista(r, fn, misma, anterior, esta) {
   esta.ocupada = v.ocupada ?? null;
   esta.pendiente = false;
   esta.desmontar = v.montar?.(main) ?? null;
+  // una tabla que se desliza de lado (el papel del reporte en el teléfono) se alcanza también con el teclado
+  requestAnimationFrame(() => main.querySelectorAll(".documento .tabla, .tabla-desliza").forEach((t) => {
+    if (t.scrollWidth > t.clientWidth + 1 && !t.hasAttribute("tabindex")) { t.tabIndex = 0; t.setAttribute("role", "region"); t.setAttribute("aria-label", "Tabla (se desliza de lado)"); }
+  }));
   if (!misma) {
     scrollTo(0, 0);
     main.focus({ preventScroll: true });
@@ -465,7 +472,7 @@ function vistaPendientes({ d }) {
     atras: "#/mas",
     html: `<div class="cabeza"><div><h1>Por enviar</h1>
         <p class="bajada">Lo que se hace sin señal queda guardado en este aparato y se envía solo, en orden, cuando vuelve la conexión.
-        ${api.ultimaCarga() ? `Los datos que ves se bajaron el ${esc(fechaHora(api.ultimaCarga()))}.` : ""}</p></div>
+        ${api.ultimaCarga() ? `Los datos que ves se bajaron el ${esc(conPunto(fechaHora(api.ultimaCarga())))}` : ""}</p></div>
         <div class="acciones"><button class="boton primario" data-accion="enviar" ${p.length ? "" : "disabled"}>${icono("nube")}Enviar ahora</button>
         <button class="boton" data-accion="refrescar">Bajar lo último</button></div></div>
       ${api.cola.ultimoError && p.length ? `<p class="nota-asignacion">${esc(api.cola.ultimoError)} Se vuelve a intentar solo.</p>` : ""}

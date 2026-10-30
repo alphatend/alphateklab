@@ -94,7 +94,10 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
   const equipos = d.equipos.filter((e) => e.activo && !e.padre_id && e.tipo !== "colector");
   const enCurso = new Map((d.paros ?? []).filter((p) => p.tipo === "no_programado" && !p.fin).map((p) => [p.equipo_id, p]));
   const estados = Object.fromEntries(equipos.map((e) => [e.id, enCurso.has(e.id) ? { estado: "parado", nota: enCurso.get(e.id).descripcion ?? "" } : { estado: "marcha", nota: "" }]));
-  const fotos = [];
+  // lo que se había escrito y no se entregó vuelve (recargar, ir atrás…)
+  const B = (() => { const b = api.borrador.leer("entrega"); return b && (b.novedades || b.pendientes || b.fotos?.length) ? b : null; })();
+  if (B) for (const [id, s] of Object.entries(B.estados ?? {})) if (estados[id]) estados[id] = s;
+  const fotos = [...(B?.fotos ?? [])];
   const sugerencia = () => {
     const turno = yo.turno ? `turno:${yo.turno}` : "-";
     const xs = [];
@@ -117,15 +120,16 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
     html: `<div class="cabeza"><div><h1>Entregar el turno${yo.turno ? ` ${esc(yo.turno)}` : ""}</h1>
         <p class="bajada">Le llega a los otros turnos y al ingeniero. Funciona sin señal.</p></div></div>
       <form id="form-entrega" novalidate class="hoja-insp">
+        ${B ? `<p class="nota-asignacion azul" style="grid-column:1/-1;margin:0">Seguiste donde lo dejaste (${esc(fechaHora(B.guardado))}). <button type="button" class="boton mini plano" data-descartar>Empezar de nuevo</button></p>` : ""}
         <div style="display:grid;gap:12px">
           <div class="panel"><div class="campo"><label for="e-novedades">Novedades del turno</label>
-            <textarea id="e-novedades" style="min-height:130px" placeholder="Qué pasó: cambios, ajustes, problemas, cómo quedó la producción…"></textarea>
+            <textarea id="e-novedades" style="min-height:130px" placeholder="Qué pasó: cambios, ajustes, problemas, cómo quedó la producción…">${esc(B?.novedades ?? "")}</textarea>
             ${hayDictado ? `<div><button type="button" class="boton chico" data-dictar="e-novedades">${icono("microfono")}Dictar</button></div>` : ""}</div></div>
           <div class="panel"><div class="campo"><label for="e-pendientes" style="display:flex;justify-content:space-between;align-items:center">Lo que queda pendiente
               <button type="button" class="boton mini" data-sugerir>${icono("lista")}Sugerir desde lo abierto</button></label>
-            <textarea id="e-pendientes" style="min-height:110px" placeholder="Lo que el que entra tiene que seguir"></textarea>
+            <textarea id="e-pendientes" style="min-height:110px" placeholder="Lo que el que entra tiene que seguir">${esc(B?.pendientes ?? "")}</textarea>
             ${hayDictado ? `<div><button type="button" class="boton chico" data-dictar="e-pendientes">${icono("microfono")}Dictar</button></div>` : ""}</div>
-            <div class="campo"><span class="rotulo">Fotos <small>(opcional)</small></span><div class="herramientas-item">${botonesMedio("entrega")}</div><div data-galeria-nueva></div></div></div>
+            <div class="campo"><span class="rotulo">Fotos <small>(opcional)</small></span><div class="herramientas-item">${botonesMedio("entrega")}</div><div data-galeria-nueva>${fotos.length ? galeria(fotos, { quitar: true }) : ""}</div></div></div>
         </div>
         <div class="panel" style="align-content:start"><h2>Cómo quedan los equipos</h2><p class="ayuda" style="margin-top:-8px">Los que están parados por un paro en curso ya vienen marcados.</p>
           <div class="estados-equipos">${equipos.map(fila).join("")}</div></div>
@@ -168,13 +172,17 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
           });
         }
       });
-      f.addEventListener("input", (e) => { const fila = e.target.closest("[data-eq]"); if (fila && e.target.dataset.nota !== undefined) estados[fila.dataset.eq].nota = e.target.value; });
+      const guardarBorrador = () => api.borrador.guardar("entrega", { novedades: f["e-novedades"].value, pendientes: f["e-pendientes"].value, estados, fotos });
+      f.addEventListener("input", (e) => { const fila = e.target.closest("[data-eq]"); if (fila && e.target.dataset.nota !== undefined) estados[fila.dataset.eq].nota = e.target.value; guardarBorrador(); });
+      f.addEventListener("click", (e) => { if (e.target.closest("[data-valor], [data-quitar], [data-sugerir]")) setTimeout(guardarBorrador, 0); });
+      f.querySelector("[data-descartar]")?.addEventListener("click", () => { api.borrador.borrar("entrega"); ir("#/nueva-entrega"); });
       f.addEventListener("change", async (e) => {
         const el = e.target;
         if (!el.dataset.medioDe || !el.files?.length) return;
         for (const a of [...el.files]) { try { fotos.push(await api.guardarMedio(await prepararArchivo(a), a.name)); } catch (x) { aviso(x.message, { error: true }); } }
         el.value = "";
         m.querySelector("[data-galeria-nueva]").innerHTML = galeria(fotos, { quitar: true });
+        guardarBorrador();
       });
       f.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -186,6 +194,7 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
         try {
           await Promise.race([api.encolar("entregas", { id, turno: yo.turno ?? "", en: new Date().toISOString(), novedades, pendientes, fotos,
             equipos: Object.entries(estados).map(([equipo_id, s]) => ({ equipo_id, estado: s.estado, nota: s.estado === "marcha" ? "" : s.nota })) }), new Promise((ok) => setTimeout(ok, 5000))]);
+          api.borrador.borrar("entrega");
           aviso(api.cola.pendientes.some((p) => p.datos?.id === id) ? "Entrega guardada en este aparato: se envía cuando haya señal." : "Turno entregado.");
           ir(`#/entrega/${id}`);
         } catch (x) {

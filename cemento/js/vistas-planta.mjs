@@ -103,7 +103,7 @@ export function vistaQr({ d, yo, hoy, param }) {
         <div class="acciones">${puede(yo, "editar") ? `<a class="boton" href="#/nuevo-hallazgo?equipo=${encodeURIComponent(e.id)}">${icono("hallazgos")}Hallazgo</a>
           <a class="boton" href="#/tarea/nueva?equipo=${encodeURIComponent(e.id)}">${icono("tareas")}Tarea</a>` : ""}
           <a class="boton plano" href="#/equipo/${encodeURIComponent(e.id)}">Ficha</a></div></div>
-      ${marcadas.length ? `<p class="nota-asignacion azul" style="margin-bottom:14px">${icono("sitio", "ico chico")} Quedó registrado que pasaste por aquí en ${plural(marcadas.length, "tu inspección abierta", "tus inspecciones abiertas")}: sale en el reporte.</p>` : ""}
+      ${marcadas.length ? `<p class="nota-asignacion azul" style="margin-bottom:14px">${icono("sitio", "ico chico")} Quedó registrado que pasaste por aquí en ${marcadas.length === 1 ? "tu inspección abierta" : `tus ${marcadas.length} inspecciones abiertas`}: sale en el reporte.</p>` : ""}
       ${pend.length ? `<section class="seccion" style="margin-top:0"><h2>Inspecciones pendientes <small>${pend.length}</small></h2><ul class="lista">${pend.map((i) => filaInspeccion(d, i, hoy)).join("")}</ul></section>` : ""}
       ${tareas.length ? `<section class="seccion"><h2>Tareas <small>${tareas.length}</small></h2><ul class="lista-tareas">${tareas.map((t) => filaTarea(d, t, hoy)).join("")}</ul></section>` : ""}
       ${hall.length ? `<section class="seccion"><h2>Hallazgos abiertos <small>${hall.length}</small></h2><ul class="lista">${hall.map((h) => filaHallazgo(d, h, hoy)).join("")}</ul></section>` : ""}

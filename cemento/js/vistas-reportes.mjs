@@ -262,7 +262,7 @@ function docEjecutivo(d, yo, hoy, per, al, r) {
     ${kpis([[pct(r.cumplimiento), "cumplimiento de lo programado"], [pct(r.aTiempoPct), "hechas a tiempo"], [r.abiertos.length, "hallazgos abiertos"],
       [r.dispProm == null ? (r.cierreMedio == null ? "—" : `${numero(r.cierreMedio, 1)} d`) : `${numero(r.dispProm * 100, 1)} %`, r.dispProm == null ? "cierre promedio de hallazgos" : "disponibilidad promedio"]])}
     <p>${esc(parrafoResumen(r, per))}</p>
-    ${r.porPersona.length ? `<h2>Cumplimiento por persona</h2>${barras(r.porPersona.map((x) => ({ t: x.p.turno ? `Turno ${x.p.turno}` : x.p.nombre, v: x.pct ?? 0, etiqueta: `${x.hechas}/${x.asignadas}`, color: x.pct < 0.8 ? "#ff9500" : null })))}` : ""}
+    ${r.porPersona.length ? `<h2>Cumplimiento por persona</h2>${barras(r.porPersona.map((x) => ({ t: `${x.p.nombre}${x.p.turno ? ` · turno ${x.p.turno}` : ""}`, v: x.pct ?? 0, etiqueta: `${x.hechas}/${x.asignadas}`, color: x.pct < 0.8 ? "#ff9500" : null })))}` : ""}
     ${porEquipo.length ? `<h2>Hallazgos nuevos por equipo</h2>${barras(porEquipo.map((x) => ({ t: x.e.tag || x.e.nombre, v: x.nuevos })))}` : ""}
     <h2>Prioridad alta abiertos</h2>
     ${altas.length ? `<table class="tabla"><thead><tr><th>N.º</th><th>Equipo</th><th>Qué</th><th>A cargo</th><th class="n">Días abierto</th></tr></thead><tbody>

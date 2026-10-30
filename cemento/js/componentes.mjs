@@ -62,7 +62,16 @@ export function elegirEquipo(d, { titulo = "Elegir equipo", actual = null, todos
       const q = velo.querySelector("[data-q]");
       let cuadro = 0;
       q.addEventListener("input", () => { cancelAnimationFrame(cuadro); cuadro = requestAnimationFrame(() => { lista.innerHTML = pintar(q.value); }); });
-      q.addEventListener("keydown", (e) => { if (e.key === "Enter") { const b = lista.querySelector("[data-id]:not([data-id=''])"); if (b) { elegido = b.dataset.id; cerrar(elegido); } } });
+      // Enter elige el primero de lo buscado: se pinta ya (si no, con el dibujo pendiente, tomaría el de la lista entera) y
+      // sin dejar que el Enter siga hasta el botón del campo, que lo volvería a abrir
+      q.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        cancelAnimationFrame(cuadro);
+        lista.innerHTML = pintar(q.value);
+        const b = lista.querySelector("[data-id]:not([data-id=''])");
+        if (b) { elegido = b.dataset.id; cerrar(elegido); }
+      });
       lista.addEventListener("click", (e) => {
         const b = e.target.closest("[data-id]");
         if (b) { elegido = b.dataset.id; cerrar(elegido); }

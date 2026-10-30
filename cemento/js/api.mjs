@@ -18,9 +18,9 @@
 // - Los datos bajados también van en IndexedDB (el logo y la historia no caben bien en localStorage).
 // - Sin espacio, o navegador privado sin IndexedDB: se avisa en vez de fingir que se guardó.
 
-const API =
-  new URLSearchParams(location.search).get("api") ||
-  (/^(127\.0\.0\.1)$/.test(location.hostname) && location.port !== "" ? "http://127.0.0.1:5195/api" : "https://cemento.alphateklab.com/api");
+// ?api= solo en las pruebas locales: en el sitio publicado, un enlace no puede mandar la contraseña a otro servidor
+const LOCAL = location.hostname === "127.0.0.1" && location.port !== "";
+const API = (LOCAL && new URLSearchParams(location.search).get("api")) || (LOCAL ? "http://127.0.0.1:5195/api" : "https://cemento.alphateklab.com/api");
 export const URL_API = API;
 
 const LS = {

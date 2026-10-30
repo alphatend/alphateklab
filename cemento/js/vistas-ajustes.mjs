@@ -1,6 +1,6 @@
 // Ajustes (cada uno: su cuenta, el tema, las notificaciones de este aparato, la hora de su aviso, el calendario) y,
 // para el administrador, la empresa (nombre y logo de los reportes), los usuarios, mandar avisos y los datos.
-import { esc, icono, plural, hoyPanama, normal } from "./util.mjs";
+import { esc, icono, plural, hoyPanama, normal, leerNumero } from "./util.mjs";
 import * as api from "./api.mjs";
 import { aviso, dialogo, confirmar, vacio, avatar, esAdmin, etiquetaPersona, PERFILES, PERMISOS, perfilDe, nombrePerfil } from "./ui.mjs";
 import { preferencia, elegir as elegirTema } from "./tema.mjs";
@@ -47,7 +47,7 @@ export function vistaAjustes({ d, yo }) {
           <div class="ajuste" style="padding:0">
             <div class="logo-vista ${a.logo ? "" : "vacio-logo"}" data-logo-vista>${a.logo ? `<img src="${esc(a.logo)}" alt="Logo">` : "Sin logo"}</div>
             <span class="texto"><b>Logo de los reportes</b><small>PNG o JPG; con fondo transparente se ve mejor. Sale arriba en cada reporte y en la app.</small></span>
-            <span style="display:grid;gap:6px"><label class="boton chico" role="button" tabindex="0">${icono("galeria")}Elegir<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="oculto" data-logo></label>
+            <span style="display:grid;gap:6px"><label class="boton chico">${icono("galeria")}Elegir<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="oculto" data-logo></label>
               ${a.logo ? `<button type="button" class="boton chico plano peligro" data-accion="quitar-logo">Quitar</button>` : ""}</span>
           </div>
           <div class="rejilla-campos dos">
@@ -179,9 +179,11 @@ async function editarLab(d) {
     html: `<div data-lab style="display:grid;gap:10px">${pintar()}</div><div><button type="button" class="boton chico" data-agregar-m>${icono("mas1")}Agregar un molino</button></div>
       <p class="error-form" role="alert" hidden style="color:var(--rojo);font-weight:600"></p>`,
     botones: [{ texto: "Cancelar", valor: null }, { texto: "Guardar", valor: true, clase: "primario", alElegir: async (v) => {
-      const num = (x) => (String(x).trim() === "" ? null : Number(String(x).replace(",", ".")));
+      const num = (x) => (String(x ?? "").trim() === "" ? null : leerNumero(x) ?? NaN);
       for (const ps of Object.values(lab)) for (const p of ps) { p.min = num(p.min ?? ""); p.max = num(p.max ?? ""); p.id ||= normal(p.nombre).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `p${Math.random().toString(36).slice(2, 6)}`; }
       if (Object.values(lab).flat().some((p) => !p.nombre?.trim() || Number.isNaN(p.min) || Number.isNaN(p.max))) { const err = v.querySelector(".error-form"); err.hidden = false; err.textContent = "Cada parámetro necesita nombre, y el mínimo y máximo tienen que ser números."; return false; }
+      const alReves = Object.values(lab).flat().find((p) => p.min != null && p.max != null && p.min > p.max);
+      if (alReves) { const err = v.querySelector(".error-form"); err.hidden = false; err.textContent = `En «${alReves.nombre}» el mínimo es mayor que el máximo.`; return false; }
       try { await api.escribir("ajustes", { lab }); aviso("Parámetros guardados."); } catch (x) { const err = v.querySelector(".error-form"); err.hidden = false; err.textContent = x.sinRed ? "Hace falta señal." : x.message; return false; }
     } }],
     alMontar(v) {

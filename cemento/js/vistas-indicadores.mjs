@@ -4,7 +4,7 @@
 // para imprimir.
 import { esc, icono, numero, plural, sumarDias, diaDe, fechaCorta } from "./util.mjs";
 import * as api from "./api.mjs";
-import { vacio, persona, equiposDe } from "./ui.mjs";
+import { vacio, persona, nombre, equiposDe } from "./ui.mjs";
 import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto } from "./componentes.mjs";
 import { calcularReporte, alcanceDe } from "./vistas-reportes.mjs";
 import { disponibilidad } from "./vistas-paros.mjs";
@@ -50,7 +50,8 @@ export function vistaIndicadores({ d, yo, hoy, query }) {
   // por persona (y los turnos juntos)
   const porQuien = new Map();
   for (const i of r.programadas) {
-    const k = i.asignada_a?.startsWith("turno:") ? `Turno ${i.asignada_a.slice(6)}` : persona(d, i.asignada_a)?.turno ? `Turno ${persona(d, i.asignada_a).turno}` : persona(d, i.asignada_a)?.nombre ?? "—";
+    // por persona; lo de todo un turno, aparte (si no, dos personas del mismo turno se juntaban en una barra)
+    const k = i.estado === "hecha" && i.asignada_a?.startsWith("turno:") && i.hecha_por ? nombre(d, i.hecha_por) : nombre(d, i.asignada_a);
     const x = porQuien.get(k) ?? porQuien.set(k, { t: k, total: 0, hechas: 0 }).get(k);
     x.total++;
     if (i.estado === "hecha") x.hechas++;
@@ -98,7 +99,7 @@ export function vistaIndicadores({ d, yo, hoy, query }) {
           ${pareto.length ? barras(pareto.map(([id, n]) => { acum += n; return { t: nombreCompleto(d, id), v: n, etiqueta: `${n} · ${Math.round((100 * acum) / totalP)} %` }; })) : vacio("Ningún hallazgo nuevo en el período.")}</div>
         <div class="grafica"><h3>Hallazgos por semana <small><span style="color:var(--tinte)">● nuevos</span> · <span style="color:var(--naranja)">● cerrados</span></small></h3>
           ${lineaTiempo({ series: [{ nombre: "Nuevos", puntos: semanas.map((s) => ({ t: s.t, v: s.nuevos })) }, { nombre: "Cerrados", clase: "b", puntos: semanas.map((s) => ({ t: s.t, v: s.cerrados })) }], decimales: 0, alto: 170 })}</div>
-        <div class="grafica"><h3>Disponibilidad por equipo <small>sin paros no programados</small></h3>
+        <div class="grafica"><h3>Disponibilidad por equipo <small>% del tiempo sin paros no programados</small></h3>
           ${disp.length ? barras(disp.sort((a, b) => a.disp - b.disp).map((x) => ({ t: nombreCompleto(d, x.e.id), v: x.disp, etiqueta: `${numero(x.disp * 100, 1)} %`, clase: x.disp < 0.95 ? "mala" : "" })), { max: 1 }) : vacio("Sin equipos.")}</div>
       </div>
       <section class="seccion"><h2>Medidas que vienen hacia afuera <small>${alertas.length || ""}</small></h2>

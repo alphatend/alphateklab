@@ -68,9 +68,36 @@ export const DIAS_CORTOS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
 export const diaSemana = (dia) => (new Date(dia + "T12:00:00Z").getUTCDay() + 6) % 7;
 /** Sin tildes y en minúsculas, para buscar. */
 export const normal = (t) => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+/** Termina la frase con punto, sin duplicarlo («… 9:00 a. m.» no lleva otro). */
+export const conPunto = (t) => (/[.!?…]$/.test(String(t).trim()) ? String(t).trim() : `${String(t).trim()}.`);
 /** H-0007 */
 export const numeroHallazgo = (h) => (h?.numero ? `H-${String(h.numero).padStart(4, "0")}` : "H-····");
-export const numero = (v, dec = 1) => (v == null || !Number.isFinite(v) ? "—" : Number(v).toLocaleString("es-PA", { maximumFractionDigits: dec }));
+// los miles con un espacio fino («3 990») y el decimal con punto: «3,990» se lee como 3 990 o como 3,99 según quién lo lea
+export const numero = (v, dec = 1) => (v == null || !Number.isFinite(v) ? "—" : Number(v).toLocaleString("es-PA", { maximumFractionDigits: dec }).replace(/,/g, "\u202f"));
+/**
+ * Lo que escribió la persona, como número (null si no es un número). La coma puede ser decimal («3,2») o de miles
+ * («4,650»): con grupos de tres cifras es de miles, salvo que el rango (min/max) diga que es decimal.
+ */
+export function leerNumero(texto, { min = null, max = null } = {}) {
+  let s = String(texto ?? "").replace(/[\s\u202f]/g, "");
+  if (!s || s === "-") return null;
+  if (s.includes(",") && s.includes(".")) s = s.lastIndexOf(",") > s.lastIndexOf(".") ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
+  else if (s.includes(",")) {
+    const miles = /^-?[1-9]\d{0,2}(,\d{3})+$/.test(s);
+    const comas = s.split(",").length - 1;
+    if (!miles && comas > 1) return null;
+    if (!miles) s = s.replace(",", ".");
+    else if (min != null || max != null) {
+      const comoMiles = Number(s.replace(/,/g, "")), comoDecimal = comas === 1 ? Number(s.replace(",", ".")) : NaN;
+      const dentro = (v) => Number.isFinite(v) && (min == null || v >= min) && (max == null || v <= max);
+      const lejos = (v) => Math.min(...[min, max].filter((x) => x != null).map((x) => Math.abs(Math.log10(Math.abs(v) + 1e-9) - Math.log10(Math.abs(x) + 1e-9))));
+      s = String(!dentro(comoMiles) && (dentro(comoDecimal) || lejos(comoDecimal) < lejos(comoMiles)) ? comoDecimal : comoMiles);
+    } else s = s.replace(/,/g, "");
+  }
+  if (!/^-?(\d+\.?\d*|\.\d+)$/.test(s)) return null;
+  const v = Number(s);
+  return Number.isFinite(v) ? v : null;
+}
 
 // Íconos: Phosphor Icons 2.1.1 (MIT, phosphoricons.com), los que usa la app, copiados de @phosphor-icons/core. Se
 // pintan con currentColor. La navegación usa la versión rellena para la sección elegida (como iOS).

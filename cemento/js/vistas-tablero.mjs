@@ -17,7 +17,8 @@ import {
 } from "./ui.mjs";
 
 const ORDEN_PRIORIDAD = { alta: 0, media: 1, baja: 2 };
-let scrollGuardado = 0; // el tablero se redibuja cuando llegan datos: que no vuelva a la primera columna
+// dónde quedó cada tablero (se redibuja cuando llegan datos: que no vuelva a la primera columna)
+const scrolls = {};
 
 function frase(d, yo, hoy, admin) {
   const turno = yo.turno ? `turno:${yo.turno}` : "-";
@@ -27,13 +28,18 @@ function frase(d, yo, hoy, admin) {
   const hall = d.hallazgos.filter((h) => h.estado !== "cerrado" && (admin || h.responsable_id === yo.id));
   const altas = hall.filter((h) => h.prioridad === "alta").length;
   const porRevisar = admin && puede(yo, "revisar") ? d.inspecciones.filter((i) => i.estado === "hecha" && !i.revisada_en).length : 0;
+  // las tareas de uno (o de su turno): las atrasadas y las de hoy también cuentan como pendiente
+  const misTareas = (d.tareas ?? []).filter((t) => t.estado !== "hecha" && t.vence && t.vence <= hoy && esMia(t, yo));
+  const tAtr = misTareas.filter((t) => t.vence < hoy).length, tHoy = misTareas.length - tAtr;
   const partes = [];
   if (atrasadas) partes.push(`<a href="#/tablero?v=inspecciones"><b>${plural(atrasadas, "inspección atrasada", "inspecciones atrasadas")}</b></a>`);
   if (deHoy) partes.push(`<b>${plural(deHoy, atrasadas ? "para hoy" : "inspección para hoy", atrasadas ? "para hoy" : "inspecciones para hoy")}</b>`);
   if (hall.length) partes.push(`<a href="#/tablero?v=hallazgos"><b>${plural(hall.length, "hallazgo abierto", "hallazgos abiertos")}</b></a>${altas ? ` (${altas} de prioridad alta)` : ""}`);
+  if (tAtr) partes.push(`<a href="#/tareas"><b>${plural(tAtr, "tarea atrasada", "tareas atrasadas")}</b></a>`);
+  if (tHoy) partes.push(`<b>${plural(tHoy, "tarea para hoy", "tareas para hoy")}</b>`);
   if (porRevisar) partes.push(`<a href="#/tablero?v=inspecciones"><b>${plural(porRevisar, "inspección por revisar", "inspecciones por revisar")}</b></a>`);
   const juntar = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} y ${xs.at(-1)}` : xs[0]);
-  if (!partes.length) return admin ? "Nada atrasado, nada para hoy y ningún hallazgo abierto." : "No tienes nada pendiente ni hallazgos a tu cargo.";
+  if (!partes.length) return admin ? "Nada atrasado, nada para hoy y ningún hallazgo abierto." : "No tienes nada pendiente para hoy ni hallazgos a tu cargo.";
   return `${admin ? "En la planta hay" : "Tienes"} ${juntar(partes)}.`;
 }
 
@@ -48,7 +54,7 @@ export function vistaTablero(ctx) {
   const cols = (v === "hallazgos" ? columnasHallazgos : v === "tareas" ? columnasTareas : columnasInspecciones)(ctx, quien, filtro);
   const enlace = (cambios) => `#/tablero?${new URLSearchParams({ ...Object.fromEntries(query), v, q: quien, ...cambios })}`;
   const arrastrable = v !== "inspecciones" && puede(yo, "editar");
-  const tablero = () => `<div data-kanban${arrastrable || v === "inspecciones" ? "" : ' class="solo-ver"'}><div class="columnas-salto" role="tablist" aria-label="Columnas">${cols.map((c, k) => `<button type="button" data-ir-col="${k}" ${k === 0 ? 'aria-current="true"' : ""}>
+  const tablero = () => `<div data-kanban${arrastrable || v === "inspecciones" ? "" : ' class="solo-ver"'}><div class="columnas-salto" role="group" aria-label="Ir a la columna">${cols.map((c, k) => `<button type="button" data-ir-col="${k}" ${k === 0 ? 'aria-current="true"' : ""}>
         <i class="punto ${c.punto}"></i>${esc(c.titulo)} <b>${c.tarjetas.length}</b></button>`).join("")}</div>
       <div class="tablero" data-tablero="${v}">${cols.map((c) => `<section class="columna" data-estado="${c.id}" aria-label="${esc(c.titulo)}">
           <header><i class="punto ${c.punto}"></i><h3>${esc(c.titulo)}</h3><span class="cuenta">${c.cuenta ?? c.tarjetas.length}</span></header>
@@ -82,12 +88,18 @@ export function vistaTablero(ctx) {
       const desmontes = [montarEnCurso(m)];
       const conectar = () => {
         const tab = m.querySelector(".tablero");
-        tab.scrollLeft = scrollGuardado;
+        if (scrolls[v] == null) {
+          // la primera vez, en la primera columna que tiene algo (en el teléfono no abrir en «Atrasadas 0»)
+          const cols = [...tab.querySelectorAll(".columna")];
+          const k = cols.findIndex((c) => c.querySelector(".tarjeta"));
+          scrolls[v] = k > 0 ? cols[k].offsetLeft - cols[0].offsetLeft : 0;
+        }
+        tab.scrollLeft = scrolls[v];
         const saltos = [...m.querySelectorAll("[data-ir-col]")];
         let cuadro = 0;
         const marcarColumna = () => {
           cuadro = 0;
-          scrollGuardado = tab.scrollLeft;
+          scrolls[v] = tab.scrollLeft;
           const ancho = tab.querySelector(".columna")?.getBoundingClientRect().width ?? 1;
           const k = Math.round(tab.scrollLeft / (ancho + 14));
           saltos.forEach((b, i) => (i === k ? b.setAttribute("aria-current", "true") : b.removeAttribute("aria-current")));

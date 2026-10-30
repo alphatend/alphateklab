@@ -64,7 +64,7 @@ export function vistaColectores({ d, yo, hoy, query }) {
         <div><dt>Colectores</dt><dd>${todos.length}</dd></div>
         <div><dt>Con algo fuera</dt><dd style="${cuenta.problema ? "color:var(--rojo)" : ""}">${cuenta.problema}</dd></div>
         <div><dt>Sin revisar en 30 días</dt><dd>${cuenta.viejos}</dd></div>
-        <div><dt>Qué se revisa</dt><dd style="font-size:16px;font-weight:600">${plRonda ? `<a href="#/plantilla/${encodeURIComponent(plRonda.id)}">${esc(plRonda.nombre)}</a> <small>${plural(plRonda.items.length, "revisión", "revisiones")}</small>` : admin ? `<a href="#/plantilla/nueva?tipo=colector">Crear la plantilla</a>` : "—"}</dd></div>
+        <div><dt>Qué se revisa</dt><dd style="font-size:16px;font-weight:600">${plRonda ? `<a href="#/plantilla/${encodeURIComponent(plRonda.id)}">${esc(plRonda.nombre)}</a> <small>${plural(plRonda.items.filter((x) => x.tipo !== "texto").length, "revisión", "revisiones")}</small>` : admin ? `<a href="#/plantilla/nueva?tipo=colector">Crear la plantilla</a>` : "—"}</dd></div>
       </dl>
       <div class="tablero-barra">
         <div class="buscador" style="flex:1 1 260px;max-width:420px">${icono("buscar")}<input type="search" placeholder="Buscar por tag, nombre o área" value="${esc(buscar)}" data-buscar aria-label="Buscar colector" autocapitalize="characters"></div>

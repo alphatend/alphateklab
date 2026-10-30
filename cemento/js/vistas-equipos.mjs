@@ -1,6 +1,6 @@
 // Equipos (los de proceso, por área: la «parte seccionada»), la ficha de un equipo o colector (cómo vienen sus
 // medidas, lo pendiente, sus hallazgos y su reporte) y el editor de plantillas (de un equipo o la común de colectores).
-import { esc, icono, plural, numero, fechaCorta, fechaHora, diaDe, normal, haceCuanto } from "./util.mjs";
+import { esc, icono, plural, numero, fechaCorta, fechaHora, diaDe, normal, haceCuanto, leerNumero } from "./util.mjs";
 import * as api from "./api.mjs";
 import {
   puede, aviso, dialogo, confirmar, vacio, equipo, plantilla, filaInspeccion, filaHallazgo, nombreEquipo, marcaTag, equiposDe, esAdmin, chispa,
@@ -228,7 +228,7 @@ export function vistaEquipo({ d, yo, hoy, param }) {
       <section class="seccion"><h2>${colector ? "Qué se revisa (común a los colectores)" : "Plantillas"} <small>${ps.length || ""}</small></h2>
         ${ps.length ? `<ul class="lista">${ps.map((p) => `<li><a class="fila" href="#/plantilla/${encodeURIComponent(p.id)}">
           <span class="titulo">${esc(p.nombre)} <small>· ${p.cuando === "parada" ? "en parada" : "en marcha"}</small></span>
-          <span class="detalle"><span>${plural(p.items.length, "revisión", "revisiones")}</span><span>${p.frecuencia_dias ? `cada ${p.frecuencia_dias === 1 ? "día" : `${p.frecuencia_dias} días`}` : "sin frecuencia"}</span>
+          <span class="detalle"><span>${plural(p.items.filter((x) => x.tipo !== "texto").length, "revisión", "revisiones")}</span><span>${p.frecuencia_dias ? `cada ${p.frecuencia_dias === 1 ? "día" : `${p.frecuencia_dias} días`}` : "sin frecuencia"}</span>
             ${p.items.some((x) => x.tipico) ? `<span class="tipico">rangos típicos por confirmar</span>` : ""}</span>
           <span class="lado">${icono("derecha", "ico chevron")}</span></a></li>`).join("")}</ul>` : vacio("Todavía no tiene plantillas.")}
         ${admin ? `<p style="margin:10px 4px"><a class="boton chico" href="#/plantilla/nueva?${colector ? "tipo=colector" : `equipo=${encodeURIComponent(eq.id)}`}">${icono("mas1")}Nueva plantilla</a></p>` : ""}
@@ -251,6 +251,10 @@ export function vistaEquipo({ d, yo, hoy, param }) {
   };
 }
 
+/** Las líneas pegadas: «tag; nombre», o solo el nombre (una línea suelta que parece un tag, como «EL1», va de tag). */
+const subequiposDe = (texto) => leerLista(texto).map((x) => (x.nombre ? { tag: x.tag, nombre: x.nombre }
+  : /^[A-Za-z0-9._-]{1,12}$/.test(x.tag) && /\d/.test(x.tag) ? { tag: x.tag, nombre: "" } : { tag: "", nombre: x.tag }));
+
 /** Varios subequipos de una vez, pegando una lista (tag; nombre). */
 async function subequiposPegados(d, padre) {
   await dialogo({
@@ -258,10 +262,19 @@ async function subequiposPegados(d, padre) {
     ancho: true,
     html: `<div class="campo"><label for="s-lista">Uno por línea: <b>tag</b>; nombre</label>
         <textarea id="s-lista" style="min-height:150px;font-family:var(--mono);font-size:15px" spellcheck="false" placeholder="EL1; Elevador de cangilones&#10;BC1; Banda transportadora BC1&#10;SEP1; Separador"></textarea>
-        <span class="ayuda">Se puede copiar de Excel (tag y nombre). Si el tag ya existe, se actualiza.</span></div>
+        <span class="ayuda">Se puede copiar de Excel (tag y nombre). Sin tag, va solo el nombre. Si el tag ya existe, se actualiza.</span>
+        <div class="ayuda" data-vista-previa></div></div>
       <p class="error-form" role="alert" hidden style="color:var(--rojo);font-weight:600"></p>`,
+    alMontar(v) {
+      // lo que se va a agregar, mientras se escribe (como en los colectores)
+      const t = v.querySelector("#s-lista"), previa = v.querySelector("[data-vista-previa]");
+      t.addEventListener("input", () => {
+        const xs = subequiposDe(t.value);
+        previa.innerHTML = xs.length ? `<b>${plural(xs.length, "subequipo", "subequipos")}:</b> ${xs.slice(0, 8).map((x) => esc(x.tag && x.nombre ? `${x.tag} · ${x.nombre}` : x.tag || x.nombre)).join(" · ")}${xs.length > 8 ? "…" : ""}` : "";
+      });
+    },
     botones: [{ texto: "Cancelar", valor: null }, { texto: "Agregar", valor: true, clase: "primario", alElegir: async (v) => {
-      const xs = leerLista(v.querySelector("#s-lista").value).map((x) => ({ tag: x.tag, nombre: x.nombre }));
+      const xs = subequiposDe(v.querySelector("#s-lista").value);
       const err = v.querySelector(".error-form");
       if (!xs.length) { err.hidden = false; err.textContent = "Escribe por lo menos un subequipo."; return false; }
       try {
@@ -393,12 +406,19 @@ export function vistaPlantilla({ d, yo, param, query, ir }) {
         P.frecuencia_dias = Number(f["p-frec"].value) || null;
         P.pedir_firma = f["p-firma"].value === "" ? null : f["p-firma"].value === "1";
         if (!P.nombre) { aviso("Ponle un nombre a la plantilla.", { error: true }); f["p-nombre"].focus(); return; }
-        if (P.items.some((it) => !String(it.texto).trim())) { aviso("Hay revisiones sin nombre: escríbelo o quítalas.", { error: true }); return; }
-        if (P.items.some((it) => it.tipo === "medida" && [it.min, it.max].some((v) => v !== "" && v != null && !Number.isFinite(Number(v))))) { aviso("Un mínimo o máximo no es un número.", { error: true }); return; }
+        // una fila que quedó en blanco (se agregó y no se usó) no se guarda ni estorba
+        const vacia = (it) => !String(it.texto ?? "").trim() && !String(it.ayuda ?? "").trim() && !String(it.unidad ?? "").trim() && [it.min, it.max].every((v) => v === "" || v == null);
+        const items = P.items.filter((it) => !vacia(it)).map((it) => ({ ...it, min: String(it.min ?? "").trim() === "" ? null : leerNumero(it.min) ?? NaN, max: String(it.max ?? "").trim() === "" ? null : leerNumero(it.max) ?? NaN }));
+        if (!items.length) { aviso("Agrega por lo menos una revisión.", { error: true }); return; }
+        const sinNombre = P.items.findIndex((it) => !vacia(it) && !String(it.texto).trim());
+        if (sinNombre >= 0) { aviso("Hay una revisión sin nombre: escríbelo o quítala.", { error: true }); m.querySelector(`#i-t-${sinNombre}`)?.focus(); return; }
+        if (items.some((it) => it.tipo === "medida" && [it.min, it.max].some((v) => Number.isNaN(v)))) { aviso("Un mínimo o máximo no es un número.", { error: true }); return; }
+        const alReves = items.find((it) => it.tipo === "medida" && it.min != null && it.max != null && it.min > it.max);
+        if (alReves) { aviso(`En «${alReves.texto}» el mínimo es mayor que el máximo.`, { error: true }); return; }
         const b = f.querySelector("button[type=submit]");
         b.disabled = true;
         try {
-          const r = await api.escribir("plantillas", { ...P, id: original?.id });
+          const r = await api.escribir("plantillas", { ...P, items, id: original?.id });
           sucio = false;
           aviso("Plantilla guardada.");
           ir(`#/plantilla/${encodeURIComponent(r.id)}`);

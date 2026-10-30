@@ -1,6 +1,6 @@
 // La curva de Tromp del separador: se meten los tamizados de la alimentación, los finos y los gruesos, y sale la
 // curva con el bypass, el corte (d50), la imperfección y la carga circulante. Lo escrito queda en el aparato.
-import { esc, icono, numero, fechaHora } from "./util.mjs";
+import { esc, icono, numero, fechaHora, leerNumero } from "./util.mjs";
 import { aviso, dialogo, nombre, puede } from "./ui.mjs";
 import * as api from "./api.mjs";
 import { nombreCompleto } from "./componentes.mjs";
@@ -55,7 +55,7 @@ export function vistaTromp({ d } = {}) {
     montar(m) {
       const cuerpo = m.querySelector("[data-filas]");
       const salida = m.querySelector("[data-resultado]");
-      const num = (v) => (v === "" || v == null ? NaN : Number(String(v).replace(",", ".")));
+      const num = (v) => leerNumero(v) ?? NaN;
       const recalcular = () => {
         guardar(filas);
         const llenas = filas.filter((x) => [x.t, x.a, x.f, x.g].every((v) => Number.isFinite(num(v))));
@@ -73,7 +73,7 @@ export function vistaTromp({ d } = {}) {
       cuerpo.addEventListener("input", (e) => {
         const t = e.target;
         const k = Number(t.closest("[data-k]").dataset.k);
-        filas[k][t.dataset.c] = t.value.replace(",", ".");
+        filas[k][t.dataset.c] = t.value;
         recalcular();
       });
       m.addEventListener("click", (e) => {

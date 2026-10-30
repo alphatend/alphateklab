@@ -92,7 +92,7 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
     viva: false,
     html: `<div class="cabeza"><div class="hallazgo-cabeza">
         <div class="migas"><span class="mono">${numeroHallazgo(h)}</span><a href="#/equipo/${encodeURIComponent(h.equipo_id)}">${esc(nombreCompleto(d, h.equipo_id))}</a>${h.item ? `<span>· ${esc(h.item)}</span>` : ""}</div>
-        <h1>${esc(h.descripcion)}</h1>
+        <h1 class="${h.descripcion.length > 220 ? "recortado" : ""}">${esc(h.descripcion)}</h1>${h.descripcion.length > 220 ? `<button type="button" class="boton mini plano" data-ver-todo>Ver todo</button>` : ""}
         <div class="marcas">${h._sinEnviar ? marcaSinEnviar() : ""}${marcaPrioridad(h.prioridad)} ${marcaEstado(h.estado)}
           ${h.ot ? `<span class="marca tag">${esc(h.ot)}</span>` : ""}
           ${h.vence && h.estado !== "cerrado" ? `<span class="marca ${tarde ? "atrasada" : "paro"}">${icono("reloj")}Compromiso ${esc(fechaCorta(h.vence))}</span>` : ""}
@@ -107,11 +107,11 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
             <div class="campo" data-zona-paro ${h.estado === "paro" ? "" : "hidden"}><label for="h-paro">Para cuál paro</label>
               <select id="h-paro"><option value="">El próximo que se programe</option>${paros.map((p) => `<option value="${esc(p.id)}" ${p.id === h.paro_id ? "selected" : ""}>${esc(nombreCompleto(d, p.equipo_id))} · ${esc(fechaHora(p.inicio))}</option>`).join("")}</select>
               <span class="ayuda">Entra a la lista de trabajos de ese paro.</span></div>
-            ${puedeTexto ? `<div class="campo"><label for="h-desc">Qué se encontró</label><textarea id="h-desc" style="min-height:70px">${esc(h.descripcion)}</textarea></div>
+            ${puedeTexto ? `<div class="campo"><label for="h-desc">Qué se encontró</label><textarea id="h-desc" maxlength="2000" style="min-height:70px">${esc(h.descripcion)}</textarea></div>
               <div class="campo"><span class="rotulo">Equipo o subequipo</span>${campoEquipo(d, { id: "h-equipo", valor: h.equipo_id, titulo: "Dónde está el hallazgo" })}</div>` : ""}
             <div class="rejilla-campos dos">
               <div class="campo"><label for="h-resp">A cargo de</label>
-                <select id="h-resp"><option value="">Nadie todavía</option>${d.personas.filter((p) => p.activo || p.id === h.responsable_id).map((p) => `<option value="${esc(p.id)}" ${p.id === h.responsable_id ? "selected" : ""}>${esc(etiquetaPersona(p, yo))}</option>`).join("")}</select></div>
+                <select id="h-resp"><option value="">Nadie todavía</option>${d.personas.filter((p) => (p.activo && puede(p, "editar")) || p.id === h.responsable_id).map((p) => `<option value="${esc(p.id)}" ${p.id === h.responsable_id ? "selected" : ""}>${esc(etiquetaPersona(p, yo))}</option>`).join("")}</select></div>
               <div class="campo"><span class="rotulo" id="r-prio">Prioridad</span>
                 <div class="segmento" role="group" aria-labelledby="r-prio">${["alta", "media", "baja"].map((p) => `<button type="button" data-prioridad="${p}" data-valor="${p}" aria-pressed="${h.prioridad === p}">${p[0].toUpperCase() + p.slice(1)}</button>`).join("")}</div></div>
               <div class="campo"><label for="h-ot">N.º de OT o aviso <small>(opcional)</small></label>
@@ -122,7 +122,7 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
             <div class="campo"><label for="h-accion">Qué hay que hacer</label>
               <textarea id="h-accion" style="min-height:70px" placeholder="Por ejemplo: gestionar el reemplazo con mantenimiento">${esc(h.accion ?? "")}</textarea></div>
             <div class="campo"><label for="h-texto">Comentario o avance</label>
-              <textarea id="h-texto" placeholder="Qué se hizo, qué falta…"></textarea>
+              <textarea id="h-texto" maxlength="2000" placeholder="Qué se hizo, qué falta…"></textarea>
               <div class="herramientas-item">${botonesMedio("comentario")}${hayDictado ? `<button type="button" class="boton chico" data-dictar>${icono("microfono")}Dictar</button>` : ""}</div>
               <div data-galeria-nueva></div></div>
             <div><button class="boton primario" type="submit">${icono("bien")}Guardar</button></div>
@@ -139,6 +139,7 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
       </div>`,
     montar(m) {
       montarChecks(m, d);
+      m.querySelector("[data-ver-todo]")?.addEventListener("click", (e) => { m.querySelector(".hallazgo-cabeza h1").classList.remove("recortado"); e.currentTarget.remove(); });
       const f = m.querySelector("#form-h");
       if (!f) return;
       let estado = h.estado, prioridad = h.prioridad, parar = null;
@@ -216,7 +217,11 @@ function soloVer(d, h) {
 export function vistaNuevoHallazgo({ d, yo, query, ir }) {
   if (!puede(yo, "editar")) return { titulo: "Anotar un hallazgo", atras: "#/tablero?v=hallazgos", html: vacio("Tu usuario es de solo ver: los hallazgos los anota quien tiene permiso de editar.") };
   const admin = d.personas.find((p) => p.rol === "admin" && p.activo);
-  const fotos = [];
+  // lo que se había escrito y no se mandó (se recargó, se fue atrás…) vuelve; si llegó con otro equipo, no
+  const b0 = api.borrador.leer("nuevo-hallazgo");
+  const B = b0 && (b0.desc || b0.accion || b0.fotos?.length) && (!query.get("equipo") || b0.equipo === query.get("equipo")) ? b0 : null;
+  const fotos = [...(B?.fotos ?? [])];
+  const respInicial = B?.resp ?? (esAdmin(yo) ? yo.id : admin?.id);
   return {
     titulo: "Anotar un hallazgo",
     atras: "#/tablero?v=hallazgos",
@@ -224,35 +229,41 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
     html: `<div class="cabeza"><div><h1>Anotar un hallazgo</h1>
         <p class="bajada">Algo que viste fuera de una inspección. Funciona sin señal: se envía cuando vuelva.</p></div></div>
       <form class="panel" id="form-nh" novalidate style="max-width:680px">
-        <div class="campo"><span class="rotulo">Equipo o subequipo</span>${campoEquipo(d, { id: "nh-equipo", valor: query.get("equipo") ?? "", titulo: "Dónde está el hallazgo", placeholder: "Elegir el equipo" })}</div>
+        ${B ? `<p class="nota-asignacion azul" data-nota-borrador>Seguiste donde lo dejaste (${esc(fechaHora(B.guardado))}). <button type="button" class="boton mini plano" data-descartar>Empezar de nuevo</button></p>` : ""}
+        <div class="campo"><span class="rotulo">Equipo o subequipo</span>${campoEquipo(d, { id: "nh-equipo", valor: B?.equipo || (query.get("equipo") ?? ""), titulo: "Dónde está el hallazgo", placeholder: "Elegir el equipo" })}</div>
         <div class="campo"><label for="nh-desc">Qué se encontró</label>
-          <textarea id="nh-desc" required placeholder="Por ejemplo: la vejiga del acumulador 2 no tiene presión"></textarea>
+          <textarea id="nh-desc" required maxlength="2000" placeholder="Por ejemplo: la vejiga del acumulador 2 no tiene presión">${esc(B?.desc ?? "")}</textarea>
           <div class="herramientas-item">${botonesMedio("nuevo")}${hayDictado ? `<button type="button" class="boton chico" data-dictar>${icono("microfono")}Dictar</button>` : ""}</div>
-          <div data-galeria-nueva></div></div>
+          <div data-galeria-nueva>${fotos.length ? galeria(fotos, { quitar: true }) : ""}</div></div>
         <div class="campo"><span class="rotulo" id="nh-r-prio">Prioridad</span>
-          <div class="segmento" role="group" aria-labelledby="nh-r-prio">${["alta", "media", "baja"].map((p) => `<button type="button" data-prioridad="${p}" data-valor="${p}" aria-pressed="${p === "media"}">${p[0].toUpperCase() + p.slice(1)}</button>`).join("")}</div></div>
-        <details class="mas-detalles"><summary>${icono("derecha", "ico")}<span>Más detalles</span><small>qué hacer, a cargo de, OT y fecha</small></summary>
+          <div class="segmento" role="group" aria-labelledby="nh-r-prio">${["alta", "media", "baja"].map((p) => `<button type="button" data-prioridad="${p}" data-valor="${p}" aria-pressed="${p === (B?.prioridad ?? "media")}">${p[0].toUpperCase() + p.slice(1)}</button>`).join("")}</div></div>
+        <details class="mas-detalles" ${B && (B.accion || B.ot || B.vence) ? "open" : ""}><summary>${icono("derecha", "ico")}<span>Más detalles</span><small>qué hacer, a cargo de, OT y fecha</small></summary>
         <div class="rejilla-campos dos">
           <div class="campo"><label for="nh-accion">Qué hay que hacer <small>(opcional)</small></label>
-            <input id="nh-accion" type="text"></div>
+            <input id="nh-accion" type="text" maxlength="2000" value="${esc(B?.accion ?? "")}"></div>
           <div class="campo"><label for="nh-resp">A cargo de</label>
-            <select id="nh-resp">${d.personas.filter((p) => p.activo).map((p) => `<option value="${esc(p.id)}" ${p.id === (esAdmin(yo) ? yo.id : admin?.id) ? "selected" : ""}>${esc(etiquetaPersona(p, yo))}</option>`).join("")}</select></div>
+            <select id="nh-resp">${d.personas.filter((p) => p.activo && puede(p, "editar")).map((p) => `<option value="${esc(p.id)}" ${p.id === respInicial ? "selected" : ""}>${esc(etiquetaPersona(p, yo))}</option>`).join("")}</select></div>
           <div class="campo"><label for="nh-ot">N.º de OT o aviso <small>(opcional)</small></label>
-            <input id="nh-ot" type="text" autocapitalize="characters"></div>
+            <input id="nh-ot" type="text" autocapitalize="characters" maxlength="60" value="${esc(B?.ot ?? "")}"></div>
           <div class="campo"><label for="nh-vence">Fecha compromiso <small>(opcional)</small></label>
-            <input id="nh-vence" type="date"></div>
+            <input id="nh-vence" type="date" value="${esc(B?.vence ?? "")}"></div>
         </div></details>
         <p class="error-form" role="alert" hidden style="color:var(--rojo);font-weight:600"></p>
         <div><button class="boton primario" type="submit">${icono("bien")}Anotar</button></div>
       </form>`,
     montar(m) {
       const f = m.querySelector("#form-nh");
-      let prioridad = "media", parar = null;
+      let prioridad = B?.prioridad ?? "media", parar = null;
+      const guardarBorrador = () => api.borrador.guardar("nuevo-hallazgo", { equipo: f["nh-equipo"].value, desc: f["nh-desc"].value, prioridad, accion: f["nh-accion"].value,
+        resp: f["nh-resp"].value, ot: f["nh-ot"].value, vence: f["nh-vence"].value, fotos });
+      f.addEventListener("input", guardarBorrador);
+      f.addEventListener("change", guardarBorrador);
+      f.querySelector("[data-descartar]")?.addEventListener("click", () => { api.borrador.borrar("nuevo-hallazgo"); ir(`#/nuevo-hallazgo${query.get("equipo") ? `?equipo=${encodeURIComponent(query.get("equipo"))}` : ""}`); });
       f.addEventListener("click", (e) => {
         const b = e.target.closest("button");
         if (!b) return;
-        if (b.dataset.prioridad) { prioridad = b.dataset.prioridad; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }
-        if (b.dataset.quitar) { fotos.splice(fotos.indexOf(b.dataset.quitar), 1); m.querySelector("[data-galeria-nueva]").innerHTML = galeria(fotos, { quitar: true }); }
+        if (b.dataset.prioridad) { prioridad = b.dataset.prioridad; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); guardarBorrador(); }
+        if (b.dataset.quitar) { fotos.splice(fotos.indexOf(b.dataset.quitar), 1); m.querySelector("[data-galeria-nueva]").innerHTML = galeria(fotos, { quitar: true }); guardarBorrador(); }
         if (b.hasAttribute("data-dictar")) {
           if (parar) { parar(); parar = null; return; }
           parar = dictar(f["nh-desc"], {
@@ -270,12 +281,13 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
         }
         t.value = "";
         m.querySelector("[data-galeria-nueva]").innerHTML = galeria(fotos, { quitar: true });
+        guardarBorrador();
       });
       f.addEventListener("submit", async (e) => {
         e.preventDefault();
         const err = f.querySelector(".error-form");
         const descripcion = f["nh-desc"].value.trim();
-        if (!f["nh-equipo"].value) { err.hidden = false; err.textContent = "Elige el equipo."; return; }
+        if (!f["nh-equipo"].value) { err.hidden = false; err.textContent = "Elige el equipo."; const c = f.querySelector('[data-campo-equipo="nh-equipo"]'); c.scrollIntoView({ block: "center", behavior: "smooth" }); c.focus({ preventScroll: true }); return; }
         if (!descripcion) { err.hidden = false; err.textContent = "Escribe qué se encontró."; f["nh-desc"].focus(); return; }
         const b = f.querySelector("button[type=submit]");
         b.disabled = true;
@@ -286,6 +298,7 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
               ot: f["nh-ot"].value.trim(), vence: f["nh-vence"].value || null, fotos, creado: new Date().toISOString() }),
             new Promise((ok) => setTimeout(ok, 6000)),
           ]);
+          api.borrador.borrar("nuevo-hallazgo");
           aviso(api.cola.pendientes.some((p) => p.datos?.id === id) ? "Anotado en este aparato: se envía cuando haya señal." : "Hallazgo anotado.");
           ir(`#/hallazgo/${encodeURIComponent(id)}`);
         } catch (x) {
