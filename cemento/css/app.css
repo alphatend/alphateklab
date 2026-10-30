@@ -228,8 +228,10 @@ p { margin: 0; }
   .armazon { display: grid; grid-template-columns: calc(var(--ancho-riel) + 24px) minmax(0, 1fr); }
   .riel {
     display: flex; flex-direction: column; position: sticky; top: 12px; margin: 12px 0 12px 12px;
-    height: calc(100dvh - 24px); border-radius: var(--r-hoja); padding: 18px 10px 12px; overflow-y: auto; scrollbar-width: none;
+    height: calc(100dvh - 24px); border-radius: var(--r-hoja); padding: 18px 10px 12px; overflow: hidden;
   }
+  /* el pie (avisos, ajustes, la señal y quién soy) siempre a la vista; si la lista no cabe, se desliza solo ella */
+  .riel > nav { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; margin: 0 -6px; padding: 0 6px; }
   .riel .marca-riel { display: flex; align-items: center; gap: 10px; padding: 2px 10px 16px; }
   .riel .marca-riel img { width: 36px; height: 36px; object-fit: contain; border-radius: 9px; background: #fff; }
   .riel .nombre-app { font: 700 19px/1.15 var(--titulo); letter-spacing: 0.006em; }
@@ -246,7 +248,23 @@ p { margin: 0; }
   .riel nav a[aria-current="page"] { background: var(--tinte-boton); color: #fff; font-weight: 600; }
   .riel nav a[aria-current="page"] .ico { color: #fff; }
   .riel .globo { position: static; margin-left: auto; }
-  .riel .pie-riel { margin-top: auto; padding-top: 12px; border-top: 0.5px solid var(--linea); display: grid; gap: 4px; }
+  .riel .pie-riel { flex: none; margin-top: 8px; padding-top: 10px; border-top: 0.5px solid var(--linea); display: grid; gap: 4px; }
+  .riel .pie-riel nav { flex-direction: row; }
+  .riel .pie-riel nav a { flex: 1 1 0; min-width: 0; }
+  /* pantallas bajas (una laptop de 900 px, el iPad acostado): la lista más apretada para que quepa entera */
+  @media (max-height: 1000px) {
+    .riel { padding-top: 14px; }
+    .riel .marca-riel { padding-bottom: 12px; }
+    .crear-riel { min-height: 40px; margin-bottom: 8px; }
+    .riel nav a { min-height: 34px; font-size: 15.5px; }
+    .riel nav .grupo-nav { padding: 9px 12px 3px; font-size: 12px; }
+    .riel .yo-riel { min-height: 44px; }
+  }
+  @media (max-height: 860px) {
+    .riel .marca-riel { padding-bottom: 8px; }
+    .riel .marca-riel .sub { display: none; }
+    .riel nav .grupo-nav { padding-top: 6px; }
+  }
   .barra-sup, .dock { display: none; }
   .crear-riel {
     display: flex; align-items: center; gap: 10px; min-height: 44px; margin: 0 2px 10px; padding: 0 12px; border-radius: 12px; border: 0; cursor: pointer;

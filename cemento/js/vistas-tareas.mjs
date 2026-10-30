@@ -70,7 +70,7 @@ export function montarChecks(m, d) {
 
 export function vistaTareas({ d, yo, hoy, query }) {
   const aOtros = puede(yo, "tareas"), editar = puede(yo, "editar");
-  const f = query.get("f") ?? "mias";
+  const f = query.get("f") ?? (editar ? "mias" : "todas"); // quien solo ve no tiene tareas suyas
   const verHechas = query.get("hechas") === "1";
   const b = normal(query.get("b") ?? "");
   const fam = familia(d, query.get("eq"));
