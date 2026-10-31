@@ -187,46 +187,58 @@ export function historialDe(d, eq) {
   const xs = [];
   for (const t of d.tareas ?? []) {
     if (t.estado !== "hecha" || !t.hecha_en || !fam.has(t.equipo_id)) continue;
-    xs.push({ tipo: "tareas", en: t.hecha_en, url: `#/tarea/${encodeURIComponent(t.id)}`, icono: "tareas", color: "verde", titulo: t.titulo,
+    xs.push({ tipo: "tareas", equipo: t.equipo_id, en: t.hecha_en, url: `#/tarea/${encodeURIComponent(t.id)}`, icono: "tareas", color: "verde", titulo: t.titulo,
       detalle: ["Tarea hecha", por(t.hecha_por), donde(t.equipo_id), t.nota_cierre ?? ""] });
   }
   for (const i of d.inspecciones) {
     if (i.estado !== "hecha" || !i.hecha_en || !equiposDe(i).some((x) => fam.has(x))) continue;
     const n = d.hallazgos.filter((h) => h.inspeccion_id === i.id).length;
-    xs.push({ tipo: "inspecciones", en: i.hecha_en, url: `#/inspeccion/${encodeURIComponent(i.id)}`, icono: "inspecciones", color: "indigo",
+    xs.push({ tipo: "inspecciones", equipo: equiposDe(i).find((x) => fam.has(x)), en: i.hecha_en, url: `#/inspeccion/${encodeURIComponent(i.id)}`, icono: "inspecciones", color: "indigo",
       titulo: plantilla(d, i.plantilla_id)?.nombre || queInspeccion(d, i), detalle: ["Inspección hecha", por(i.hecha_por), n ? plural(n, "hallazgo", "hallazgos") : "sin hallazgos"] });
   }
   for (const h of d.hallazgos) {
     if (!fam.has(h.equipo_id)) continue;
     const titulo = `${numeroHallazgo(h)} · ${h.descripcion}`, url = `#/hallazgo/${encodeURIComponent(h.id)}`;
-    xs.push({ tipo: "hallazgos", en: h.creado, url, icono: "hallazgos", color: h.prioridad === "alta" ? "rojo" : "naranja", titulo,
+    xs.push({ tipo: "hallazgos", equipo: h.equipo_id, en: h.creado, url, icono: "hallazgos", color: h.prioridad === "alta" ? "rojo" : "naranja", titulo,
       detalle: ["Hallazgo anotado", por(h.creado_por), `prioridad ${(TEXTO_PRIORIDAD[h.prioridad] ?? "").toLowerCase()}`, donde(h.equipo_id)] });
     if (h.estado === "cerrado" && h.cerrado) {
       const dias = diasEntre(diaDe(h.creado), diaDe(h.cerrado));
-      xs.push({ tipo: "hallazgos", en: h.cerrado, url, icono: "bien", color: "verde", titulo,
+      xs.push({ tipo: "hallazgos", equipo: h.equipo_id, en: h.cerrado, url, icono: "bien", color: "verde", titulo,
         detalle: ["Hallazgo cerrado", dias ? `tardó ${plural(dias, "día", "días")}` : "el mismo día", donde(h.equipo_id)] });
     }
   }
   for (const p of d.paros ?? []) {
     if (!fam.has(p.equipo_id) || Date.parse(p.inicio) > Date.now()) continue;
-    xs.push({ tipo: "paros", en: p.inicio, url: `#/paro/${encodeURIComponent(p.id)}`, icono: "paros", color: p.tipo === "programado" ? "gris" : "morado",
+    xs.push({ tipo: "paros", equipo: p.equipo_id, en: p.inicio, url: `#/paro/${encodeURIComponent(p.id)}`, icono: "paros", color: p.tipo === "programado" ? "gris" : "morado",
       titulo: p.tipo === "programado" ? "Paro programado" : `Paro: ${p.causa || "no programado"}`,
       detalle: [p.fin ? duracion((Date.parse(p.fin) - Date.parse(p.inicio)) / 3600e3) : "sigue parado", donde(p.equipo_id), p.descripcion ?? ""] });
   }
   return xs.filter((x) => x.en).sort((a, b) => b.en.localeCompare(a.en));
 }
-const TIPOS_HISTORIAL = [["todo", "Todo"], ["tareas", "Tareas"], ["inspecciones", "Inspecciones"], ["hallazgos", "Hallazgos"], ["paros", "Paros"]];
+const TIPOS_HISTORIAL = [["tareas", "Tareas"], ["inspecciones", "Inspecciones"], ["hallazgos", "Hallazgos"], ["paros", "Paros"]];
 const PRIMEROS = 15;
+/** Arriba, desplegables (Eduardo, 31-oct-2026: «que salga un desplegable para todo, tareas, hallazgos, paros; aparte
+ *  también un desplegable por subequipo y buscar por fecha»): qué, de qué subequipo, y desde/hasta. */
 function seccionHistorial(d, eq) {
   const xs = historialDe(d, eq);
   const cuenta = (t) => xs.filter((x) => x.tipo === t).length;
-  const fila = (x, k) => `<li data-tipo="${x.tipo}" ${k >= PRIMEROS ? "hidden" : ""}><a class="fila con-icono" href="${x.url}"><span class="icono-fila ${x.color}">${icono(x.icono)}</span>
+  const subs = eq.padre_id ? [] : d.equipos.filter((x) => x.padre_id === eq.id && (x.activo || xs.some((y) => y.equipo === x.id)));
+  const fila = (x, k) => `<li data-tipo="${x.tipo}" data-equipo="${esc(x.equipo ?? "")}" data-dia="${diaDe(x.en)}" ${k >= PRIMEROS ? "hidden" : ""}><a class="fila con-icono" href="${x.url}"><span class="icono-fila ${x.color}">${icono(x.icono)}</span>
       <span class="titulo">${esc(x.titulo)}</span>
       <span class="detalle"><span>${esc(fechaHora(x.en))}</span>${x.detalle.filter(Boolean).map((t) => `<span>${esc(t)}</span>`).join("")}</span>
       <span class="lado">${icono("derecha", "ico chevron")}</span></a></li>`;
   return `<section class="seccion" data-historial><h2>Historial <small>${xs.length || ""}</small></h2>
-    ${xs.length ? `<nav class="filtros" aria-label="Qué ver del historial">${TIPOS_HISTORIAL.filter(([t]) => t === "todo" || cuenta(t)).map(([t, n]) => `<button type="button" data-ver="${t}" aria-pressed="${t === "todo"}">${n}${t === "todo" ? "" : ` <b>${cuenta(t)}</b>`}</button>`).join("")}</nav>
+    ${xs.length ? `<div class="rejilla-campos filtros-historial">
+        <div class="campo"><label for="hist-tipo">Qué</label><select id="hist-tipo"><option value="">Todo (${xs.length})</option>
+          ${TIPOS_HISTORIAL.map(([t, n]) => `<option value="${t}">${n} (${cuenta(t)})</option>`).join("")}</select></div>
+        ${eq.padre_id ? "" : `<div class="campo"><label for="hist-sub">Subequipo</label><select id="hist-sub" ${subs.length ? "" : "disabled"}>
+          ${subs.length ? `<option value="">Todos</option><option value="${esc(eq.id)}">Solo ${esc(eq.tag || eq.nombre)}</option>${subs.map((x) => `<option value="${esc(x.id)}">${esc(x.tag ? `${x.tag} · ${x.nombre}` : x.nombre)}</option>`).join("")}`
+            : `<option value="">No tiene subequipos</option>`}</select></div>`}
+        <div class="campo"><label for="hist-desde">Desde</label><input id="hist-desde" type="date"></div>
+        <div class="campo"><label for="hist-hasta">Hasta</label><input id="hist-hasta" type="date"></div>
+      </div>
       <ul class="lista">${xs.map(fila).join("")}</ul>
+      <p class="ayuda" data-hist-nada hidden style="margin:10px 4px">Nada con esos filtros.</p>
       <p class="pie-seccion" data-zona-mas ${xs.length > PRIMEROS ? "" : "hidden"}><button type="button" class="boton chico plano" data-ver-mas>Ver todo</button></p>`
       : vacio("Todavía no hay nada hecho ni anotado en este equipo. Aquí quedan las tareas hechas, las inspecciones, los hallazgos y los paros.")}</section>`;
 }
@@ -234,24 +246,23 @@ function seccionHistorial(d, eq) {
 function montarHistorial(m) {
   const z = m.querySelector("[data-historial]");
   if (!z) return;
-  let ver = "todo", todo = false;
+  let todo = false;
+  const v = (id) => z.querySelector(`#${id}`)?.value ?? "";
   const pintar = () => {
+    const tipo = v("hist-tipo"), sub = v("hist-sub"), desde = v("hist-desde"), hasta = v("hist-hasta");
     let k = 0;
     z.querySelectorAll("li[data-tipo]").forEach((li) => {
-      if (ver !== "todo" && li.dataset.tipo !== ver) { li.hidden = true; return; }
+      const si = (!tipo || li.dataset.tipo === tipo) && (!sub || li.dataset.equipo === sub) && (!desde || li.dataset.dia >= desde) && (!hasta || li.dataset.dia <= hasta);
+      if (!si) { li.hidden = true; return; }
       li.hidden = !todo && k >= PRIMEROS;
       k++;
     });
-    const mas = z.querySelector("[data-zona-mas]");
-    if (mas) mas.hidden = todo || k <= PRIMEROS;
+    z.querySelector("[data-hist-nada]").hidden = k > 0;
+    z.querySelector("[data-zona-mas]").hidden = todo || k <= PRIMEROS;
   };
-  z.addEventListener("click", (e) => {
-    const b = e.target.closest("button");
-    if (!b) return;
-    if (b.dataset.ver) { ver = b.dataset.ver; z.querySelectorAll("[data-ver]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }
-    if (b.hasAttribute("data-ver-mas")) todo = true;
-    pintar();
-  });
+  z.addEventListener("change", pintar);
+  z.addEventListener("input", (e) => { if (e.target.type === "date") pintar(); });
+  z.addEventListener("click", (e) => { if (e.target.closest("[data-ver-mas]")) { todo = true; pintar(); } });
 }
 
 export function vistaEquipo({ d, yo, hoy, param }) {
