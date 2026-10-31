@@ -43,7 +43,7 @@ export function vistaTromp({ d } = {}) {
           <p style="font-size:14px;color:var(--tinta-3)">El ejemplo es inventado, para ver cómo funciona. Las mallas van de la más fina a la más gruesa.</p>
           ${!d?.yo || esDeProceso(d.yo) ? `<div class="herramientas-item" style="border-top:0.5px solid var(--linea);padding-top:12px">
             <button type="button" class="boton primario chico" data-accion="guardar">${icono("bien")}Guardar este muestreo</button>
-            <span class="ayuda">Queda con el molino y la fecha, para seguirlo junto al Blaine en Laboratorio.</span></div>` : ""}
+            <span class="ayuda">Queda con el molino y la fecha.</span></div>` : ""}
           ${guardados.length ? `<div><span class="rotulo">Muestreos guardados</span><ul class="lista" style="margin-top:8px;background:var(--hundido)">${guardados.slice(0, 12).map((x) => {
             let r = null; try { r = calcularTromp(x.datos); } catch { /* datos incompletos */ }
             return `<li><button type="button" class="fila" data-cargar="${esc(x.id)}"><span class="titulo">${esc(nombreCompleto(d, x.equipo_id))} <small>· ${esc(fechaHora(x.en))}</small></span>

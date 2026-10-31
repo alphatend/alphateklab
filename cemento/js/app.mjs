@@ -17,7 +17,6 @@ import { vistaAjustes, vistaUsuarios } from "./vistas-ajustes.mjs";
 import { vistaTarea } from "./vistas-tareas.mjs";
 import { vistaTurno, vistaEntrega, vistaNuevaEntrega } from "./vistas-turno.mjs";
 import { vistaParos, vistaParo } from "./vistas-paros.mjs";
-import { vistaLaboratorio } from "./vistas-laboratorio.mjs";
 import { vistaIndicadores } from "./vistas-indicadores.mjs";
 import { vistaPlanta, vistaEscanear, vistaQr, vistaEtiquetas } from "./vistas-planta.mjs";
 import { vistaMantenimiento } from "./vistas-mantenimiento.mjs";
@@ -40,7 +39,6 @@ const NAV = [
     { ruta: "mantenimiento", texto: "Mantenimiento", icono: "herramienta" },
   ] },
   { grupo: "Proceso", items: [
-    { ruta: "laboratorio", texto: "Laboratorio", icono: "laboratorio" },
     { ruta: "tromp", texto: "Curva de Tromp", icono: "tromp", si: esDeProceso },
   ] },
   { grupo: "Informes", items: [
@@ -81,7 +79,6 @@ const VISTAS = {
   "nueva-entrega": vistaNuevaEntrega,
   paros: vistaParos,
   paro: vistaParo,
-  laboratorio: vistaLaboratorio,
   indicadores: vistaIndicadores,
   planta: vistaPlanta,
   mantenimiento: vistaMantenimiento,
@@ -98,7 +95,7 @@ const SECCION = {
 // en el teléfono, qué pestaña se marca para las secciones que no tienen la suya
 // sin «Más» (Eduardo, 30-oct-2026): lo de inspecciones y hallazgos es de Tareas; lo de la planta, de Planta; el calendario,
 // los avisos y la configuración, del inicio
-const EN_PLANTA = new Set(["equipos", "colectores", "paros", "laboratorio", "tromp", "planta", "turno", "reportes", "indicadores", "mantenimiento"]);
+const EN_PLANTA = new Set(["equipos", "colectores", "paros", "tromp", "planta", "turno", "reportes", "indicadores", "mantenimiento"]);
 const EN_TAREAS = new Set(["tareas", "inspecciones", "hallazgos"]);
 const EN_INICIO = new Set(["tablero", "calendario", "ajustes", "avisos", "pendientes"]);
 
@@ -239,7 +236,6 @@ function opcionesCrear(yo, r = ruta()) {
     puede(yo, "asignar") && { icono: "inspecciones", texto: "Asignar inspección", detalle: "A una persona o a un turno", ir: con("#/asignar"), color: "indigo" },
     puede(yo, "editar") && { icono: "paros", texto: "Paro", detalle: "Un equipo que paró", ir: con("#/paro/nuevo"), color: "naranja" },
     puede(yo, "editar") && { icono: "turno", texto: "Entregar turno", detalle: "Lo que pasó y lo pendiente", ir: "#/nueva-entrega", color: "verde" },
-    esDeProceso(yo) && puede(yo, "editar") && { icono: "laboratorio", texto: "Resultado de laboratorio", detalle: "Blaine, residuo, humedad…", ir: "#/laboratorio?registrar=1", color: "morado" },
   ].filter(Boolean);
 }
 

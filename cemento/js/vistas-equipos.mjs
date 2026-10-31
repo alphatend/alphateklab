@@ -193,7 +193,7 @@ export function vistaEquipo({ d, yo, hoy, param }) {
   const curso = enCurso(d).filter((p) => fam.has(p.equipo_id));
   const disp = !colector && !padre ? disponibilidad(d, eq.id, Date.now() - 30 * 86400e3, Date.now()) : null;
   const paros = (d.paros ?? []).filter((p) => fam.has(p.equipo_id) && Date.parse(p.inicio) > Date.now() - 90 * 86400e3).sort((a, b) => b.inicio.localeCompare(a.inicio));
-  // el laboratorio no va aquí (Eduardo, 31-oct-2026: «no es necesario ver el tema de laboratorio»): está en su pantalla
+  // sin laboratorio (Eduardo, 31-oct-2026: «elimina laboratorio»; se quitó de toda la app)
   return {
     titulo: nombreCompleto(d, eq.id),
     tituloCorto: eq.tag || eq.nombre,

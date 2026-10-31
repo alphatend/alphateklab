@@ -63,10 +63,7 @@ export function vistaAjustes({ d, yo }) {
           <input type="number" min="1" max="60" value="${esc(a.escalar_dias ?? 3)}" data-escalar aria-label="Días" style="width:84px;min-height:38px;text-align:center"><span class="ayuda">días</span></div>
         <label class="ajuste"><span class="icono-fila indigo">${icono("firma")}</span><span class="texto"><b>Firma al terminar una inspección</b>
           <small>Con el dedo; sale en el reporte. Cada plantilla puede cambiarlo.</small></span>
-          <span class="interruptor"><input type="checkbox" data-firma ${a.pedir_firma === false ? "" : "checked"}><span></span></span></label>
-        <div class="ajuste"><span class="icono-fila morado">${icono("laboratorio")}</span><span class="texto"><b>Parámetros del laboratorio</b>
-          <small>${esc(Object.keys(a.lab ?? {}).map((id) => d.equipos.find((e) => e.id === id)?.nombre).filter(Boolean).join(", ") || "Ningún molino todavía")}</small></span>
-          <button type="button" class="boton chico" data-accion="lab">Editar</button></div>`, "Los rangos del laboratorio que vienen son típicos de libro: cámbialos por los de la planta.") : ""}
+          <span class="interruptor"><input type="checkbox" data-firma ${a.pedir_firma === false ? "" : "checked"}><span></span></span></label>`) : ""}
 
       ${admin ? seccion("Equipo de trabajo", `<a class="fila con-icono" href="#/usuarios"><span class="icono-fila indigo">${icono("personas")}</span><span class="titulo">Usuarios</span>
           <span class="detalle">${plural(d.personas.filter((p) => p.activo).length, "activo", "activos")}${d.personas.some((p) => p.activo && !p.tiene_clave) ? ` · ${d.personas.filter((p) => p.activo && !p.tiene_clave).length} sin contraseña` : ""}</span>
@@ -101,7 +98,6 @@ export function vistaAjustes({ d, yo }) {
         if (ac === "clave") return cambiarClave();
         if (ac === "calendario") return suscribir(d);
         if (ac === "avisar") return mandarAviso(d, yo);
-        if (ac === "lab") return editarLab(d);
         if (ac === "sin-hora") return guardarHora(m, "");
         if (ac === "activar-push" || ac === "probar-push" || ac === "quitar-push") return manejarPush(m, ac, b);
         if (ac === "actualizar") {
@@ -161,47 +157,6 @@ export function vistaAjustes({ d, yo }) {
       });
     },
   };
-}
-
-/** Los parámetros del laboratorio de cada molino: nombre, unidad y rango. */
-async function editarLab(d) {
-  const lab = structuredClone(d.ajustes?.lab ?? {});
-  const fila = (eq, p, k) => `<div class="rejilla-campos" style="grid-template-columns:2fr 1fr 1fr 1fr auto;gap:6px;align-items:center" data-eq="${esc(eq)}" data-k="${k}">
-    <input type="text" data-c="nombre" value="${esc(p.nombre)}" placeholder="Blaine" aria-label="Parámetro"><input type="text" data-c="unidad" value="${esc(p.unidad ?? "")}" placeholder="cm²/g" aria-label="Unidad">
-    <input type="text" inputmode="decimal" data-c="min" value="${esc(p.min ?? "")}" placeholder="mín." aria-label="Mínimo"><input type="text" inputmode="decimal" data-c="max" value="${esc(p.max ?? "")}" placeholder="máx." aria-label="Máximo">
-    <button type="button" class="boton-icono" data-quitar-p aria-label="Quitar">${icono("basura")}</button></div>`;
-  const pintar = () => Object.entries(lab).map(([eq, ps]) => `<section class="panel" style="background:var(--hundido);padding:12px"><h3 style="display:flex;justify-content:space-between;align-items:center">${esc(nombreCompleto(d, eq))}
-      <button type="button" class="boton mini plano peligro" data-quitar-m="${esc(eq)}">Quitar molino</button></h3>
-    ${ps.map((p, k) => fila(eq, p, k)).join("")}<div><button type="button" class="boton mini" data-agregar-p="${esc(eq)}">${icono("mas1")}Parámetro</button></div></section>`).join("") || `<p class="ayuda">Ningún molino todavía.</p>`;
-  await dialogo({
-    titulo: "Parámetros del laboratorio",
-    ancho: true,
-    html: `<div data-lab style="display:grid;gap:10px">${pintar()}</div><div><button type="button" class="boton chico" data-agregar-m>${icono("mas1")}Agregar un molino</button></div>
-      <p class="error-form" role="alert" hidden style="color:var(--rojo);font-weight:600"></p>`,
-    botones: [{ texto: "Cancelar", valor: null }, { texto: "Guardar", valor: true, clase: "primario", alElegir: async (v) => {
-      const num = (x) => (String(x ?? "").trim() === "" ? null : leerNumero(x) ?? NaN);
-      for (const ps of Object.values(lab)) for (const p of ps) { p.min = num(p.min ?? ""); p.max = num(p.max ?? ""); p.id ||= normal(p.nombre).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `p${Math.random().toString(36).slice(2, 6)}`; }
-      if (Object.values(lab).flat().some((p) => !p.nombre?.trim() || Number.isNaN(p.min) || Number.isNaN(p.max))) { const err = v.querySelector(".error-form"); err.hidden = false; err.textContent = "Cada parámetro necesita nombre, y el mínimo y máximo tienen que ser números."; return false; }
-      const alReves = Object.values(lab).flat().find((p) => p.min != null && p.max != null && p.min > p.max);
-      if (alReves) { const err = v.querySelector(".error-form"); err.hidden = false; err.textContent = `En «${alReves.nombre}» el mínimo es mayor que el máximo.`; return false; }
-      try { await api.escribir("ajustes", { lab }); aviso("Parámetros guardados."); } catch (x) { const err = v.querySelector(".error-form"); err.hidden = false; err.textContent = x.sinRed ? "Hace falta señal." : x.message; return false; }
-    } }],
-    alMontar(v) {
-      const zona = v.querySelector("[data-lab]");
-      zona.addEventListener("input", (e) => { const f = e.target.closest("[data-eq]"); if (f) lab[f.dataset.eq][Number(f.dataset.k)][e.target.dataset.c] = e.target.value; });
-      v.addEventListener("click", async (e) => {
-        const b = e.target.closest("button");
-        if (!b) return;
-        if (b.hasAttribute("data-quitar-p")) { const f = b.closest("[data-eq]"); lab[f.dataset.eq].splice(Number(f.dataset.k), 1); zona.innerHTML = pintar(); }
-        if (b.dataset.agregarP) { lab[b.dataset.agregarP].push({ id: "", nombre: "", unidad: "", min: null, max: null }); zona.innerHTML = pintar(); zona.querySelector(`[data-eq="${CSS.escape(b.dataset.agregarP)}"]:last-of-type input`)?.focus(); }
-        if (b.dataset.quitarM) { delete lab[b.dataset.quitarM]; zona.innerHTML = pintar(); }
-        if (b.hasAttribute("data-agregar-m")) {
-          const id = await elegirEquipo(d, { titulo: "¿De qué molino?", soloArriba: true });
-          if (id && !lab[id]) { lab[id] = [{ id: "", nombre: "", unidad: "", min: null, max: null }]; zona.innerHTML = pintar(); }
-        }
-      });
-    },
-  });
 }
 
 async function guardarHora(m, hora) {

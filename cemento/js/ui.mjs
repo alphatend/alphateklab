@@ -181,7 +181,7 @@ export const textoTurno = (t) => TURNOS.find((x) => x.id === String(t ?? "").toU
 /** En qué turno cae una hora (en Panamá). */
 export const turnoDeHora = (iso) => { const h = new Date(Date.parse(iso) - 5 * 3600e3).getUTCHours(); return TURNOS.find((x) => h >= x.desde && h < x.hasta)?.id ?? null; };
 /**
- * Laboratorio y curva de Tromp los llena ingeniería de procesos (Eduardo, 30-oct-2026: «él lo llena, los demás solo lo
+ * La curva de Tromp la llena ingeniería de procesos (Eduardo, 30-oct-2026: «él lo llena, los demás solo lo
  * ven»): el administrador y quien tenga de cargo procesos, gerencia o coordinación. La curva de Tromp solo la ven ellos.
  */
 export const esDeProceso = (p) => p?.rol === "admin" || /proceso|gerent|gerenc|coordin/i.test(p?.puesto ?? "");
@@ -189,12 +189,12 @@ export const esDeProceso = (p) => p?.rol === "admin" || /proceso|gerent|gerenc|c
 export const puede = (yo, permiso) => yo?.rol === "admin" || (yo?.permisos ?? ["editar"]).includes(permiso);
 export const PERFILES = {
   lectura: { nombre: "Solo ver", desc: "Ve inspecciones, hallazgos, tareas y reportes. No cambia nada.", permisos: [] },
-  inspector: { nombre: "Inspector", desc: "Llena inspecciones, anota hallazgos, sus tareas, entregas de turno, paros y laboratorio.", permisos: ["editar"] },
+  inspector: { nombre: "Inspector", desc: "Llena inspecciones, anota hallazgos, sus tareas, entregas de turno y paros.", permisos: ["editar"] },
   supervisor: { nombre: "Supervisor", desc: "Además asigna inspecciones, le pasa tareas a otros y da el visto bueno.", permisos: ["editar", "asignar", "tareas", "revisar"] },
   admin: { nombre: "Administrador", desc: "Todo, también usuarios, equipos y ajustes.", permisos: ["editar", "asignar", "tareas", "equipos", "revisar"] },
 };
 export const PERMISOS = {
-  editar: ["Llenar y anotar", "Inspecciones, hallazgos, sus tareas, entregas de turno, paros y laboratorio"],
+  editar: ["Llenar y anotar", "Inspecciones, hallazgos, sus tareas, entregas de turno y paros"],
   asignar: ["Asignar inspecciones", "Y programar paros"],
   tareas: ["Pasarles tareas a otros", "A una persona o a un turno"],
   equipos: ["Editar equipos y plantillas", "Equipos, subequipos, colectores y lo que se revisa"],

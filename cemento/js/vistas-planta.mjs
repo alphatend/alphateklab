@@ -1,4 +1,4 @@
-// La planta en el teléfono (un centro: equipos, colectores, paros, laboratorio), el escáner de QR y lo que pasa al
+// La planta en el teléfono (un centro: equipos, colectores, paros, mantenimiento), el escáner de QR y lo que pasa al
 // escanear: el QR de cada equipo lleva a …/#/qr/<id>, que muestra lo pendiente de ese equipo y, si hay una inspección
 // mía abierta que lo incluye, la marca «en sitio» (queda la hora en el reporte: prueba de que se pasó por el equipo).
 // También las etiquetas QR para imprimir y pegar.
@@ -17,7 +17,8 @@ export function vistaPlanta({ d, yo, hoy }) {
   const ent = (d.entregas ?? []).find((e) => !e.recibida_por && e.de !== yo.id);
   const mant = d.hallazgos.filter((h) => h.estado !== "cerrado" && DE_MANTENIMIENTO.has(h.tipo)).length;
   const hallAbiertos = d.hallazgos.filter((h) => h.estado !== "cerrado").length, inspPend = d.inspecciones.filter((i) => i.estado === "pendiente").length;
-  // sin «Más» (30-oct-2026): aquí va todo lo de la planta; el laboratorio y la curva de Tromp, para ingeniería de procesos
+  // sin «Más» (30-oct-2026): aquí va todo lo de la planta; la curva de Tromp, para ingeniería de procesos. El laboratorio
+  // se quitó (Eduardo, 31-oct-2026: «elimina laboratorio»)
   return {
     titulo: "Planta",
     html: `<div class="cabeza"><div><h1>Planta</h1><p class="bajada">${esc(d.ajustes?.planta || "")}</p></div>
@@ -30,9 +31,8 @@ export function vistaPlanta({ d, yo, hoy }) {
         <a href="#/mantenimiento"><span class="icono-fila naranja">${icono("herramienta")}</span><b>Mantenimiento</b><small>${mant ? plural(mant, "pendiente", "pendientes") : "Nada pendiente"}</small></a>
         <a href="#/turno"><span class="icono-fila">${icono("turno")}</span><b>Entrega de turno</b><small>${ent ? "Hay una por recibir" : "Lo que deja el que sale"}</small></a>
         <a href="#/indicadores"><span class="icono-fila verde">${icono("indicadores")}</span><b>Indicadores</b><small>Cumplimiento y disponibilidad</small></a>
-        <a href="#/reportes"><span class="icono-fila verde">${icono("reportes")}</span><b>Reportes</b><small>PDF, Excel y correo</small></a>
-        ${esDeProceso(yo) ? `<a href="#/laboratorio"><span class="icono-fila morado">${icono("laboratorio")}</span><b>Laboratorio</b><small>${plural((d.laboratorio ?? []).length, "muestra", "muestras")}</small></a>
-        <a href="#/tromp"><span class="icono-fila indigo">${icono("tromp")}</span><b>Curva de Tromp</b><small>Separador</small></a>` : ""}
+        <a href="#/reportes"><span class="icono-fila verde">${icono("reportes")}</span><b>Reportes</b><small>PDF o copiar</small></a>
+        ${esDeProceso(yo) ? `<a href="#/tromp"><span class="icono-fila indigo">${icono("tromp")}</span><b>Curva de Tromp</b><small>Separador</small></a>` : ""}
       </div>
       <section class="seccion"><h2>Historial</h2><ul class="lista">
         <li><a class="fila con-icono" href="#/hallazgos"><span class="icono-fila naranja">${icono("hallazgos")}</span><span class="titulo">Hallazgos</span><span class="detalle">${plural(hallAbiertos, "abierto", "abiertos")} · todos, con su número</span><span class="lado">${icono("derecha", "ico chevron")}</span></a></li>

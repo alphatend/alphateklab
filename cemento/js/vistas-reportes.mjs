@@ -529,12 +529,6 @@ export function excelDe(d, per, al, hoy) {
       filas: (d.tareas ?? []).filter((t) => (!t.equipo_id || al.ids.has(t.equipo_id)) && (al.planta || t.equipo_id) && (t.estado !== "hecha" || enRango(diaDe(t.hecha_en))))
         .map((t) => [t.titulo, TEXTO_ESTADO_TAREA[t.estado], TEXTO_PRIORIDAD[t.prioridad] ?? "", t.equipo_id ? nombreCompleto(d, t.equipo_id) : "", paraQuien(d, t.asignada_a), nombre(d, t.creada_por),
           t.creada, t.vence, t.hecha_en, t.hecha_por ? nombre(d, t.hecha_por) : "", t.nota_cierre ?? "", t.inspeccion_id ? "Inspección" : t.hallazgo_id ? "Hallazgo" : "Suelta"]) },
-    { nombre: "Laboratorio", columnas: [{ titulo: "Fecha", tipo: "fechahora" }, { titulo: "Molino", ancho: 28 }, { titulo: "Parámetro", ancho: 22 }, { titulo: "Valor", tipo: "numero", decimales: 2 },
-      { titulo: "Unidad", ancho: 9 }, { titulo: "Mínimo", tipo: "numero", decimales: 2 }, { titulo: "Máximo", tipo: "numero", decimales: 2 }, { titulo: "Fuera de rango" }, { titulo: "Quién", ancho: 20 }, { titulo: "Nota", ancho: 30 }],
-      filas: (d.laboratorio ?? []).filter((x) => al.ids.has(x.equipo_id) && enRango(diaDe(x.en))).flatMap((x) => Object.entries(x.valores ?? {}).map(([k, v]) => {
-        const p = (d.ajustes?.lab?.[x.equipo_id] ?? []).find((y) => y.id === k) ?? { nombre: k };
-        return [x.en, nombreCompleto(d, x.equipo_id), p.nombre, v, p.unidad ?? "", p.min ?? null, p.max ?? null, (p.min != null && v < p.min) || (p.max != null && v > p.max) ? "Sí" : "No", nombre(d, x.por), x.nota ?? ""];
-      })) },
     { nombre: "Entregas de turno", columnas: [{ titulo: "Fecha", tipo: "fechahora" }, { titulo: "Turno", ancho: 8 }, { titulo: "Entregó", ancho: 22 }, { titulo: "Novedades", ancho: 60 }, { titulo: "Pendiente", ancho: 50 },
       { titulo: "Equipos no en marcha", ancho: 40 }, { titulo: "Recibió", ancho: 22 }, { titulo: "Recibida", tipo: "fechahora" }],
       filas: (d.entregas ?? []).filter((x) => enRango(diaDe(x.en))).sort((a, b) => a.en.localeCompare(b.en)).map((x) => [x.en, x.turno ?? "", nombre(d, x.de), x.novedades ?? "", x.pendientes ?? "",
