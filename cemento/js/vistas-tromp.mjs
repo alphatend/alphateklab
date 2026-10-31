@@ -1,7 +1,7 @@
 // La curva de Tromp del separador: se meten los tamizados de la alimentación, los finos y los gruesos, y sale la
 // curva con el bypass, el corte (d50), la imperfección y la carga circulante. Lo escrito queda en el aparato.
 import { esc, icono, numero, fechaHora, leerNumero } from "./util.mjs";
-import { aviso, dialogo, nombre, puede } from "./ui.mjs";
+import { aviso, dialogo, nombre, puede, vacio, esDeProceso } from "./ui.mjs";
 import * as api from "./api.mjs";
 import { nombreCompleto } from "./componentes.mjs";
 import { calcularTromp, EJEMPLO } from "./tromp.mjs";
@@ -15,6 +15,7 @@ function filasDe(datos) {
 }
 
 export function vistaTromp({ d } = {}) {
+  if (d?.yo && !esDeProceso(d.yo)) return { titulo: "Curva de Tromp", atras: "#/planta", html: vacio("La curva de Tromp la lleva ingeniería de procesos.") };
   let filas = leer() ?? filasDe(EJEMPLO);
   const guardados = [...(d?.tromp ?? [])].sort((a, b) => b.en.localeCompare(a.en));
   const molinos = (d?.equipos ?? []).filter((e) => e.activo && !e.padre_id && e.tipo !== "colector");
@@ -26,7 +27,7 @@ export function vistaTromp({ d } = {}) {
       <td><button type="button" class="boton chico plano" data-quitar-fila aria-label="Quitar la fila ${k + 1}">${icono("mal")}</button></td></tr>`;
   return {
     titulo: "Curva de Tromp",
-    atras: matchMedia("(max-width: 899px)").matches ? "#/mas" : null,
+    atras: matchMedia("(max-width: 899px)").matches ? "#/planta" : null,
     viva: false,
     html: `<div class="cabeza"><div><h1>Curva de Tromp</h1>
         <p class="bajada">Con el tamizado de la alimentación, los finos y los gruesos del separador (% que pasa por cada malla), en el mismo muestreo.</p></div></div>
@@ -40,7 +41,7 @@ export function vistaTromp({ d } = {}) {
             <button type="button" class="boton chico" data-accion="ejemplo">Usar el ejemplo</button>
             <button type="button" class="boton chico plano" data-accion="limpiar">Vaciar</button></div>
           <p style="font-size:14px;color:var(--tinta-3)">El ejemplo es inventado, para ver cómo funciona. Las mallas van de la más fina a la más gruesa.</p>
-          ${!d?.yo || puede(d.yo, "editar") ? `<div class="herramientas-item" style="border-top:0.5px solid var(--linea);padding-top:12px">
+          ${!d?.yo || esDeProceso(d.yo) ? `<div class="herramientas-item" style="border-top:0.5px solid var(--linea);padding-top:12px">
             <button type="button" class="boton primario chico" data-accion="guardar">${icono("bien")}Guardar este muestreo</button>
             <span class="ayuda">Queda con el molino y la fecha, para seguirlo junto al Blaine en Laboratorio.</span></div>` : ""}
           ${guardados.length ? `<div><span class="rotulo">Muestreos guardados</span><ul class="lista" style="margin-top:8px;background:var(--hundido)">${guardados.slice(0, 12).map((x) => {

@@ -4,7 +4,7 @@ import { esc, icono, fechaHora, fechaCorta, haceCuanto, plural, diasEntre, diaDe
 import * as api from "./api.mjs";
 import {
   aviso, filaHallazgo, vacio, equipo, plantilla, nombre, nombreEquipo, marcaPrioridad, marcaEstado, marcaSinEnviar, esAdmin, puede,
-  etiquetaPersona, galeria, botonesMedio, TEXTO_ESTADO, ESTADOS, ICONO_ESTADO,
+  etiquetaPersona, galeria, botonesMedio, TEXTO_ESTADO, ESTADOS, ICONO_ESTADO, segmentoTipoDano, TIPOS_DANO,
 } from "./ui.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
 import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, campoEquipo } from "./componentes.mjs";
@@ -43,10 +43,10 @@ export function vistaHallazgos({ d, yo, hoy, query }) {
   const filtro = (id, texto, n) => `<a href="${q(id)}" ${f === id ? 'aria-current="true"' : ""}>${texto}${n ? ` <b>${n}</b>` : ""}</a>`;
   return {
     titulo: "Hallazgos",
-    atras: matchMedia("(max-width: 899px)").matches ? "#/mas" : null,
+    atras: matchMedia("(max-width: 899px)").matches ? "#/tareas" : null,
     html: `<div class="cabeza"><div><h1>Hallazgos</h1>
         <p class="bajada">${abiertos.length ? `${plural(abiertos.length, "abierto", "abiertos")}${viejos ? `, ${plural(viejos, "con más de una semana", "con más de una semana")}` : ""}.` : "No hay hallazgos abiertos."}
-        También están en el <a href="#/tablero?v=hallazgos">tablero</a>.</p></div>
+        También están en <a href="#/tareas">Tareas</a>.</p></div>
         <div class="acciones"><a class="boton primario" href="#/nuevo-hallazgo${eqFiltro ? `?equipo=${encodeURIComponent(eqFiltro)}` : ""}">${icono("mas1")}Anotar</a></div></div>
       ${barraFiltros(d, new URLSearchParams({ ...Object.fromEntries(query), ...(eqFiltro ? { eq: eqFiltro } : {}) }), { placeholder: "Buscar por número, OT, equipo o texto" })}
       <nav class="filtros" aria-label="Filtrar">
@@ -88,7 +88,7 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
   return {
     titulo: `Hallazgo ${numeroHallazgo(h)}`,
     tituloCorto: numeroHallazgo(h),
-    atras: "#/tablero?v=hallazgos",
+    atras: "#/tareas",
     viva: false,
     html: `<div class="cabeza"><div class="hallazgo-cabeza">
         <div class="migas"><span class="mono">${numeroHallazgo(h)}</span><a href="#/equipo/${encodeURIComponent(h.equipo_id)}">${esc(nombreCompleto(d, h.equipo_id))}</a>${h.item ? `<span>· ${esc(h.item)}</span>` : ""}</div>
@@ -119,6 +119,7 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
               <div class="campo"><label for="h-vence">Fecha compromiso <small>(opcional)</small></label>
                 <input id="h-vence" type="date" value="${esc(h.vence ?? "")}"></div>
             </div>
+            ${segmentoTipoDano(h.tipo, "h-tipo")}
             <div class="campo"><label for="h-accion">Qué hay que hacer</label>
               <textarea id="h-accion" style="min-height:70px" placeholder="Por ejemplo: gestionar el reemplazo con mantenimiento">${esc(h.accion ?? "")}</textarea></div>
             <div class="campo"><label for="h-texto">Comentario o avance</label>
@@ -142,7 +143,7 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
       m.querySelector("[data-ver-todo]")?.addEventListener("click", (e) => { m.querySelector(".hallazgo-cabeza h1").classList.remove("recortado"); e.currentTarget.remove(); });
       const f = m.querySelector("#form-h");
       if (!f) return;
-      let estado = h.estado, prioridad = h.prioridad, parar = null;
+      let estado = h.estado, prioridad = h.prioridad, tipo = h.tipo ?? null, parar = null;
       f.addEventListener("click", (e) => {
         const b = e.target.closest("button");
         if (!b) return;
@@ -152,6 +153,7 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
           m.querySelector("[data-zona-paro]").hidden = estado !== "paro";
         }
         if (b.dataset.prioridad) { prioridad = b.dataset.prioridad; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }
+        if (b.dataset.tipoDano) { tipo = tipo === b.dataset.tipoDano ? null : b.dataset.tipoDano; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.tipoDano === tipo))); }
         if (b.dataset.quitar) { nuevas.splice(nuevas.indexOf(b.dataset.quitar), 1); m.querySelector("[data-galeria-nueva]").innerHTML = galeria(nuevas, { quitar: true }); }
         if (b.hasAttribute("data-dictar")) {
           if (parar) { parar(); parar = null; return; }
@@ -174,13 +176,13 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
       f.addEventListener("submit", async (e) => {
         e.preventDefault();
         const cambio = {
-          estado, prioridad, accion: f["h-accion"].value, responsable_id: f["h-resp"].value, ot: f["h-ot"].value.trim(), vence: f["h-vence"].value || null,
+          estado, prioridad, ...((tipo ?? null) !== (h.tipo ?? null) ? { tipo } : {}), accion: f["h-accion"].value, responsable_id: f["h-resp"].value, ot: f["h-ot"].value.trim(), vence: f["h-vence"].value || null,
           ...(estado === "paro" ? { paro_id: f["h-paro"].value || null } : {}),
           ...(puedeTexto && f["h-equipo"]?.value && f["h-equipo"].value !== h.equipo_id ? { equipo_id: f["h-equipo"].value } : {}),
           ...(puedeTexto && f["h-desc"].value.trim() && f["h-desc"].value.trim() !== h.descripcion ? { descripcion: f["h-desc"].value.trim() } : {}),
           texto: f["h-texto"].value.trim(), fotos: [...nuevas], seguimiento_id: crypto.randomUUID(), fecha: new Date().toISOString(),
         };
-        const nada = estado === h.estado && prioridad === h.prioridad && cambio.accion === (h.accion ?? "") && cambio.responsable_id === (h.responsable_id ?? "")
+        const nada = estado === h.estado && prioridad === h.prioridad && (tipo ?? null) === (h.tipo ?? null) && cambio.accion === (h.accion ?? "") && cambio.responsable_id === (h.responsable_id ?? "")
           && cambio.ot === (h.ot ?? "") && (cambio.vence ?? null) === (h.vence ?? null) && !cambio.descripcion && !cambio.texto && !nuevas.length
           && !cambio.equipo_id && (estado !== "paro" || (cambio.paro_id ?? null) === (h.paro_id ?? null));
         if (nada) { aviso("No hay cambios que guardar."); return; }
@@ -206,6 +208,7 @@ function soloVer(d, h) {
       <dt>En qué va</dt><dd>${esc(TEXTO_ESTADO[h.estado])}</dd>
       <dt>A cargo de</dt><dd>${h.responsable_id ? esc(nombre(d, h.responsable_id)) : "Nadie todavía"}</dd>
       <dt>Prioridad</dt><dd>${esc(h.prioridad[0].toUpperCase() + h.prioridad.slice(1))}</dd>
+      ${h.tipo ? `<dt>Tipo de daño</dt><dd>${esc(TIPOS_DANO[h.tipo] ?? h.tipo)}</dd>` : ""}
       ${h.ot ? `<dt>OT o aviso</dt><dd class="mono">${esc(h.ot)}</dd>` : ""}
       ${h.vence ? `<dt>Compromiso</dt><dd>${esc(fechaCorta(h.vence))}</dd>` : ""}</dl>
     ${h.accion ? `<div><span class="rotulo">Qué hay que hacer</span><p style="margin:6px 0 0">${esc(h.accion)}</p></div>` : ""}
@@ -215,7 +218,7 @@ function soloVer(d, h) {
 // ------------------------------------------------------------------------------- nuevo
 
 export function vistaNuevoHallazgo({ d, yo, query, ir }) {
-  if (!puede(yo, "editar")) return { titulo: "Anotar un hallazgo", atras: "#/tablero?v=hallazgos", html: vacio("Tu usuario es de solo ver: los hallazgos los anota quien tiene permiso de editar.") };
+  if (!puede(yo, "editar")) return { titulo: "Anotar un hallazgo", atras: "#/tareas", html: vacio("Tu usuario es de solo ver: los hallazgos los anota quien tiene permiso de editar.") };
   const admin = d.personas.find((p) => p.rol === "admin" && p.activo);
   // lo que se había escrito y no se mandó (se recargó, se fue atrás…) vuelve; si llegó con otro equipo, no
   const b0 = api.borrador.leer("nuevo-hallazgo");
@@ -224,7 +227,7 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
   const respInicial = B?.resp ?? (esAdmin(yo) ? yo.id : admin?.id);
   return {
     titulo: "Anotar un hallazgo",
-    atras: "#/tablero?v=hallazgos",
+    atras: "#/tareas",
     viva: false,
     html: `<div class="cabeza"><div><h1>Anotar un hallazgo</h1>
         <p class="bajada">Algo que viste fuera de una inspección. Funciona sin señal: se envía cuando vuelva.</p></div></div>
@@ -237,6 +240,7 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
           <div data-galeria-nueva>${fotos.length ? galeria(fotos, { quitar: true }) : ""}</div></div>
         <div class="campo"><span class="rotulo" id="nh-r-prio">Prioridad</span>
           <div class="segmento" role="group" aria-labelledby="nh-r-prio">${["alta", "media", "baja"].map((p) => `<button type="button" data-prioridad="${p}" data-valor="${p}" aria-pressed="${p === (B?.prioridad ?? "media")}">${p[0].toUpperCase() + p.slice(1)}</button>`).join("")}</div></div>
+        ${segmentoTipoDano(B?.tipo, "nh-tipo")}
         <details class="mas-detalles" ${B && (B.accion || B.ot || B.vence) ? "open" : ""}><summary>${icono("derecha", "ico")}<span>Más detalles</span><small>qué hacer, a cargo de, OT y fecha</small></summary>
         <div class="rejilla-campos dos">
           <div class="campo"><label for="nh-accion">Qué hay que hacer <small>(opcional)</small></label>
@@ -253,8 +257,8 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
       </form>`,
     montar(m) {
       const f = m.querySelector("#form-nh");
-      let prioridad = B?.prioridad ?? "media", parar = null;
-      const guardarBorrador = () => api.borrador.guardar("nuevo-hallazgo", { equipo: f["nh-equipo"].value, desc: f["nh-desc"].value, prioridad, accion: f["nh-accion"].value,
+      let prioridad = B?.prioridad ?? "media", tipo = B?.tipo ?? null, parar = null;
+      const guardarBorrador = () => api.borrador.guardar("nuevo-hallazgo", { equipo: f["nh-equipo"].value, desc: f["nh-desc"].value, prioridad, tipo, accion: f["nh-accion"].value,
         resp: f["nh-resp"].value, ot: f["nh-ot"].value, vence: f["nh-vence"].value, fotos });
       f.addEventListener("input", guardarBorrador);
       f.addEventListener("change", guardarBorrador);
@@ -263,6 +267,7 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
         const b = e.target.closest("button");
         if (!b) return;
         if (b.dataset.prioridad) { prioridad = b.dataset.prioridad; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); guardarBorrador(); }
+        if (b.dataset.tipoDano) { tipo = tipo === b.dataset.tipoDano ? null : b.dataset.tipoDano; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.tipoDano === tipo))); guardarBorrador(); }
         if (b.dataset.quitar) { fotos.splice(fotos.indexOf(b.dataset.quitar), 1); m.querySelector("[data-galeria-nueva]").innerHTML = galeria(fotos, { quitar: true }); guardarBorrador(); }
         if (b.hasAttribute("data-dictar")) {
           if (parar) { parar(); parar = null; return; }
@@ -294,7 +299,7 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
         const id = crypto.randomUUID();
         try {
           await Promise.race([
-            api.encolar("hallazgos", { id, equipo_id: f["nh-equipo"].value, descripcion, prioridad, accion: f["nh-accion"].value, responsable_id: f["nh-resp"].value,
+            api.encolar("hallazgos", { id, equipo_id: f["nh-equipo"].value, descripcion, prioridad, tipo, accion: f["nh-accion"].value, responsable_id: f["nh-resp"].value,
               ot: f["nh-ot"].value.trim(), vence: f["nh-vence"].value || null, fotos, creado: new Date().toISOString() }),
             new Promise((ok) => setTimeout(ok, 6000)),
           ]);

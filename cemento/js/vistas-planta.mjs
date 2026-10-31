@@ -4,7 +4,7 @@
 // También las etiquetas QR para imprimir y pegar.
 import { esc, icono, fechaHora, plural, haceCuanto } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, vacio, filaInspeccion, filaHallazgo, equiposDe, esAdmin, puede } from "./ui.mjs";
+import { aviso, vacio, filaInspeccion, filaHallazgo, equiposDe, esAdmin, puede, esDeProceso, DE_MANTENIMIENTO } from "./ui.mjs";
 import { escanear, equipoDelQr, nombreCompleto, familia, elegirEquipo } from "./componentes.mjs";
 import { enCurso, tarjetaEnCurso, montarEnCurso } from "./vistas-paros.mjs";
 import { esMia, filaTarea, montarChecks } from "./vistas-tareas.mjs";
@@ -14,9 +14,10 @@ export function vistaPlanta({ d, yo, hoy }) {
   const procesos = d.equipos.filter((e) => e.activo && !e.padre_id && e.tipo !== "colector");
   const cols = d.equipos.filter((e) => e.activo && e.tipo === "colector" && !e.padre_id);
   const curso = enCurso(d);
-  const abiertos = (id) => d.hallazgos.filter((h) => h.estado !== "cerrado" && familia(d, id).has(h.equipo_id)).length;
-  const porArea = {};
-  for (const e of procesos) (porArea[e.area || "Sin área"] ??= []).push(e);
+  const ent = (d.entregas ?? []).find((e) => !e.recibida_por && e.de !== yo.id);
+  const mant = d.hallazgos.filter((h) => h.estado !== "cerrado" && DE_MANTENIMIENTO.has(h.tipo)).length;
+  const hallAbiertos = d.hallazgos.filter((h) => h.estado !== "cerrado").length, inspPend = d.inspecciones.filter((i) => i.estado === "pendiente").length;
+  // sin «Más» (30-oct-2026): aquí va todo lo de la planta; el laboratorio y la curva de Tromp, para ingeniería de procesos
   return {
     titulo: "Planta",
     html: `<div class="cabeza"><div><h1>Planta</h1><p class="bajada">${esc(d.ajustes?.planta || "")}</p></div>
@@ -26,16 +27,18 @@ export function vistaPlanta({ d, yo, hoy }) {
         <a href="#/equipos"><span class="icono-fila">${icono("equipos")}</span><b>Equipos</b><small>${plural(procesos.length, "equipo", "equipos")}</small></a>
         <a href="#/colectores"><span class="icono-fila gris">${icono("colector")}</span><b>Colectores</b><small>${plural(cols.length, "colector", "colectores")}</small></a>
         <a href="#/paros"><span class="icono-fila rojo">${icono("paros")}</span><b>Paros</b><small>${curso.length ? `${curso.length} en curso` : "Ninguno en curso"}</small></a>
-        <a href="#/laboratorio"><span class="icono-fila morado">${icono("laboratorio")}</span><b>Laboratorio</b><small>${plural((d.laboratorio ?? []).length, "muestra", "muestras")}</small></a>
-        <a href="#/tromp"><span class="icono-fila indigo">${icono("tromp")}</span><b>Curva de Tromp</b><small>Separador</small></a>
+        <a href="#/mantenimiento"><span class="icono-fila naranja">${icono("herramienta")}</span><b>Mantenimiento</b><small>${mant ? plural(mant, "pendiente", "pendientes") : "Nada pendiente"}</small></a>
+        <a href="#/turno"><span class="icono-fila">${icono("turno")}</span><b>Entrega de turno</b><small>${ent ? "Hay una por recibir" : "Lo que deja el que sale"}</small></a>
         <a href="#/indicadores"><span class="icono-fila verde">${icono("indicadores")}</span><b>Indicadores</b><small>Cumplimiento y disponibilidad</small></a>
+        <a href="#/reportes"><span class="icono-fila verde">${icono("reportes")}</span><b>Reportes</b><small>PDF, Excel y correo</small></a>
+        ${esDeProceso(yo) ? `<a href="#/laboratorio"><span class="icono-fila morado">${icono("laboratorio")}</span><b>Laboratorio</b><small>${plural((d.laboratorio ?? []).length, "muestra", "muestras")}</small></a>
+        <a href="#/tromp"><span class="icono-fila indigo">${icono("tromp")}</span><b>Curva de Tromp</b><small>Separador</small></a>` : ""}
       </div>
-      ${Object.entries(porArea).sort(([a], [b]) => a.localeCompare(b)).map(([area, es]) => `<section class="seccion"><h2>${esc(area)}</h2><ul class="lista">${es.map((e) => {
-        const n = abiertos(e.id), parado = curso.some((p) => familia(d, e.id).has(p.equipo_id));
-        return `<li><a class="fila" href="#/equipo/${encodeURIComponent(e.id)}"><span class="titulo">${esc(e.tag ? `${e.tag} · ${e.nombre}` : e.nombre)}</span>
-          <span class="detalle">${d.equipos.some((s) => s.padre_id === e.id) ? `<span>${plural(d.equipos.filter((s) => s.padre_id === e.id && s.activo).length, "subequipo", "subequipos")}</span>` : ""}${n ? `<span>${plural(n, "hallazgo abierto", "hallazgos abiertos")}</span>` : ""}</span>
-          <span class="lado horizontal">${parado ? `<span class="marca parado">Parado</span>` : ""}${icono("derecha", "ico chevron")}</span></a></li>`;
-      }).join("")}</ul></section>`).join("")}`,
+      <section class="seccion"><h2>Historial</h2><ul class="lista">
+        <li><a class="fila con-icono" href="#/hallazgos"><span class="icono-fila naranja">${icono("hallazgos")}</span><span class="titulo">Hallazgos</span><span class="detalle">${plural(hallAbiertos, "abierto", "abiertos")} · todos, con su número</span><span class="lado">${icono("derecha", "ico chevron")}</span></a></li>
+        <li><a class="fila con-icono" href="#/inspecciones"><span class="icono-fila">${icono("inspecciones")}</span><span class="titulo">Inspecciones</span><span class="detalle">${plural(inspPend, "pendiente", "pendientes")} · todas, también las hechas</span><span class="lado">${icono("derecha", "ico chevron")}</span></a></li>
+      </ul></section>
+`,
     montar: (m) => montarEnCurso(m),
   };
 }
@@ -73,7 +76,7 @@ function marcarEnSitio(d, yo, eqId, hoy) {
   const turno = yo.turno ? `turno:${yo.turno}` : "-";
   const fam = familia(d, eqId);
   const padre = d.equipos.find((e) => e.id === eqId)?.padre_id;
-  const xs = d.inspecciones.filter((i) => i.estado === "pendiente" && (i.asignada_a === yo.id || i.asignada_a === turno) && i.vence <= hoy
+  const xs = d.inspecciones.filter((i) => i.estado === "pendiente" && (i.asignada_a === yo.id || (i.asignada_a === turno || i.asignada_a === "todos")) && i.vence <= hoy
     && equiposDe(i).some((x) => fam.has(x) || x === padre));
   const en = new Date().toISOString();
   for (const i of xs) {

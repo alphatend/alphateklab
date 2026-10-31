@@ -2,7 +2,7 @@
 // restricción); el que entra la lee y marca «Recibido». Funciona sin señal (entra a la cola).
 import { esc, icono, fechaHora, haceCuanto, plural, diasEntre, diaDe } from "./util.mjs";
 import * as api from "./api.mjs";
-import { puede, aviso, dialogo, vacio, nombre, persona, avatar, galeria, botonesMedio, marcaSinEnviar, queInspeccion, plantilla } from "./ui.mjs";
+import { puede, aviso, dialogo, vacio, nombre, persona, avatar, galeria, botonesMedio, marcaSinEnviar, queInspeccion, plantilla, textoTurno } from "./ui.mjs";
 import { nombreCompleto } from "./componentes.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
 import { esMia } from "./vistas-tareas.mjs";
@@ -22,7 +22,7 @@ const marcaEquipo = (e) => `<span class="marca ${e}">${icono(ICONO_EQ[e])}${TEXT
 function filaEntrega(d, e, hoy) {
   const malos = (e.equipos ?? []).filter((x) => x.estado !== "marcha");
   return `<li><a class="fila con-icono" href="#/entrega/${encodeURIComponent(e.id)}">${avatar(persona(d, e.de) ?? { id: e.de, nombre: "?" })}
-    <span class="titulo">Turno ${esc(e.turno || "—")} <small>· ${esc(nombre(d, e.de))}</small></span>
+    <span class="titulo">${esc(e.turno ? textoTurno(e.turno) : "Turno —")} <small>· ${esc(nombre(d, e.de))}</small></span>
     <span class="detalle"><span>${esc(fechaHora(e.en))}</span>${malos.length ? `<span style="color:var(--naranja)">${plural(malos.length, "equipo no está en marcha", "equipos no están en marcha")}</span>` : `<span>Todo en marcha</span>`}</span>
     <span class="lado">${e._sinEnviar ? marcaSinEnviar() : e.recibida_por ? `<span class="marca ok">${icono("bien")}Recibida</span>` : `<span class="marca media">${icono("reloj")}Sin recibir</span>`}</span></a></li>`;
 }
@@ -33,12 +33,12 @@ export function vistaTurno({ d, yo, hoy }) {
   const ultimaMia = xs.find((e) => e.de === yo.id);
   return {
     titulo: "Entrega de turno",
-    atras: matchMedia("(max-width: 899px)").matches ? "#/mas" : null,
+    atras: matchMedia("(max-width: 899px)").matches ? "#/planta" : null,
     html: `<div class="cabeza"><div><h1>Entrega de turno</h1>
         <p class="bajada">El que sale deja lo que pasó, lo pendiente y cómo quedan los equipos; el que entra lo lee y marca «Recibido».</p></div>
         ${puede(yo, "editar") ? `<div class="acciones"><a class="boton primario" href="#/nueva-entrega">${icono("turno")}Entregar mi turno</a></div>` : ""}</div>
       ${porRecibir ? `<a class="tira azul" href="#/entrega/${encodeURIComponent(porRecibir.id)}" style="margin-bottom:18px"><span class="icono-tira">${icono("turno", "ico", { lleno: true })}</span>
-        <span><b>El turno ${esc(porRecibir.turno)} te entregó, ${esc(haceCuanto(porRecibir.en, hoy) === "hoy" ? fechaHora(porRecibir.en).split(", ")[1] : fechaHora(porRecibir.en))}</b>
+        <span><b>${esc(porRecibir.turno ? textoTurno(porRecibir.turno) : nombre(d, porRecibir.de))} te entregó, ${esc(haceCuanto(porRecibir.en, hoy) === "hoy" ? fechaHora(porRecibir.en).split(", ")[1] : fechaHora(porRecibir.en))}</b>
         <small>${esc((porRecibir.novedades || porRecibir.pendientes || "").slice(0, 110))}</small></span>${icono("derecha", "ico chevron")}</a>` : ""}
       ${ultimaMia && diasEntre(diaDe(ultimaMia.en), hoy) === 0 ? `<p class="nota-asignacion azul" style="margin-bottom:14px">Ya entregaste hoy (${esc(fechaHora(ultimaMia.en))}). ${ultimaMia.recibida_por ? `La recibió ${esc(nombre(d, ultimaMia.recibida_por))}.` : "Todavía nadie la recibe."}</p>` : ""}
       ${xs.length ? `<ul class="lista">${xs.map((e) => filaEntrega(d, e, hoy)).join("")}</ul>` : vacio("Todavía no hay entregas de turno.", puede(yo, "editar") ? `<a class="boton chico" href="#/nueva-entrega">${icono("turno")}Hacer la primera</a>` : "")}`,
@@ -51,10 +51,10 @@ export function vistaEntrega({ d, yo, param, ir }) {
   const puedeRecibir = !e.recibida_por && e.de !== yo.id && puede(yo, "editar");
   const malos = (e.equipos ?? []).filter((x) => x.estado !== "marcha");
   return {
-    titulo: `Entrega del turno ${e.turno || ""}`,
+    titulo: `Entrega del ${e.turno ? textoTurno(e.turno) : "turno"}`,
     atras: "#/turno",
     html: `<div class="cabeza"><div><div class="migas"><a href="#/turno">Entrega de turno</a></div>
-        <h1>Turno ${esc(e.turno || "—")}</h1><p class="bajada">${esc(nombre(d, e.de))} · ${esc(fechaHora(e.en))}</p></div>
+        <h1>${esc(e.turno ? textoTurno(e.turno) : "Turno —")}</h1><p class="bajada">${esc(nombre(d, e.de))} · ${esc(fechaHora(e.en))}</p></div>
         <div class="acciones">${e._sinEnviar ? marcaSinEnviar() : e.recibida_por ? `<span class="marca ok">${icono("bien")}Recibida por ${esc(nombre(d, e.recibida_por).split(" ")[0])}</span>` : ""}
           ${puedeRecibir ? `<button class="boton primario" data-recibir>${icono("bien")}Recibido</button>` : ""}</div></div>
       <div class="hoja-insp">
@@ -101,7 +101,7 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
   const sugerencia = () => {
     const turno = yo.turno ? `turno:${yo.turno}` : "-";
     const xs = [];
-    for (const i of d.inspecciones.filter((i) => i.estado === "pendiente" && (i.asignada_a === yo.id || i.asignada_a === turno) && i.vence <= hoy)) xs.push(`- Inspección sin hacer: ${queInspeccion(d, i)} · ${plantilla(d, i.plantilla_id)?.nombre ?? ""}`);
+    for (const i of d.inspecciones.filter((i) => i.estado === "pendiente" && (i.asignada_a === yo.id || (i.asignada_a === turno || i.asignada_a === "todos")) && i.vence <= hoy)) xs.push(`- Inspección sin hacer: ${queInspeccion(d, i)} · ${plantilla(d, i.plantilla_id)?.nombre ?? ""}`);
     for (const t of (d.tareas ?? []).filter((t) => t.estado !== "hecha" && esMia(t, yo) && t.vence && t.vence <= hoy)) xs.push(`- Tarea: ${t.titulo}`);
     for (const h of d.hallazgos.filter((h) => h.estado !== "cerrado" && h.prioridad === "alta")) xs.push(`- Hallazgo alto abierto: ${nombreCompleto(d, h.equipo_id)}: ${h.descripcion}`);
     for (const p of enCurso.values()) xs.push(`- Sigue parado: ${nombreCompleto(d, p.equipo_id)}${p.causa ? ` (${p.causa})` : ""}`);

@@ -1,105 +1,189 @@
-// El tablero (la pantalla principal): un kanban de hallazgos (Abierto → En proceso → Para el paro → Cerrado), que se
-// mueven arrastrando la tarjeta, y uno de inspecciones (Atrasadas, Hoy, Próximas, Por revisar).
+// El tablero (la pantalla principal). Eduardo, 30-oct-2026: «solo necesita 3 partes: lo que está pendiente, lo que
+// está en proceso, lo que terminó […] al final todo son tareas». Un solo kanban con hallazgos, inspecciones y tareas
+// juntos, en tres columnas. Arriba, «debajo de Hola Eduardo solo […] la cantidad de tareas pendientes asignadas que
+// tienes. Y justo debajo […] el calendario»: la semana; después lo que no espera (un equipo parado, la entrega de turno).
 //
 // Arrastrar: con el mouse, al mover más de 6 px; en el teléfono, dejando el dedo quieto un momento (así deslizar sigue
 // siendo deslizar). Lo que se mueve es una copia fija que solo cambia de transform en cada cuadro; cerca del borde,
 // el tablero y la página se deslizan solos. El cambio entra a la cola (funciona sin señal) y se puede deshacer.
-import { esc, icono, fechaDia, fechaCorta, fechaHora, plural, numeroHallazgo, diasEntre, haceCuanto, normal } from "./util.mjs";
+// Una inspección no se arrastra: se abre y se llena (o se ve, si ya está hecha).
+import { esc, icono, fechaDia, fechaCorta, fechaHora, plural, numeroHallazgo, diasEntre, haceCuanto, normal, sumarDias } from "./util.mjs";
 import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto } from "./componentes.mjs";
-import { esMia, puedeTocar, paraQuien, montarChecks, TEXTO_ESTADO_TAREA } from "./vistas-tareas.mjs";
+import { esMia, puedeTocar, paraQuien, montarChecks, filaTarea, TEXTO_ESTADO_TAREA } from "./vistas-tareas.mjs";
 import { entregaPorRecibir } from "./vistas-turno.mjs";
-import { enCurso, montarEnCurso, proximosProgramados } from "./vistas-paros.mjs";
-import { alertasTendencia } from "./vistas-indicadores.mjs";
+import { enCurso, montarEnCurso } from "./vistas-paros.mjs";
+import { calendarioInicio } from "./vistas-calendario.mjs";
 import * as api from "./api.mjs";
 import {
-  puede, aviso, dialogo, elegir, equipo, equiposDe, plantilla, persona, nombreCorto, nombreEquipo, queInspeccion, esAdmin, avatar,
-  marcaPrioridad, marcaVence, marcaSinEnviar, TEXTO_ESTADO, ESTADOS, ICONO_ESTADO, PUNTO_ESTADO,
+  puede, aviso, dialogo, elegir, vacio, equipo, equiposDe, plantilla, persona, nombreCorto, queInspeccion, avatar,
+  marcaPrioridad, marcaVence, marcaSinEnviar, TEXTO_ESTADO, ICONO_ESTADO, textoTurno,
 } from "./ui.mjs";
 
 const ORDEN_PRIORIDAD = { alta: 0, media: 1, baja: 2 };
-// dónde quedó cada tablero (se redibuja cuando llegan datos: que no vuelva a la primera columna)
-const scrolls = {};
+const COLUMNAS = [
+  { id: "pendiente", titulo: "Pendiente", punto: "naranja", nada: "Nada pendiente.", icono: "circulo" },
+  { id: "en_proceso", titulo: "En proceso", punto: "azul", nada: "Nada en proceso.", icono: "repetir" },
+  { id: "terminado", titulo: "Terminado", punto: "verde", nada: "Nada terminado esta semana.", icono: "hecho" },
+];
+// cada tipo, a qué columna va su estado y qué estado le toca al moverlo a una columna
+const TIPOS = {
+  h: { ruta: "hallazgo", columna: { abierto: "pendiente", en_proceso: "en_proceso", paro: "en_proceso", cerrado: "terminado" },
+    estado: { pendiente: "abierto", en_proceso: "en_proceso", terminado: "cerrado" } },
+  t: { ruta: "tarea", columna: { pendiente: "pendiente", en_curso: "en_proceso", hecha: "terminado" },
+    estado: { pendiente: "pendiente", en_proceso: "en_curso", terminado: "hecha" } },
+  i: { ruta: "inspeccion" },
+};
+const tipoDe = (t) => (t.dataset.h ? "h" : t.dataset.t ? "t" : "i");
+const idDe = (t) => t.dataset.h ?? t.dataset.t ?? t.dataset.i;
+// una inspección pendiente que ya se empezó a llenar en este aparato está «en proceso»
+const empezada = (i) => i.estado === "pendiente" && Object.values(api.borrador.leer(i.id)?.respuestas ?? {}).some((r) => r?.resultado || (r?.valor ?? "") !== "" || r?.texto);
+let scrollTablero = null; // dónde quedó el kanban (se redibuja cuando llegan datos: que no vuelva a la primera columna)
+let diaInicio = null; // el día que se tocó en el calendario del inicio
 
-function frase(d, yo, hoy, admin) {
-  const turno = yo.turno ? `turno:${yo.turno}` : "-";
-  const pend = d.inspecciones.filter((i) => i.estado === "pendiente" && (admin || i.asignada_a === yo.id || i.asignada_a === turno));
-  const atrasadas = pend.filter((i) => i.vence < hoy).length;
-  const deHoy = pend.filter((i) => i.vence === hoy).length;
-  const hall = d.hallazgos.filter((h) => h.estado !== "cerrado" && (admin || h.responsable_id === yo.id));
-  const altas = hall.filter((h) => h.prioridad === "alta").length;
-  const porRevisar = admin && puede(yo, "revisar") ? d.inspecciones.filter((i) => i.estado === "hecha" && !i.revisada_en).length : 0;
-  // las tareas de uno (o de su turno): las atrasadas y las de hoy también cuentan como pendiente
-  const misTareas = (d.tareas ?? []).filter((t) => t.estado !== "hecha" && t.vence && t.vence <= hoy && esMia(t, yo));
-  const tAtr = misTareas.filter((t) => t.vence < hoy).length, tHoy = misTareas.length - tAtr;
-  const partes = [];
-  if (atrasadas) partes.push(`<a href="#/tablero?v=inspecciones"><b>${plural(atrasadas, "inspección atrasada", "inspecciones atrasadas")}</b></a>`);
-  if (deHoy) partes.push(`<b>${plural(deHoy, atrasadas ? "para hoy" : "inspección para hoy", atrasadas ? "para hoy" : "inspecciones para hoy")}</b>`);
-  if (hall.length) partes.push(`<a href="#/tablero?v=hallazgos"><b>${plural(hall.length, "hallazgo abierto", "hallazgos abiertos")}</b></a>${altas ? ` (${altas} de prioridad alta)` : ""}`);
-  if (tAtr) partes.push(`<a href="#/tareas"><b>${plural(tAtr, "tarea atrasada", "tareas atrasadas")}</b></a>`);
-  if (tHoy) partes.push(`<b>${plural(tHoy, "tarea para hoy", "tareas para hoy")}</b>`);
-  if (porRevisar) partes.push(`<a href="#/tablero?v=inspecciones"><b>${plural(porRevisar, "inspección por revisar", "inspecciones por revisar")}</b></a>`);
-  const juntar = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} y ${xs.at(-1)}` : xs[0]);
-  if (!partes.length) return admin ? "Nada atrasado, nada para hoy y ningún hallazgo abierto." : "No tienes nada pendiente para hoy ni hallazgos a tu cargo.";
-  return `${admin ? "En la planta hay" : "Tienes"} ${juntar(partes)}.`;
-}
+// ------------------------------------------------------------------------------- el inicio
 
+/**
+ * El inicio (Eduardo, 30-oct-2026): «Hola», cuántas tareas pendientes tiene uno, y «justo debajo el calendario» (la
+ * semana y lo del día que se toque). Arriba a la derecha, los avisos y la configuración. Nada de kanban aquí: ese va
+ * en Tareas.
+ */
 export function vistaTablero(ctx) {
-  const { d, yo, hoy, query } = ctx;
-  // quien asigna, o quien solo ve (no tiene nada «suyo»), mira la planta entera
+  const { d, yo, hoy } = ctx;
   const general = puede(yo, "asignar") || !puede(yo, "editar");
-  const v = ["hallazgos", "inspecciones", "tareas"].includes(query.get("v")) ? query.get("v") : api.LS.leer("bp-tablero") ?? (general ? "hallazgos" : "inspecciones");
-  const quien = query.get("q") ?? (general ? "todos" : "mios");
-  api.LS.poner("bp-tablero", v);
-  const filtro = { fam: familia(d, query.get("eq")), b: normal(query.get("b") ?? "") };
-  const cols = (v === "hallazgos" ? columnasHallazgos : v === "tareas" ? columnasTareas : columnasInspecciones)(ctx, quien, filtro);
-  const enlace = (cambios) => `#/tablero?${new URLSearchParams({ ...Object.fromEntries(query), v, q: quien, ...cambios })}`;
-  const arrastrable = v !== "inspecciones" && puede(yo, "editar");
-  const tablero = () => `<div data-kanban${arrastrable || v === "inspecciones" ? "" : ' class="solo-ver"'}><div class="columnas-salto" role="group" aria-label="Ir a la columna">${cols.map((c, k) => `<button type="button" data-ir-col="${k}" ${k === 0 ? 'aria-current="true"' : ""}>
-        <i class="punto ${c.punto}"></i>${esc(c.titulo)} <b>${c.tarjetas.length}</b></button>`).join("")}</div>
-      <div class="tablero" data-tablero="${v}">${cols.map((c) => `<section class="columna" data-estado="${c.id}" aria-label="${esc(c.titulo)}">
-          <header><i class="punto ${c.punto}"></i><h3>${esc(c.titulo)}</h3><span class="cuenta">${c.cuenta ?? c.tarjetas.length}</span></header>
-          <div class="tarjetas">${c.tarjetas.length ? c.tarjetas.join("") : `<div class="nada">${c.nada}</div>`}</div>
-          ${c.pie ?? ""}
-        </section>`).join("")}</div>
-      ${arrastrable ? `<p class="no-imprimir ayuda" style="margin:2px 4px">${matchMedia("(pointer: coarse)").matches ? "Deja el dedo sobre una tarjeta para moverla de columna" : "Arrastra una tarjeta para cambiarla de columna"}, o toca ${icono("arrastrar", "ico chico")}.</p>` : ""}</div>`;
+  const quien = general ? "todos" : "mios";
+  const pendientes = misPendientes(d, yo);
+  const visto = api.LS.leer("bp-avisos-visto") ?? "";
+  const nuevos = (d.avisos ?? []).filter((a) => a.fecha > visto).length;
+  if (!diaInicio || diaInicio < sumarDias(hoy, -60)) diaInicio = hoy;
   return {
     titulo: "Tablero",
     tituloCorto: d.ajustes?.app_nombre || "Tablero",
-    html: `<div class="cabeza"><div>
-        <div class="fecha-hoy">${esc(fechaDia(hoy))}</div>
-        <h1>${esc(yo.turno && !general ? `Turno ${yo.turno}` : `Hola, ${yo.nombre.split(" ")[0]}`)}</h1>
-        <p class="resumen-dia">${frase(d, yo, hoy, general)}</p>
-      </div></div>
-      ${tiras(d, yo, hoy, general)}
-      <div class="tablero-barra">
-        <div class="segmento vista" role="group" aria-label="Qué tablero">
-          <a href="${enlace({ v: "hallazgos" })}" ${v === "hallazgos" ? 'aria-current="true"' : ""}>${icono("hallazgos")}Hallazgos</a>
-          <a href="${enlace({ v: "inspecciones" })}" ${v === "inspecciones" ? 'aria-current="true"' : ""}>${icono("inspecciones")}Inspecciones</a>
-          <a href="${enlace({ v: "tareas" })}" ${v === "tareas" ? 'aria-current="true"' : ""}>${icono("tareas")}Tareas</a>
-        </div>
-        <nav class="filtros" style="margin:0" aria-label="De quién">
-          <a href="${enlace({ q: "mios" })}" ${quien === "mios" ? 'aria-current="true"' : ""}>${v === "hallazgos" ? "A mi cargo" : "Mías"}</a>
-          <a href="${enlace({ q: "todos" })}" ${quien === "todos" ? 'aria-current="true"' : ""}>${v === "hallazgos" ? "Todos" : "Todas"}</a>
-        </nav>
-      </div>
-      ${barraFiltros(d, query, { placeholder: v === "tareas" ? "Buscar tareas" : v === "hallazgos" ? "Buscar hallazgos" : "Buscar inspecciones" })}
-      ${tablero()}`,
+    html: `<div class="cabeza cabeza-inicio"><div>
+        <div class="fecha-hoy">${esc(fechaDia(hoy))}${yo.turno ? ` · ${esc(textoTurno(yo.turno))}` : ""}</div>
+        <h1>Hola, ${esc(yo.nombre.split(" ")[0])}</h1>
+        <p class="pendientes-hoy"><a href="#/tareas?q=mios">${pendientes ? `Tienes <b>${pendientes}</b> ${pendientes === 1 ? "tarea pendiente" : "tareas pendientes"}` : "No tienes tareas pendientes"}</a></p></div>
+        <div class="iconos-inicio"><a class="boton-icono vidrio" href="#/avisos" aria-label="${nuevos ? `Avisos: ${nuevos} nuevos` : "Avisos"}">${icono("campana")}${nuevos ? `<span class="globo">${nuevos > 99 ? "99+" : nuevos}</span>` : ""}</a>
+          <a class="boton-icono vidrio" href="#/ajustes" aria-label="Configuración">${icono("ajustes")}</a></div></div>
+      <div data-calendario-inicio>${calendarioInicio(d, yo, hoy, quien, diaInicio)}</div>
+      <div data-tiras>${tiras(d, yo, diaInicio === hoy)}</div>`,
     montar(m) {
-      const desmontes = [montarEnCurso(m)];
+      const zona = m.querySelector("[data-calendario-inicio]");
+      zona.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-dia]"), s = e.target.closest("[data-semana]");
+        if (!b && !s) return;
+        diaInicio = b ? b.dataset.dia : sumarDias(diaInicio, Number(s.dataset.semana));
+        zona.innerHTML = calendarioInicio(api.obtener(), yo, hoy, quien, diaInicio);
+        m.querySelector("[data-tiras]").innerHTML = tiras(api.obtener(), yo, diaInicio === hoy);
+        zona.querySelector(`[data-dia="${diaInicio}"]`)?.focus({ preventScroll: true });
+      });
+      return montarEnCurso(m);
+    },
+  };
+}
+
+/** Lo asignado a uno (o a su turno) que no está terminado: hallazgos a su cargo, inspecciones y tareas. */
+function misPendientes(d, yo) {
+  const turno = yo.turno ? `turno:${yo.turno}` : "-";
+  // lo de «Todos» cuenta para quien puede hacerlo (no para quien solo ve)
+  const todos = puede(yo, "editar") ? "todos" : "-";
+  return d.hallazgos.filter((h) => h.estado !== "cerrado" && h.responsable_id === yo.id).length
+    + d.inspecciones.filter((i) => i.estado === "pendiente" && (i.asignada_a === yo.id || i.asignada_a === turno || i.asignada_a === todos)).length
+    + (d.tareas ?? []).filter((t) => t.estado !== "hecha" && esMia(t, yo) && (t.asignada_a !== "todos" || todos === "todos")).length;
+}
+
+/**
+ * Debajo del calendario, solo lo que no espera: la entrega de turno por recibir y los equipos parados ahora. Con hoy
+ * elegido, los parados ya salen en lo del día (no se repiten).
+ */
+function tiras(d, yo, conHoy = false) {
+  const xs = [];
+  const ent = entregaPorRecibir(d, yo);
+  if (ent) xs.push(`<a class="tira azul" href="#/entrega/${encodeURIComponent(ent.id)}"><span class="icono-tira">${icono("turno", "ico", { lleno: true })}</span>
+    <span><b>${esc(ent.turno ? textoTurno(ent.turno) : nombreCorto(d, ent.de))} te entregó</b><small>${esc((ent.novedades || ent.pendientes || "").slice(0, 90))}</small></span>${icono("derecha", "ico chevron")}</a>`);
+  for (const p of conHoy ? [] : enCurso(d).slice(0, 2)) {
+    xs.push(`<a class="tira roja" href="#/paro/${encodeURIComponent(p.id)}"><span class="icono-tira">${icono("paros", "ico", { lleno: true })}</span>
+      <span><b>${esc(nombreCompleto(d, p.equipo_id))} parado</b><small>desde ${esc(fechaHora(p.inicio))}${p.causa ? ` · ${esc(p.causa)}` : ""}</small></span>${icono("derecha", "ico chevron")}</a>`);
+  }
+  return xs.length ? `<div class="tiras">${xs.join("")}</div>` : "";
+}
+
+// ------------------------------------------------------------------------------- Tareas: lista o kanban
+
+/**
+ * Tareas (Eduardo: «al final todo son tareas»): hallazgos, inspecciones y tareas juntos. Filtros por equipo y de quién,
+ * ordenar por fecha o por criticidad, y verlo en lista o en kanban (Pendiente, En proceso, Terminado). Se agrega con
+ * «Nueva tarea» (el formulario), sin alta rápida.
+ */
+export function vistaTareasTablero(ctx) {
+  const { d, yo, hoy, query } = ctx;
+  const general = puede(yo, "asignar") || !puede(yo, "editar");
+  const quien = query.get("q") ?? (general ? "todos" : "mios");
+  const vista = ["lista", "kanban"].includes(query.get("vista")) ? query.get("vista") : api.LS.leer("bp-tareas-vista") ?? "lista";
+  const orden = ["fecha", "criticidad"].includes(query.get("orden")) ? query.get("orden") : api.LS.leer("bp-tareas-orden") ?? "fecha";
+  api.LS.poner("bp-tareas-vista", vista);
+  api.LS.poner("bp-tareas-orden", orden);
+  const filtro = { fam: familia(d, query.get("eq")), b: normal(query.get("b") ?? "") };
+  const r = columnas(ctx, quien, filtro, orden);
+  const enlace = (cambios) => `#/tareas?${new URLSearchParams({ ...Object.fromEntries(query), q: quien, vista, orden, ...cambios })}`;
+  const arrastrable = puede(yo, "editar");
+  const abiertos = r.cols[0].items.length + r.cols[1].items.length;
+  const atrasados = [...r.cols[0].items, ...r.cols[1].items].filter((x) => x.fecha && x.fecha < hoy).length;
+  const contenido = () => (vista === "kanban" ? kanban() : lista());
+  const kanban = () => `<div data-contenido data-kanban${arrastrable ? "" : ' class="solo-ver"'}><div class="columnas-salto" role="group" aria-label="Ir a la columna">${r.cols.map((c, k) => `<button type="button" data-ir-col="${k}" ${k === 0 ? 'aria-current="true"' : ""}>
+        <i class="punto ${c.punto}"></i>${esc(c.titulo)} <b>${c.items.length}</b></button>`).join("")}</div>
+      <div class="tablero" data-tablero="todo">${r.cols.map((c) => `<section class="columna" data-estado="${c.id}" aria-label="${esc(c.titulo)}">
+          <header><i class="punto ${c.punto}"></i><h3>${esc(c.titulo)}</h3><span class="cuenta">${c.items.length}</span></header>
+          <div class="tarjetas">${c.items.length ? c.items.map((x) => x.html).join("") : `<div class="nada">${c.nada}</div>`}</div>
+          ${c.pie ?? ""}
+        </section>`).join("")}</div>
+      ${arrastrable ? `<p class="no-imprimir ayuda" style="margin:2px 4px">${matchMedia("(pointer: coarse)").matches ? "Deja el dedo sobre una tarjeta para moverla de columna" : "Arrastra una tarjeta para cambiarla de columna"}, o toca ${icono("arrastrar", "ico chico")}. Las inspecciones se abren y se llenan.</p>` : ""}</div>`;
+  const lista = () => {
+    const vivos = [...r.cols[0].items, ...r.cols[1].items].sort(orden === "criticidad" ? porCriticidad(hoy) : porFecha(hoy));
+    const grupos = orden === "criticidad"
+      ? [["Alta", (x) => x.prio === "alta", "roja"], ["Media", (x) => x.prio === "media"], ["Baja", (x) => x.prio === "baja"]]
+      : [["Atrasadas", (x) => x.fecha && x.fecha < hoy, "roja"], ["Hoy", (x) => x.fecha === hoy], ["Próximas", (x) => x.fecha && x.fecha > hoy], ["Sin fecha", (x) => !x.fecha]];
+    const verHechas = query.get("hechas") === "1";
+    const hechas = r.cols[2].items;
+    const secciones = grupos.map(([t, f, cl]) => [t, vivos.filter(f), cl]).filter(([, xs]) => xs.length);
+    return `<div data-contenido>${secciones.length ? secciones.map(([t, xs, cl]) => `<section class="seccion"><h2${cl ? ' style="color:var(--rojo)"' : ""}>${t} <small>${xs.length}</small></h2>
+        <ul class="lista-tareas">${xs.map((x) => x.fila).join("")}</ul></section>`).join("")
+      : vacio(filtro.b || filtro.fam ? "Nada con ese filtro." : quien === "mios" ? "No tienes nada pendiente." : "No hay nada pendiente.")}
+      ${hechas.length ? `<section class="seccion"><h2>Terminado esta semana <small>${hechas.length}</small> <a class="boton mini plano" href="${enlace({ hechas: verHechas ? "0" : "1" })}" style="margin-left:auto">${verHechas ? "Ocultar" : "Mostrar"}</a></h2>
+        ${verHechas ? `<ul class="lista-tareas">${hechas.map((x) => x.fila).join("")}</ul>` : ""}</section>` : ""}</div>`;
+  };
+  return {
+    titulo: "Tareas",
+    html: `<div class="cabeza"><div><h1>Tareas</h1>
+        <p class="bajada">${abiertos ? `${plural(abiertos, "pendiente", "pendientes")}${atrasados ? `, ${atrasados} ${atrasados === 1 ? "atrasada" : "atrasadas"}` : ""}.` : "Todo al día."} Hallazgos, inspecciones y tareas, juntos.</p></div>
+        ${puede(yo, "editar") ? `<div class="acciones"><a class="boton primario" href="#/tarea/nueva">${icono("mas1")}Nueva tarea</a></div>` : ""}</div>
+      ${barraFiltros(d, query, { placeholder: "Buscar", extra: `<nav class="filtros" style="margin:0" aria-label="De quién">
+        <a href="${enlace({ q: "mios" })}" ${quien === "mios" ? 'aria-current="true"' : ""}>Lo mío</a>
+        <a href="${enlace({ q: "todos" })}" ${quien === "todos" ? 'aria-current="true"' : ""}>Todo</a></nav>` })}
+      <div class="tareas-controles">
+        <div class="control-con-rotulo"><span>Ordenar</span><div class="segmento chico" role="group" aria-label="Ordenar por">
+          <a href="${enlace({ orden: "fecha" })}" ${orden === "fecha" ? 'aria-current="true"' : ""}>Fecha</a>
+          <a href="${enlace({ orden: "criticidad" })}" ${orden === "criticidad" ? 'aria-current="true"' : ""}>Criticidad</a></div></div>
+        <div class="segmento chico" role="group" aria-label="Vista">
+          <a href="${enlace({ vista: "lista" })}" ${vista === "lista" ? 'aria-current="true"' : ""}>${icono("lista")}Lista</a>
+          <a href="${enlace({ vista: "kanban" })}" ${vista === "kanban" ? 'aria-current="true"' : ""}>${icono("tablero")}Kanban</a></div>
+      </div>
+      ${contenido()}`,
+    montar(m) {
+      const desmontes = [];
       const conectar = () => {
         const tab = m.querySelector(".tablero");
-        if (scrolls[v] == null) {
-          // la primera vez, en la primera columna que tiene algo (en el teléfono no abrir en «Atrasadas 0»)
+        if (!tab) return;
+        if (scrollTablero == null) {
           const cols = [...tab.querySelectorAll(".columna")];
           const k = cols.findIndex((c) => c.querySelector(".tarjeta"));
-          scrolls[v] = k > 0 ? cols[k].offsetLeft - cols[0].offsetLeft : 0;
+          scrollTablero = k > 0 ? cols[k].offsetLeft - cols[0].offsetLeft : 0;
         }
-        tab.scrollLeft = scrolls[v];
+        tab.scrollLeft = scrollTablero;
         const saltos = [...m.querySelectorAll("[data-ir-col]")];
         let cuadro = 0;
         const marcarColumna = () => {
           cuadro = 0;
-          scrolls[v] = tab.scrollLeft;
+          scrollTablero = tab.scrollLeft;
           const ancho = tab.querySelector(".columna")?.getBoundingClientRect().width ?? 1;
           const k = Math.round(tab.scrollLeft / (ancho + 14));
           saltos.forEach((b, i) => (i === k ? b.setAttribute("aria-current", "true") : b.removeAttribute("aria-current")));
@@ -113,90 +197,170 @@ export function vistaTablero(ctx) {
         if (!salto) return;
         const tab = m.querySelector(".tablero");
         const col = tab.children[Number(salto.dataset.irCol)];
-        // las columnas comparten el mismo offsetParent: la diferencia es su lugar dentro del tablero
         tab.scrollTo({ left: col.offsetLeft - tab.firstElementChild.offsetLeft, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
       });
-      // al filtrar se cambia solo el tablero (la búsqueda conserva el foco)
-      montarFiltros(m, d, { ruta: "tablero", alCambiar: (q) => {
-        const nv = vistaTablero({ ...ctx, d: api.obtener(), query: q });
+      // al filtrar se cambia solo la lista o el kanban (la búsqueda conserva el foco)
+      montarFiltros(m, d, { ruta: "tareas", alCambiar: (q) => {
+        const nv = vistaTareasTablero({ ...ctx, d: api.obtener(), query: q });
         const tmp = document.createElement("div");
         tmp.innerHTML = nv.html;
-        m.querySelector("[data-kanban]").replaceWith(tmp.querySelector("[data-kanban]"));
+        m.querySelector("[data-contenido]").replaceWith(tmp.querySelector("[data-contenido]"));
         conectar();
       } });
-      if (v === "inspecciones") montarInspecciones(m, ctx);
-      else desmontes.push(montarKanban(m, ctx, { ...KANBAN[v], fijo: !puede(yo, "editar") }));
+      if (vista === "kanban") desmontes.push(montarKanban(m, ctx, { fijo: !puede(yo, "editar") }));
+      else montarLista(m, ctx);
       montarChecks(m, d);
       return () => desmontes.forEach((f) => f?.());
     },
-    ocupada: () => !!arrastre,
+    ocupada: () => !!arrastre || !!document.querySelector(".lista-tareas li.saliendo"),
   };
 }
 
-/** Lo urgente, arriba: entrega por recibir, equipos parados, compromisos vencidos, tareas atrasadas, alertas. */
-function tiras(d, yo, hoy, admin) {
-  const xs = [];
-  const ent = entregaPorRecibir(d, yo);
-  if (ent) xs.push(`<a class="tira azul" href="#/entrega/${encodeURIComponent(ent.id)}"><span class="icono-tira">${icono("turno", "ico", { lleno: true })}</span>
-    <span><b>El turno ${esc(ent.turno)} te entregó</b><small>${esc((ent.novedades || ent.pendientes || "").slice(0, 90))}</small></span>${icono("derecha", "ico chevron")}</a>`);
-  for (const p of enCurso(d).slice(0, 2)) {
-    xs.push(`<a class="tira roja" href="#/paro/${encodeURIComponent(p.id)}"><span class="icono-tira">${icono("paros", "ico", { lleno: true })}</span>
-      <span><b>${esc(nombreCompleto(d, p.equipo_id))} parado</b><small>desde ${esc(fechaHora(p.inicio))}${p.causa ? ` · ${esc(p.causa)}` : ""}</small></span>${icono("derecha", "ico chevron")}</a>`);
-  }
-  const vencidos = d.hallazgos.filter((h) => h.estado !== "cerrado" && h.vence && h.vence < hoy && (admin || h.responsable_id === yo.id));
-  if (vencidos.length) xs.push(`<a class="tira naranja" href="#/hallazgos?f=abiertos"><span class="icono-tira">${icono("reloj")}</span>
-    <span><b>${plural(vencidos.length, "compromiso vencido", "compromisos vencidos")}</b><small>${esc(vencidos.slice(0, 2).map((h) => `${numeroHallazgo(h)} ${h.descripcion}`).join(" · "))}</small></span>${icono("derecha", "ico chevron")}</a>`);
-  const tareasAtr = (d.tareas ?? []).filter((t) => t.estado !== "hecha" && t.vence && t.vence < hoy && esMia(t, yo));
-  if (tareasAtr.length) xs.push(`<a class="tira morada" href="#/tareas"><span class="icono-tira">${icono("tareas", "ico", { lleno: true })}</span>
-    <span><b>${plural(tareasAtr.length, "tarea atrasada", "tareas atrasadas")}</b><small>${esc(tareasAtr.slice(0, 2).map((t) => t.titulo).join(" · "))}</small></span>${icono("derecha", "ico chevron")}</a>`);
-  if (admin) {
-    const al = alertasTendencia(d);
-    if (al.length) xs.push(`<a class="tira naranja" href="#/indicadores"><span class="icono-tira">${icono("subeT")}</span>
-      <span><b>${plural(al.length, "medida viene", "medidas vienen")} hacia afuera del rango</b><small>${esc(al.slice(0, 2).map((a) => `${a.e.tag || a.e.nombre}: ${a.it.texto}`).join(" · "))}</small></span>${icono("derecha", "ico chevron")}</a>`);
-  }
-  return xs.length ? `<div class="tiras">${xs.join("")}</div>` : "";
+/** En la lista: el visto bueno y el recordatorio de una inspección (lo demás son enlaces y el círculo de la tarea). */
+function montarLista(m, { d }) {
+  m.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-visto], [data-recordar]");
+    const id = b?.closest("[data-i]")?.dataset.i;
+    if (!b || !id) return;
+    e.preventDefault();
+    b.disabled = true;
+    try {
+      if (b.hasAttribute("data-visto")) { await api.escribir(`inspecciones/${encodeURIComponent(id)}/revisar`, {}); aviso("Visto bueno dado.", { icono: "visto" }); }
+      else { const r = await api.escribir(`inspecciones/${encodeURIComponent(id)}/recordar`, {}); const i = d.inspecciones.find((x) => x.id === id); aviso(r.entregados ? `Recordatorio enviado a ${nombreCorto(d, i.asignada_a)}.` : `Quedó en sus avisos de la app.`); b.disabled = false; }
+    } catch (x) { aviso(x.sinRed ? "Para esto hace falta señal." : x.message, { error: true }); b.disabled = false; }
+  });
 }
 
-// ------------------------------------------------------------------------------- hallazgos
+// lo atrasado primero, después lo de hoy, después por fecha; lo sin fecha al final; en cada grupo, lo urgente arriba
+const grupoFecha = (x, hoy) => (!x.fecha ? 3 : x.fecha < hoy ? 0 : x.fecha === hoy ? 1 : 2);
+const porFecha = (hoy) => (a, c) => grupoFecha(a, hoy) - grupoFecha(c, hoy) || (a.fecha ?? "").localeCompare(c.fecha ?? "") || ORDEN_PRIORIDAD[a.prio] - ORDEN_PRIORIDAD[c.prio] || (c.creado ?? "").localeCompare(a.creado ?? "");
+const porCriticidad = (hoy) => (a, c) => ORDEN_PRIORIDAD[a.prio] - ORDEN_PRIORIDAD[c.prio] || porFecha(hoy)(a, c);
+
+/** Todo lo que toca (hallazgos, inspecciones, tareas), repartido en Pendiente, En proceso y Terminado. */
+function columnas({ d, yo, hoy }, quien, { fam, b }, orden = "fecha") {
+  const turno = yo.turno ? `turno:${yo.turno}` : "-";
+  const reviso = puede(yo, "revisar");
+  const busca = (t) => !b || normal(t).includes(b);
+  const reciente = (iso) => iso && diasEntre(iso.slice(0, 10), hoy) <= 7;
+  const xs = [];
+  for (const h of d.hallazgos) {
+    if (!(quien === "todos" || h.responsable_id === yo.id) || !enFiltro(fam, h.equipo_id)) continue;
+    if (!busca(`${numeroHallazgo(h)} ${h.descripcion} ${h.accion} ${h.ot} ${nombreCompleto(d, h.equipo_id)}`)) continue;
+    const col = TIPOS.h.columna[h.estado];
+    if (col === "terminado" && !reciente(h.cerrado)) continue;
+    xs.push({ col, fecha: h.vence, prio: h.prioridad, hecho: h.cerrado, creado: h.creado, html: tarjetaHallazgo(d, h, hoy), fila: filaHallazgoLista(d, h, hoy) });
+  }
+  let masAdelante = 0;
+  for (const i of d.inspecciones) {
+    if (!(quien === "todos" || i.asignada_a === yo.id || (i.asignada_a === turno || i.asignada_a === "todos") || i.hecha_por === yo.id) || !enFiltro(fam, equiposDe(i))) continue;
+    if (!busca(`${queInspeccion(d, i)} ${plantilla(d, i.plantilla_id)?.nombre} ${equiposDe(i).map((x) => nombreCompleto(d, x)).join(" ")}`)) continue;
+    const col = i.estado === "hecha" ? "terminado" : empezada(i) ? "en_proceso" : "pendiente";
+    // lo hecho: la última semana (y lo que espera el visto bueno de quien lo da); lo pendiente: hasta dentro de 7 días
+    if (col === "terminado" && !reciente(i.hecha_en) && !(reviso && !i.revisada_en)) continue;
+    if (col === "pendiente" && diasEntre(hoy, i.vence) > 7) { masAdelante++; continue; }
+    // una inspección no tiene criticidad: atrasada cuenta como alta
+    xs.push({ col, fecha: i.estado === "hecha" ? null : i.vence, prio: i.estado === "pendiente" && i.vence < hoy ? "alta" : "media", hecho: i.hecha_en, creado: i.creada,
+      porRevisar: i.estado === "hecha" && !i.revisada_en, html: tarjetaInspeccion(d, i, hoy, yo), fila: filaInspeccionLista(d, i, hoy, yo) });
+  }
+  for (const t of d.tareas ?? []) {
+    if (!(quien === "todos" || esMia(t, yo) || t.creada_por === yo.id) || !enFiltro(fam, t.equipo_id)) continue;
+    if (!busca(`${t.titulo} ${t.detalle} ${nombreCompleto(d, t.equipo_id)}`)) continue;
+    const col = TIPOS.t.columna[t.estado];
+    if (col === "terminado" && !reciente(t.hecha_en)) continue;
+    xs.push({ col, fecha: t.estado === "hecha" ? null : t.vence, prio: t.prioridad, hecho: t.hecha_en, creado: t.creada, html: tarjetaTarea(d, t, hoy), fila: filaTarea(d, t, hoy) });
+  }
+  const ordenar = orden === "criticidad" ? porCriticidad(hoy) : porFecha(hoy);
+  const cols = COLUMNAS.map((c) => {
+    const items = xs.filter((x) => x.col === c.id).sort(c.id === "terminado" ? (a, e) => (e.hecho ?? "").localeCompare(a.hecho ?? "") : ordenar);
+    return { ...c, items,
+      pie: c.id === "pendiente" && masAdelante ? `<p style="margin:10px 6px 2px;font-size:14px"><a href="#/calendario">${plural(masAdelante, "inspección más adelante", "inspecciones más adelante")} · ver el calendario</a></p>`
+        : c.id === "terminado" ? `<p style="margin:10px 6px 2px;font-size:14px"><a href="#/reportes">Lo de antes, en Reportes</a></p>` : "" };
+  });
+  return { cols };
+}
+
+/** Las filas de la lista para hallazgos e inspecciones (las tareas usan la suya, con el círculo para marcarla). */
+function filaHallazgoLista(d, h, hoy) {
+  const tarde = h.vence && h.estado !== "cerrado" && h.vence < hoy;
+  const det = [`<span>Hallazgo <span class="mono">${numeroHallazgo(h)}</span></span>`, `<span>${esc(nombreCompleto(d, h.equipo_id))}</span>`,
+    h.responsable_id ? `<span>${esc(nombreCorto(d, h.responsable_id))}</span>` : "",
+    h.vence && h.estado !== "cerrado" ? `<span class="${tarde ? "tarde" : ""}">${icono("reloj", "ico chico")} ${h.vence === hoy ? "Hoy" : esc(fechaCorta(h.vence))}</span>` : "",
+    h.estado === "en_proceso" ? `<span style="color:var(--tinte);font-weight:600">En proceso</span>` : h.estado === "paro" ? `<span style="color:var(--morado);font-weight:600">Para el paro</span>` : ""].join("");
+  return `<li class="${h.estado === "cerrado" ? "hecha" : ""}"><span class="icono-lista rojo" aria-hidden="true">${icono("hallazgos")}</span>
+    <a class="que" href="#/hallazgo/${encodeURIComponent(h.id)}"><b>${esc(h.descripcion)}</b><small>${det}</small></a>
+    <span class="lado">${h._sinEnviar ? marcaSinEnviar() : ""}${h.prioridad === "alta" && h.estado !== "cerrado" ? `<span class="marca alta">Alta</span>` : ""}</span></li>`;
+}
+function filaInspeccionLista(d, i, hoy, yo) {
+  const pl = plantilla(d, i.plantilla_id);
+  const quien = i.estado === "hecha" ? i.hecha_por : i.asignada_a;
+  const det = [`<span>Inspección</span>`, quien ? `<span>${esc(nombreCorto(d, quien))}</span>` : "",
+    i.estado === "pendiente" ? `<span class="${i.vence < hoy ? "tarde" : ""}">${icono("reloj", "ico chico")} ${i.vence === hoy ? "Hoy" : esc(fechaCorta(i.vence))}</span>` : "",
+    empezada(i) ? `<span style="color:var(--tinte);font-weight:600">Empezada</span>` : ""].join("");
+  return `<li class="${i.estado === "hecha" ? "hecha" : ""}" data-i="${esc(i.id)}"><span class="icono-lista azul" aria-hidden="true">${icono("inspecciones")}</span>
+    <a class="que" href="#/inspeccion/${encodeURIComponent(i.id)}"><b>${esc(queInspeccion(d, i))} · ${esc(pl?.nombre ?? "Inspección")}</b><small>${det}</small></a>
+    <span class="lado">${i._sinEnviar ? marcaSinEnviar() : ""}${puede(yo, "revisar") && i.estado === "hecha" && !i.revisada_en && !i._sinEnviar ? `<button type="button" class="boton mini verde" data-visto>${icono("visto")}Visto bueno</button>` : ""}</span></li>`;
+}
+
+// ------------------------------------------------------------------------------- las tarjetas
+
+const tipo = (ic, texto) => `<span class="tipo-tarjeta">${icono(ic, "ico chico")}${texto}</span>`;
+const mover = `<span class="derecha"><button type="button" class="boton-icono" data-mover style="width:36px;height:36px;margin:-8px -6px -8px 0" aria-label="Mover a otra columna">${icono("arrastrar")}</button></span>`;
 
 function tarjetaHallazgo(d, h, hoy) {
-  const eq = equipo(d, h.equipo_id);
   const resp = persona(d, h.responsable_id);
   const foto = h.fotos?.[0];
   const tarde = h.vence && h.estado !== "cerrado" && h.vence < hoy;
-  return `<article class="tarjeta${foto ? " con-foto" : ""}" data-h="${esc(h.id)}" tabindex="0" aria-label="${esc(`${numeroHallazgo(h)}: ${h.descripcion}`)}">
-    <div class="arriba"><span class="num">${numeroHallazgo(h)}</span>${h.estado === "cerrado" ? "" : marcaPrioridad(h.prioridad)}${h._sinEnviar ? marcaSinEnviar() : ""}</div>
+  return `<article class="tarjeta${foto ? " con-foto" : ""}" data-h="${esc(h.id)}" tabindex="0" aria-label="${esc(`Hallazgo ${numeroHallazgo(h)}: ${h.descripcion}`)}">
+    <div class="arriba">${tipo("hallazgos", `Hallazgo <span class="num">${numeroHallazgo(h)}</span>`)}${h.estado === "cerrado" ? "" : marcaPrioridad(h.prioridad)}${h.estado === "paro" ? `<span class="marca paro">${icono("paro")}Para el paro</span>` : ""}${h._sinEnviar ? marcaSinEnviar() : ""}</div>
     <div class="que">${esc(h.descripcion)}</div>
     <div class="donde"><span>${esc(nombreCompleto(d, h.equipo_id))}</span>${h.ot ? `<span class="mono">${esc(h.ot)}</span>` : ""}</div>
     <div class="abajo">${resp ? `${avatar(resp, true)}<span>${esc(nombreCorto(d, resp.id))}</span>` : "<span>Sin responsable</span>"}
       ${h.vence && h.estado !== "cerrado" ? `<span class="${tarde ? "vence-tarde" : ""}">${icono("reloj", "ico chico")} ${esc(fechaCorta(h.vence))}</span>` : ""}
       ${h.estado === "cerrado" && h.cerrado ? `<span>${esc(haceCuanto(h.cerrado, hoy))}</span>` : ""}
-      <span class="derecha"><button type="button" class="boton-icono" data-mover style="width:36px;height:36px;margin:-8px -6px -8px 0" aria-label="Mover a otra columna">${icono("arrastrar")}</button></span></div>
+      ${mover}</div>
     ${foto ? `<img class="foto" src="${esc(api.urlMedio(foto))}" alt="" loading="lazy" onerror="this.remove()">` : ""}
   </article>`;
 }
 
-function columnasHallazgos({ d, yo, hoy }, quien, { fam, b }) {
-  const xs = d.hallazgos.filter((h) => (quien === "todos" || h.responsable_id === yo.id) && enFiltro(fam, h.equipo_id)
-    && (!b || normal(`${numeroHallazgo(h)} ${h.descripcion} ${h.accion} ${h.ot} ${nombreCompleto(d, h.equipo_id)}`).includes(b)));
-  const orden = (a, b) => ORDEN_PRIORIDAD[a.prioridad] - ORDEN_PRIORIDAD[b.prioridad] || (a.vence ?? "9").localeCompare(b.vence ?? "9") || (b.creado ?? "").localeCompare(a.creado ?? "");
-  const NADA = { abierto: "Nada abierto.", en_proceso: "Nada en proceso.", paro: "Nada esperando el paro.", cerrado: "Nada cerrado en las últimas dos semanas." };
-  return ESTADOS.map((e) => {
-    let grupo = xs.filter((h) => h.estado === e);
-    const total = grupo.length;
-    if (e === "cerrado") grupo = grupo.filter((h) => !h.cerrado || diasEntre(h.cerrado.slice(0, 10), hoy) <= 14).sort((a, b) => (b.cerrado ?? "").localeCompare(a.cerrado ?? ""));
-    else grupo.sort(orden);
-    return {
-      id: e, titulo: TEXTO_ESTADO[e], punto: PUNTO_ESTADO[e], nada: NADA[e], cuenta: total,
-      tarjetas: grupo.map((h) => tarjetaHallazgo(d, h, hoy)),
-      pie: e === "cerrado" && total > grupo.length ? `<p style="margin:10px 6px 2px;font-size:14px"><a href="#/hallazgos?f=cerrados">Ver los ${total} cerrados</a></p>` : "",
-    };
-  });
+function tarjetaTarea(d, t, hoy) {
+  const tarde = t.estado !== "hecha" && t.vence && t.vence < hoy;
+  const quien = t.asignada_a && !t.asignada_a.startsWith("turno:") ? persona(d, t.asignada_a) : null;
+  const fija = d.yo && !puedeTocar(d.yo, t); // la de otro: se ve, no se mueve
+  return `<article class="tarjeta" data-t="${esc(t.id)}" ${fija ? "data-fija" : ""} tabindex="0" aria-label="${esc(`Tarea: ${t.titulo}`)}">
+    <div class="arriba">${tipo("tareas", "Tarea")}${t.estado !== "hecha" && t.prioridad === "alta" ? marcaPrioridad("alta") : ""}${t._sinEnviar ? marcaSinEnviar() : ""}</div>
+    <div class="que">${esc(t.titulo)}</div>
+    ${t.equipo_id ? `<div class="donde"><span>${esc(nombreCompleto(d, t.equipo_id))}</span>${t.inspeccion_id ? `<span>${icono("inspecciones", "ico chico")} de una inspección</span>` : ""}</div>` : ""}
+    <div class="abajo">${quien ? `${avatar(quien, true)}<span>${esc(paraQuien(d, t.asignada_a))}</span>` : `<span>${esc(paraQuien(d, t.asignada_a))}</span>`}
+      ${t.vence && t.estado !== "hecha" ? `<span class="${tarde ? "vence-tarde" : ""}">${icono("reloj", "ico chico")} ${esc(fechaCorta(t.vence))}</span>` : ""}
+      ${t.estado === "hecha" && t.hecha_en ? `<span>${esc(haceCuanto(t.hecha_en, hoy))}</span>` : ""}
+      ${fija ? "" : mover}</div>
+  </article>`;
 }
+
+function tarjetaInspeccion(d, i, hoy, yo) {
+  const pl = plantilla(d, i.plantilla_id);
+  const quien = persona(d, i.estado === "hecha" ? i.hecha_por : i.asignada_a);
+  const hall = i.estado === "hecha" ? d.hallazgos.filter((h) => h.inspeccion_id === i.id).length : 0;
+  const ids = i.equipos?.length ? i.equipos : [i.equipo_id];
+  const area = equipo(d, ids[0])?.area;
+  return `<article class="tarjeta" data-i="${esc(i.id)}" data-fija tabindex="0" aria-label="${esc(`Inspección: ${queInspeccion(d, i)} · ${pl?.nombre ?? ""}`)}">
+    <div class="arriba">${tipo("inspecciones", "Inspección")}${i._sinEnviar ? marcaSinEnviar() : empezada(i) ? `<span class="marca en_proceso">${icono("repetir")}Empezada</span>` : marcaVence(i, hoy)}${i.repetir_dias ? `<span class="num">${icono("repetir", "ico chico")}</span>` : ""}</div>
+    <div class="que">${esc(queInspeccion(d, i))} · ${esc(pl?.nombre ?? "Inspección")}</div>
+    <div class="donde">${area ? `<span>${esc(area)}</span>` : ""}${i.estado === "pendiente" ? `<span>${esc(fechaCorta(i.vence))}</span>` : ""}
+      ${i.estado === "hecha" ? `<span>${hall ? plural(hall, "hallazgo", "hallazgos") : "Todo bien"}</span>` : ""}</div>
+    <div class="abajo">${quien ? `${avatar(quien, true)}<span>${esc(nombreCorto(d, quien.id))}</span>` : i.asignada_a?.startsWith("turno:") || i.asignada_a === "todos" ? `<span>${esc(nombreCorto(d, i.asignada_a))}</span>` : ""}
+      <span class="derecha">
+        ${puede(yo, "asignar") && i.estado === "pendiente" ? `<button type="button" class="boton mini" data-recordar>${icono("campana")}Recordar</button>` : ""}
+        ${puede(yo, "revisar") && i.estado === "hecha" && !i.revisada_en && !i._sinEnviar ? `<button type="button" class="boton mini verde" data-visto>${icono("visto")}Visto bueno</button>` : ""}
+      </span></div>
+  </article>`;
+}
+
+// ------------------------------------------------------------------------------- mover
 
 let arrastre = null;
 
-/** Mover un hallazgo de columna (al cerrar, pide cómo se resolvió). Devuelve si se movió. */
+/** Mover un hallazgo de estado (al cerrar, pide cómo se resolvió). Devuelve si se movió. */
 async function moverHallazgo(d, id, estado) {
   const h = d.hallazgos.find((x) => x.id === id);
   if (!h || h.estado === estado) return false;
@@ -210,20 +374,9 @@ async function moverHallazgo(d, id, estado) {
     });
     if (!r) return false;
   }
-  // «Para el paro»: a cuál (si hay programados)
-  let paro_id;
-  if (estado === "paro") {
-    const fam = familia(d, d.equipos.find((e) => e.id === h.equipo_id)?.padre_id ?? h.equipo_id);
-    const ps = proximosProgramados(d).sort((a, b) => fam.has(b.equipo_id) - fam.has(a.equipo_id));
-    if (ps.length) {
-      const r = await elegir("¿Para cuál paro?", [...ps.map((p) => ({ valor: p.id, texto: `${nombreCompleto(d, p.equipo_id)} · ${fechaHora(p.inicio)}`, icono: "calendario" })), { valor: "", texto: "El próximo que se programe", icono: "reloj" }]);
-      if (r === null) return false;
-      paro_id = r || null;
-    }
-  }
   const antes = h.estado;
   try {
-    await api.encolar(`hallazgos/${encodeURIComponent(id)}`, { estado, texto, ...(paro_id !== undefined ? { paro_id } : {}), seguimiento_id: crypto.randomUUID(), fecha: new Date().toISOString() });
+    await api.encolar(`hallazgos/${encodeURIComponent(id)}`, { estado, texto, seguimiento_id: crypto.randomUUID(), fecha: new Date().toISOString() });
   } catch (x) {
     aviso(x.message, { error: true });
     return false;
@@ -235,7 +388,7 @@ async function moverHallazgo(d, id, estado) {
   return true;
 }
 
-/** Mover una tarea de columna. */
+/** Mover una tarea de estado. */
 async function moverTarea(d, id, estado) {
   const t = (d.tareas ?? []).find((x) => x.id === id);
   if (!t || t.estado === estado) return false;
@@ -246,34 +399,52 @@ async function moverTarea(d, id, estado) {
   aviso(`${TEXTO_ESTADO_TAREA[estado]}: ${t.titulo}`, { accion: { texto: "Deshacer", alTocar: () => api.encolar(`tareas/${encodeURIComponent(id)}`, { estado: antes, fecha: new Date().toISOString() }) } });
   return true;
 }
-const KANBAN = {
-  hallazgos: { attr: "h", ruta: "hallazgo", estados: ESTADOS, textos: TEXTO_ESTADO, iconos: ICONO_ESTADO, mover: moverHallazgo, actual: (d, id) => d.hallazgos.find((x) => x.id === id)?.estado },
-  tareas: { attr: "t", ruta: "tarea", estados: ["pendiente", "en_curso", "hecha"], textos: TEXTO_ESTADO_TAREA, iconos: { pendiente: "circulo", en_curso: "repetir", hecha: "hecho" },
-    mover: moverTarea, actual: (d, id) => (d.tareas ?? []).find((x) => x.id === id)?.estado },
-};
 
 function montarKanban(m, { d, ir }, k) {
   const tablero = m.querySelector(".tablero");
   let recien = false; // un arrastre termina con un clic que no tiene que abrir la tarjeta
 
-  const mover = (id, estado) => k.mover(d, id, estado);
-
+  /** Pasar una tarjeta a una columna: a cada tipo, su estado. */
+  const mover = (tarjeta, col) => {
+    const tp = tipoDe(tarjeta), id = idDe(tarjeta);
+    if (tp === "h") return moverHallazgo(d, id, TIPOS.h.estado[col]);
+    if (tp === "t") return moverTarea(d, id, TIPOS.t.estado[col]);
+    return false;
+  };
 
   m.addEventListener("click", async (e) => {
     const t = e.target.closest(".tarjeta");
     if (!t) return;
     if (recien) { recien = false; return; }
-    if (e.target.closest("[data-mover]")) {
-      const id = t.dataset[k.attr];
-      const r = await elegir("Mover a", k.estados.map((s) => ({ valor: s, texto: k.textos[s], icono: k.iconos[s] })), { actual: k.actual(d, id) });
-      if (r) mover(id, r);
+    const id = idDe(t), tp = tipoDe(t);
+    const b = e.target.closest("button");
+    if (b?.hasAttribute("data-mover")) {
+      const actual = t.closest(".columna")?.dataset.estado;
+      const r = await elegir("Mover a", COLUMNAS.map((c) => ({ valor: c.id, texto: c.titulo, icono: c.icono })), { actual });
+      if (r && r !== actual) mover(t, r);
       return;
     }
-    ir(`#/${k.ruta}/${encodeURIComponent(t.dataset[k.attr])}`);
+    if (b?.hasAttribute("data-recordar")) {
+      b.disabled = true;
+      try {
+        const r = await api.escribir(`inspecciones/${encodeURIComponent(id)}/recordar`, {});
+        const i = d.inspecciones.find((x) => x.id === id);
+        aviso(r.entregados ? `Recordatorio enviado a ${nombreCorto(d, i.asignada_a)}.` : `Quedó en sus avisos de la app: ${nombreCorto(d, i.asignada_a)} no tiene notificaciones activadas.`);
+      } catch (x) { aviso(x.sinRed ? "Para recordar hace falta señal." : x.message, { error: true }); }
+      b.disabled = false;
+      return;
+    }
+    if (b?.hasAttribute("data-visto")) {
+      b.disabled = true;
+      try { await api.escribir(`inspecciones/${encodeURIComponent(id)}/revisar`, {}); aviso("Visto bueno dado.", { icono: "visto" }); }
+      catch (x) { aviso(x.sinRed ? "Para el visto bueno hace falta señal." : x.message, { error: true }); b.disabled = false; }
+      return;
+    }
+    ir(`#/${TIPOS[tp].ruta}/${encodeURIComponent(id)}`);
   });
   m.addEventListener("keydown", (e) => {
     const t = e.target.closest?.(".tarjeta");
-    if (t && (e.key === "Enter" || e.key === " ") && e.target === t) { e.preventDefault(); ir(`#/${k.ruta}/${encodeURIComponent(t.dataset[k.attr])}`); }
+    if (t && (e.key === "Enter" || e.key === " ") && e.target === t) { e.preventDefault(); ir(`#/${TIPOS[tipoDe(t)].ruta}/${encodeURIComponent(idDe(t))}`); }
   });
   m.addEventListener("contextmenu", (e) => { if (e.target.closest(".tarjeta") && matchMedia("(pointer: coarse)").matches) e.preventDefault(); });
 
@@ -290,7 +461,7 @@ function montarKanban(m, { d, ir }, k) {
     f.style.height = `${r.height}px`;
     f.style.transform = `translate3d(${r.left}px, ${r.top}px, 0)`;
     document.body.append(f);
-    arrastre = { tarjeta, id: tarjeta.dataset[k.attr], origen: tarjeta.closest(".columna").dataset.estado, fantasma: f, dx: x - r.left, dy: y - r.top, x, y, destino: null, raf: 0 };
+    arrastre = { tarjeta, origen: tarjeta.closest(".columna").dataset.estado, fantasma: f, dx: x - r.left, dy: y - r.top, x, y, destino: null, raf: 0 };
     tarjeta.classList.remove("preparando");
     tarjeta.classList.add("levantada");
     document.documentElement.classList.add("arrastrando");
@@ -345,7 +516,7 @@ function montarKanban(m, { d, ir }, k) {
     a.tarjeta.classList.remove("levantada");
     tablero.style.scrollSnapType = "";
     arrastre = null;
-    if (destino && !(await mover(a.id, destino.dataset.estado))) ir(location.hash); // cancelado: se redibuja como estaba
+    if (destino && !(await mover(a.tarjeta, destino.dataset.estado))) ir(location.hash); // cancelado: se redibuja como estaba
   }
 
   function cancelar() {
@@ -415,109 +586,4 @@ function montarKanban(m, { d, ir }, k) {
     removeEventListener("keydown", tecla);
     if (arrastre) { arrastre.fantasma.remove(); cancelAnimationFrame(arrastre.raf); arrastre = null; document.documentElement.classList.remove("arrastrando"); }
   };
-}
-
-// ------------------------------------------------------------------------------- inspecciones
-
-function tarjetaTarea(d, t, hoy) {
-  const tarde = t.estado !== "hecha" && t.vence && t.vence < hoy;
-  const quien = t.asignada_a && !t.asignada_a.startsWith("turno:") ? persona(d, t.asignada_a) : null;
-  const fija = d.yo && !puedeTocar(d.yo, t); // la de otro: se ve, no se mueve
-  return `<article class="tarjeta" data-t="${esc(t.id)}" ${fija ? "data-fija" : ""} tabindex="0" aria-label="${esc(t.titulo)}">
-    <div class="arriba">${t.estado !== "hecha" && t.prioridad === "alta" ? marcaPrioridad("alta") : ""}${t._sinEnviar ? marcaSinEnviar() : ""}${t.inspeccion_id ? `<span class="num">${icono("inspecciones", "ico chico")}</span>` : ""}</div>
-    <div class="que">${esc(t.titulo)}</div>
-    ${t.equipo_id ? `<div class="donde"><span>${esc(nombreCompleto(d, t.equipo_id))}</span></div>` : ""}
-    <div class="abajo">${quien ? `${avatar(quien, true)}<span>${esc(paraQuien(d, t.asignada_a))}</span>` : `<span>${esc(paraQuien(d, t.asignada_a))}</span>`}
-      ${t.vence ? `<span class="${tarde ? "vence-tarde" : ""}">${icono("reloj", "ico chico")} ${esc(fechaCorta(t.vence))}</span>` : ""}
-      ${fija ? "" : `<span class="derecha"><button type="button" class="boton-icono" data-mover style="width:36px;height:36px;margin:-8px -6px -8px 0" aria-label="Mover a otra columna">${icono("arrastrar")}</button></span>`}</div>
-  </article>`;
-}
-
-function columnasTareas({ d, yo, hoy }, quien, { fam, b }) {
-  const xs = (d.tareas ?? []).filter((t) => (quien === "todos" || esMia(t, yo) || t.creada_por === yo.id) && enFiltro(fam, t.equipo_id)
-    && (!b || normal(`${t.titulo} ${t.detalle} ${nombreCompleto(d, t.equipo_id)}`).includes(b)));
-  const orden = (a, c) => (a.vence ?? "9").localeCompare(c.vence ?? "9") || ORDEN_PRIORIDAD[a.prioridad] - ORDEN_PRIORIDAD[c.prioridad];
-  const hechas = xs.filter((t) => t.estado === "hecha" && diasEntre((t.hecha_en ?? "").slice(0, 10) || hoy, hoy) <= 7).sort((a, c) => (c.hecha_en ?? "").localeCompare(a.hecha_en ?? ""));
-  return [
-    { id: "pendiente", titulo: "Por hacer", punto: "gris", nada: "Nada por hacer.", tarjetas: xs.filter((t) => t.estado === "pendiente").sort(orden).map((t) => tarjetaTarea(d, t, hoy)) },
-    { id: "en_curso", titulo: "En curso", punto: "azul", nada: "Nada en curso.", tarjetas: xs.filter((t) => t.estado === "en_curso").sort(orden).map((t) => tarjetaTarea(d, t, hoy)) },
-    { id: "hecha", titulo: "Hechas esta semana", punto: "verde", nada: "Nada todavía.", tarjetas: hechas.map((t) => tarjetaTarea(d, t, hoy)),
-      pie: `<p style="margin:10px 6px 2px;font-size:14px"><a href="#/tareas?hechas=1">Ver todas en Tareas</a></p>` },
-  ];
-}
-
-function tarjetaInspeccion(d, i, hoy, yo) {
-  const pl = plantilla(d, i.plantilla_id);
-  const quien = persona(d, i.estado === "hecha" ? i.hecha_por : i.asignada_a);
-  const hall = i.estado === "hecha" ? d.hallazgos.filter((h) => h.inspeccion_id === i.id).length : 0;
-  const ids = i.equipos?.length ? i.equipos : [i.equipo_id];
-  const area = equipo(d, ids[0])?.area;
-  return `<article class="tarjeta" data-i="${esc(i.id)}" tabindex="0" aria-label="${esc(`${queInspeccion(d, i)} · ${pl?.nombre ?? ""}`)}">
-    <div class="arriba">${i._sinEnviar ? marcaSinEnviar() : marcaVence(i, hoy)}${i.repetir_dias ? `<span class="num">${icono("repetir", "ico chico")}</span>` : ""}</div>
-    <div class="que">${esc(queInspeccion(d, i))} · ${esc(pl?.nombre ?? "Inspección")}</div>
-    <div class="donde">${area ? `<span>${esc(area)}</span>` : ""}${i.estado === "pendiente" ? `<span>${esc(fechaCorta(i.vence))}</span>` : ""}
-      ${i.estado === "hecha" ? `<span>${hall ? plural(hall, "hallazgo", "hallazgos") : "Todo bien"}</span>` : ""}</div>
-    <div class="abajo">${quien ? `${avatar(quien, true)}<span>${esc(nombreCorto(d, quien.id))}</span>` : ""}
-      <span class="derecha">
-        ${puede(yo, "asignar") && i.estado === "pendiente" ? `<button type="button" class="boton mini" data-recordar>${icono("campana")}Recordar</button>` : ""}
-        ${puede(yo, "revisar") && i.estado === "hecha" && !i.revisada_en && !i._sinEnviar ? `<button type="button" class="boton mini verde" data-visto>${icono("visto")}Visto bueno</button>` : ""}
-      </span></div>
-  </article>`;
-}
-
-function columnasInspecciones({ d, yo, hoy }, quien, { fam, b }) {
-  const admin = puede(yo, "revisar");
-  const turno = yo.turno ? `turno:${yo.turno}` : "-";
-  const mias = (i) => (quien === "todos" || i.asignada_a === yo.id || i.asignada_a === turno || i.hecha_por === yo.id) && enFiltro(fam, equiposDe(i))
-    && (!b || normal(`${queInspeccion(d, i)} ${plantilla(d, i.plantilla_id)?.nombre} ${equiposDe(i).map((x) => nombreCompleto(d, x)).join(" ")}`).includes(b));
-  const pend = d.inspecciones.filter((i) => i.estado === "pendiente" && mias(i)).sort((a, b) => a.vence.localeCompare(b.vence));
-  const semana = pend.filter((i) => i.vence > hoy && diasEntre(hoy, i.vence) <= 7);
-  const despues = pend.filter((i) => i.vence > hoy).length - semana.length;
-  const hechas = d.inspecciones.filter((i) => i.estado === "hecha" && mias(i) && (admin ? !i.revisada_en : diasEntre((i.hecha_en ?? "").slice(0, 10) || hoy, hoy) <= 7))
-    .sort((a, b) => (b.hecha_en ?? "").localeCompare(a.hecha_en ?? ""));
-  const t = (xs) => xs.map((i) => tarjetaInspeccion(d, i, hoy, yo));
-  return [
-    { id: "atrasadas", titulo: "Atrasadas", punto: "rojo", nada: "Nada atrasado.", tarjetas: t(pend.filter((i) => i.vence < hoy)) },
-    { id: "hoy", titulo: "Hoy", punto: "naranja", nada: "Nada para hoy.", tarjetas: t(pend.filter((i) => i.vence === hoy)) },
-    { id: "proximas", titulo: "Próximos 7 días", punto: "azul", nada: "Nada en la semana.", tarjetas: t(semana),
-      pie: despues ? `<p style="margin:10px 6px 2px;font-size:14px"><a href="#/calendario">${plural(despues, "más adelante", "más adelante")} · ver el calendario</a></p>` : "" },
-    { id: "hechas", titulo: admin ? "Por revisar" : "Hechas esta semana", punto: "verde", nada: admin ? "Todo revisado." : "Nada todavía.", tarjetas: t(hechas) },
-  ];
-}
-
-function montarInspecciones(m, { d, ir }) {
-  m.addEventListener("click", async (e) => {
-    const t = e.target.closest(".tarjeta");
-    if (!t) return;
-    const id = t.dataset.i;
-    const b = e.target.closest("button");
-    if (b?.hasAttribute("data-recordar")) {
-      b.disabled = true;
-      try {
-        const r = await api.escribir(`inspecciones/${encodeURIComponent(id)}/recordar`, {});
-        const i = d.inspecciones.find((x) => x.id === id);
-        aviso(r.entregados ? `Recordatorio enviado a ${nombreCorto(d, i.asignada_a)}.` : `Quedó en sus avisos de la app: ${nombreCorto(d, i.asignada_a)} no tiene notificaciones activadas.`);
-      } catch (x) {
-        aviso(x.sinRed ? "Para recordar hace falta señal." : x.message, { error: true });
-      }
-      b.disabled = false;
-      return;
-    }
-    if (b?.hasAttribute("data-visto")) {
-      b.disabled = true;
-      try {
-        await api.escribir(`inspecciones/${encodeURIComponent(id)}/revisar`, {});
-        aviso("Visto bueno dado.", { icono: "visto" });
-      } catch (x) {
-        aviso(x.sinRed ? "Para el visto bueno hace falta señal." : x.message, { error: true });
-        b.disabled = false;
-      }
-      return;
-    }
-    ir(`#/inspeccion/${encodeURIComponent(id)}`);
-  });
-  m.addEventListener("keydown", (e) => {
-    const t = e.target.closest?.(".tarjeta");
-    if (t && (e.key === "Enter" || e.key === " ") && e.target === t) { e.preventDefault(); ir(`#/inspeccion/${encodeURIComponent(t.dataset.i)}`); }
-  });
 }

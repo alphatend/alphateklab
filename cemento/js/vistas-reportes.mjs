@@ -1,14 +1,18 @@
-// Reportes. Se elige el período, el alcance (toda la planta, un área, un equipo o los colectores) y la plantilla:
+// Reportes. Se elige el período, el turno, de qué (toda la planta o un equipo) y la plantilla:
 // - Formal: membrete con el logo de la empresa, resumen, tablas y firmas.
-// - Por equipo: una hoja por equipo, o por área («subdivisión»), con sus medidas, hallazgos y pendientes.
+// - Por equipo: una hoja por equipo con sus medidas, hallazgos y pendientes.
 // - Ejecutivo: una página con los indicadores (cumplimiento, a tiempo, cierre, por persona, por equipo).
+// - Mantenimiento: los hallazgos mecánicos, eléctricos y de lógica: lo pendiente con los días que lleva y lo resuelto
+//   en el período con lo que tardó.
 // Sale impreso o en PDF (diálogo de impresión, en carta), en Excel (todas las tablas, para filtrar y graficar),
 // copiado como correo (con asunto, saludo y firma) o para WhatsApp. Todo se arma en el aparato: funciona sin señal.
 import { esc, icono, fechaCorta, fechaLarga, fechaHora, sumarDias, diaDe, numero, plural, numeroHallazgo, diasEntre } from "./util.mjs";
 import * as api from "./api.mjs";
 import {
   aviso, vacio, equipo, plantilla, nombre, nombreCorto, nombreEquipo, queInspeccion, equiposDe, persona, TEXTO_PRIORIDAD, TEXTO_ESTADO,
+  TURNOS, textoTurno, turnoDeHora, TIPOS_DANO, DE_MANTENIMIENTO,
 } from "./ui.mjs";
+import { diasAbierto } from "./vistas-mantenimiento.mjs";
 import { fueraDeRango, textoRango } from "./vistas-inspecciones.mjs";
 import { libroXlsx, TIPO_XLSX } from "./xlsx.mjs";
 import { nombreCompleto } from "./componentes.mjs";
@@ -39,7 +43,7 @@ export function periodo(query, hoy, d) {
   return { p: "semana", desde: lunes(hoy), hasta: hoy, texto: "Esta semana" };
 }
 
-/** Qué equipos entran: toda la planta, un área, un equipo o los colectores. */
+/** Qué equipos entran: toda la planta o un equipo (un área y los colectores quedan para los enlaces viejos). */
 export function alcanceDe(d, valor = "planta") {
   const [tipo, ...resto] = valor.split(":");
   const arg = resto.join(":");
@@ -49,6 +53,27 @@ export function alcanceDe(d, valor = "planta") {
   if (tipo === "colectores") return { valor, texto: "Colectores de polvo", ids: conHijos(new Set(d.equipos.filter((e) => e.tipo === "colector").map((e) => e.id))) };
   return { valor: "planta", texto: d.ajustes?.planta || "Toda la planta", ids: new Set(d.equipos.map((e) => e.id)), planta: true };
 }
+
+/**
+ * Lo de un turno (Eduardo, 30-oct-2026: «que se puedan generar reportes por turno»): lo hecho, por la hora en que se
+ * hizo; lo pendiente, por a quién está asignado (al turno, o a alguien de ese turno; lo de «Todos» entra en cada turno).
+ * Los hallazgos y los paros, por la hora en que se anotaron; las entregas, por su turno.
+ */
+export function deTurno(d, t) {
+  if (!t) return d;
+  const enTurno = (iso) => !!iso && turnoDeHora(iso) === t;
+  const asignadoAl = (id) => id === "todos" || id === `turno:${t}` || persona(d, id)?.turno === t;
+  return {
+    ...d,
+    inspecciones: d.inspecciones.filter((i) => (i.estado === "hecha" ? enTurno(i.hecha_en) : asignadoAl(i.asignada_a))),
+    hallazgos: d.hallazgos.filter((h) => enTurno(h.creado)),
+    paros: (d.paros ?? []).filter((p) => enTurno(p.inicio)),
+    tareas: (d.tareas ?? []).filter((x) => (x.estado === "hecha" ? enTurno(x.hecha_en) : asignadoAl(x.asignada_a))),
+    entregas: (d.entregas ?? []).filter((x) => (x.turno ? String(x.turno).toUpperCase() === t : enTurno(x.en))),
+    laboratorio: (d.laboratorio ?? []).filter((x) => enTurno(x.en)),
+  };
+}
+const TEXTO_TURNO_REPORTE = (t) => { const x = TURNOS.find((y) => y.id === t); return x ? `${x.nombre} (${x.horas})` : ""; };
 
 export function calcularReporte(d, desde, hasta, hoy, alcance = alcanceDe(d)) {
   const enRango = (dia) => dia && dia >= desde && dia <= hasta;
@@ -99,8 +124,6 @@ export function calcularReporte(d, desde, hasta, hoy, alcance = alcanceDe(d)) {
   };
 }
 
-/** Como Object.groupBy (que no está en iOS 16). */
-const agrupar = (xs, f) => xs.reduce((a, x) => ((a[f(x)] ??= []).push(x), a), {});
 const pct = (v) => (v == null ? "—" : `${Math.round(v * 100)} %`);
 const ORDEN = { alta: 0, media: 1, baja: 2 };
 
@@ -232,20 +255,15 @@ function hojaEquipo(d, e, hechas, per, r, o) {
 function docPorEquipo(d, yo, hoy, per, al, r, o) {
   const equipos = r.porEquipo.map((x) => x.e).filter((e) => e.activo || r.porEquipo.find((x) => x.e === e).hechas);
   const portada = `<article class="documento">${membrete(d, yo, hoy, "Reporte por equipo")}
-    <h1>Reporte por ${o.agrupar === "area" ? "área" : "equipo"}</h1><p class="sub-doc">${esc(al.texto)} · ${esc(per.texto)}: ${esc(fechaLarga(per.desde))} al ${esc(fechaLarga(per.hasta))}</p>
+    <h1>Reporte por equipo</h1><p class="sub-doc">${esc(al.texto)} · ${esc(per.texto)}: ${esc(fechaLarga(per.desde))} al ${esc(fechaLarga(per.hasta))}</p>
     <p>${esc(parrafoResumen(r, per))}</p>
     ${kpis([[pct(r.cumplimiento), "cumplimiento"], [r.hechas.length, "inspecciones hechas"], [r.nuevos.length, "hallazgos nuevos"], [r.abiertos.length, "abiertos hoy"]])}
-    <h2>Contenido</h2><table class="tabla"><thead><tr><th>${o.agrupar === "area" ? "Área" : "Equipo"}</th><th class="n">Hechas</th><th class="n">Atrasadas</th><th class="n">Hallazgos nuevos</th><th class="n">Abiertos</th></tr></thead><tbody>
-      ${(o.agrupar === "area" ? Object.entries(agrupar(r.porEquipo, (x) => x.e.area || "Sin área")).map(([a, xs]) => ({ t: a, ...["hechas", "atrasadas", "nuevos", "abiertos"].reduce((s, k) => ({ ...s, [k]: xs.reduce((n, x) => n + x[k], 0) }), {}) }))
-        : r.porEquipo.map((x) => ({ t: nombreEquipo(x.e), ...x }))).map((x) => `<tr><td>${esc(x.t)}</td><td class="n">${x.hechas}</td><td class="n ${x.atrasadas ? "fuera" : ""}">${x.atrasadas}</td><td class="n">${x.nuevos}</td><td class="n">${x.abiertos}</td></tr>`).join("")}</tbody></table>
+    <h2>Contenido</h2><table class="tabla"><thead><tr><th>Equipo</th><th class="n">Hechas</th><th class="n">Atrasadas</th><th class="n">Hallazgos nuevos</th><th class="n">Abiertos</th></tr></thead><tbody>
+      ${r.porEquipo.map((x) => `<tr><td>${esc(nombreEquipo(x.e))}</td><td class="n">${x.hechas}</td><td class="n ${x.atrasadas ? "fuera" : ""}">${x.atrasadas}</td><td class="n">${x.nuevos}</td><td class="n">${x.abiertos}</td></tr>`).join("")}</tbody></table>
     ${firmas(yo)}${pie(d, yo)}</article>`;
-  const hojas = o.agrupar === "area"
-    ? Object.entries(agrupar(equipos, (e) => e.area || "Sin área")).sort(([a], [b]) => a.localeCompare(b)).map(([area, es]) => `<article class="documento">${membrete(d, yo, hoy, area)}
-        <h1>${esc(area)}</h1><p class="sub-doc">${esc(per.texto)}: ${esc(fechaLarga(per.desde))} al ${esc(fechaLarga(per.hasta))} · ${plural(es.length, "equipo", "equipos")}</p>
-        ${es.map((e) => hojaEquipo(d, e, r.hechas, per, r, o)).join("")}${pie(d, yo)}</article>`)
-    : equipos.map((e) => `<article class="documento">${membrete(d, yo, hoy, e.tag || e.nombre)}
-        <h1>${esc(e.nombre)}</h1><p class="sub-doc">${esc(per.texto)}: ${esc(fechaLarga(per.desde))} al ${esc(fechaLarga(per.hasta))}</p>
-        ${hojaEquipo(d, e, r.hechas, per, r, o).replace(/^<h2>[\s\S]*?<\/h2>\s*/, "")}${pie(d, yo)}</article>`);
+  const hojas = equipos.map((e) => `<article class="documento">${membrete(d, yo, hoy, e.tag || e.nombre)}
+      <h1>${esc(e.nombre)}</h1><p class="sub-doc">${esc(per.texto)}: ${esc(fechaLarga(per.desde))} al ${esc(fechaLarga(per.hasta))}${al.turno ? ` · ${esc(TEXTO_TURNO_REPORTE(al.turno))}` : ""}</p>
+      ${hojaEquipo(d, e, r.hechas, per, r, o).replace(/^<h2>[\s\S]*?<\/h2>\s*/, "")}${pie(d, yo)}</article>`);
   return al.uno ? hojas.join("") : portada + hojas.join("");
 }
 
@@ -262,7 +280,7 @@ function docEjecutivo(d, yo, hoy, per, al, r) {
     ${kpis([[pct(r.cumplimiento), "cumplimiento de lo programado"], [pct(r.aTiempoPct), "hechas a tiempo"], [r.abiertos.length, "hallazgos abiertos"],
       [r.dispProm == null ? (r.cierreMedio == null ? "—" : `${numero(r.cierreMedio, 1)} d`) : `${numero(r.dispProm * 100, 1)} %`, r.dispProm == null ? "cierre promedio de hallazgos" : "disponibilidad promedio"]])}
     <p>${esc(parrafoResumen(r, per))}</p>
-    ${r.porPersona.length ? `<h2>Cumplimiento por persona</h2>${barras(r.porPersona.map((x) => ({ t: `${x.p.nombre}${x.p.turno ? ` · turno ${x.p.turno}` : ""}`, v: x.pct ?? 0, etiqueta: `${x.hechas}/${x.asignadas}`, color: x.pct < 0.8 ? "#ff9500" : null })))}` : ""}
+    ${r.porPersona.length ? `<h2>Cumplimiento por persona</h2>${barras(r.porPersona.map((x) => ({ t: `${x.p.nombre}${x.p.turno ? ` · ${textoTurno(x.p.turno)}` : ""}`, v: x.pct ?? 0, etiqueta: `${x.hechas}/${x.asignadas}`, color: x.pct < 0.8 ? "#ff9500" : null })))}` : ""}
     ${porEquipo.length ? `<h2>Hallazgos nuevos por equipo</h2>${barras(porEquipo.map((x) => ({ t: x.e.tag || x.e.nombre, v: x.nuevos })))}` : ""}
     <h2>Prioridad alta abiertos</h2>
     ${altas.length ? `<table class="tabla"><thead><tr><th>N.º</th><th>Equipo</th><th>Qué</th><th>A cargo</th><th class="n">Días abierto</th></tr></thead><tbody>
@@ -271,12 +289,77 @@ function docEjecutivo(d, yo, hoy, per, al, r) {
     ${firmas(yo)}${pie(d, yo)}</article>`;
 }
 
+/**
+ * Lo de mantenimiento: los hallazgos mecánicos, eléctricos y de lógica del alcance. Lo pendiente es lo abierto hoy (con
+ * los días que lleva desde que se anotó); lo completado, lo validado dentro del período (con lo que tardó).
+ */
+export function datosMantenimiento(d, per, al, hoy) {
+  const enRango = (dia) => dia && dia >= per.desde && dia <= per.hasta;
+  const xs = d.hallazgos.filter((h) => DE_MANTENIMIENTO.has(h.tipo) && al.ids.has(h.equipo_id));
+  const pendientes = xs.filter((h) => h.estado !== "cerrado").sort((a, b) => diasAbierto(b, hoy) - diasAbierto(a, hoy));
+  const completados = xs.filter((h) => h.estado === "cerrado" && enRango(diaDe(h.cerrado))).sort((a, b) => (a.cerrado ?? "").localeCompare(b.cerrado ?? ""));
+  const prom = (ys) => (ys.length ? ys.reduce((s, h) => s + diasAbierto(h, hoy), 0) / ys.length : null);
+  const raiz = (id) => equipo(d, id)?.padre_id ?? id;
+  const porTipo = [...DE_MANTENIMIENTO].map((t) => {
+    const p = pendientes.filter((h) => h.tipo === t), c = completados.filter((h) => h.tipo === t);
+    return { t, pendientes: p.length, abiertoProm: prom(p), completados: c.length, tardaProm: prom(c) };
+  });
+  const ids = [...new Set([...pendientes, ...completados].map((h) => raiz(h.equipo_id)))];
+  const porEquipo = ids.map((id) => {
+    const p = pendientes.filter((h) => raiz(h.equipo_id) === id), c = completados.filter((h) => raiz(h.equipo_id) === id);
+    return { id, pendientes: p, completados: c.length, masViejo: p.length ? diasAbierto(p[0], hoy) : null };
+  }).sort((a, b) => (b.masViejo ?? -1) - (a.masViejo ?? -1) || b.completados - a.completados);
+  return { pendientes, completados, porTipo, porEquipo, abiertoProm: prom(pendientes), tardaProm: prom(completados), semana: pendientes.filter((h) => diasAbierto(h, hoy) >= 7).length };
+}
+const dias1 = (v) => (v == null ? "—" : `${numero(v, v < 10 ? 1 : 0)} d`);
+
+function docMantenimiento(d, yo, hoy, per, al, o) {
+  const m = datosMantenimiento(d, per, al, hoy);
+  // lo pendiente va agrupado por equipo: el subequipo, si lo hay, va junto a lo que se encontró
+  const sub = (h) => { const e = equipo(d, h.equipo_id); return e?.padre_id ? `<b>${esc(e.tag || e.nombre)}:</b> ` : ""; };
+  const fila = (h) => `<tr><td class="n">${numeroHallazgo(h)}</td><td>${esc(TIPOS_DANO[h.tipo])}</td><td class="prio-${h.prioridad}">${TEXTO_PRIORIDAD[h.prioridad]}</td>
+    <td>${sub(h)}${esc(h.descripcion)}${fotos(h.fotos, o.fotos)}</td><td>${esc(h.accion ?? "")}${h.ot ? `<br><b>${esc(h.ot)}</b>` : ""}</td>
+    <td>${esc(nombreCorto(d, h.responsable_id))}</td><td>${esc(fechaCorta(diaDe(h.creado)))}</td><td class="n ${diasAbierto(h, hoy) >= 7 ? "fuera" : ""}">${diasAbierto(h, hoy)}</td></tr>`;
+  const cabeza = `<thead><tr><th>N.º</th><th>Tipo</th><th>Prioridad</th><th>Qué se encontró</th><th>Qué hay que hacer</th><th>A cargo</th><th>Anotado</th><th class="n">Días</th></tr></thead>`;
+  const validado = (h) => d.seguimientos.filter((s) => s.hallazgo_id === h.id && s.estado === "cerrado").sort((a, b) => (b.fecha ?? "").localeCompare(a.fecha ?? ""))[0];
+  return `<article class="documento">${membrete(d, yo, hoy, "Reporte de mantenimiento")}
+    <h1>Reporte de mantenimiento</h1><p class="sub-doc">${esc(al.texto)} · lo pendiente al ${esc(fechaLarga(hoy))} y lo resuelto del ${esc(fechaLarga(per.desde))} al ${esc(fechaLarga(per.hasta))}</p>
+    <p>${esc(m.pendientes.length ? `${plural(m.pendientes.length, "hallazgo de mantenimiento sigue pendiente", "hallazgos de mantenimiento siguen pendientes")}; llevan en promedio ${dias1(m.abiertoProm).replace(" d", " días")} desde que se anotaron${m.semana ? ` y ${plural(m.semana, "lleva", "llevan")} más de una semana` : ""}.` : "No queda nada pendiente de mantenimiento.")}
+      ${esc(m.completados.length ? ` En el período se ${m.completados.length === 1 ? "validó 1 como resuelto" : `validaron ${m.completados.length} como resueltos`}; tardaron en promedio ${dias1(m.tardaProm).replace(" d", " días")}.` : " En el período no se validó ninguno como resuelto.")}</p>
+    ${kpis([[m.pendientes.length, "pendientes"], [dias1(m.abiertoProm), "llevan en promedio"], [m.semana, "con más de una semana"], [dias1(m.tardaProm), "tardan en resolverse"]])}
+    <h2>Por tipo de daño</h2><table class="tabla"><thead><tr><th>Tipo</th><th class="n">Pendientes</th><th class="n">Llevan en promedio</th><th class="n">Resueltos en el período</th><th class="n">Tardaron en promedio</th></tr></thead><tbody>
+      ${m.porTipo.map((x) => `<tr><td>${esc(TIPOS_DANO[x.t])}</td><td class="n">${x.pendientes}</td><td class="n">${dias1(x.abiertoProm)}</td><td class="n">${x.completados}</td><td class="n">${dias1(x.tardaProm)}</td></tr>`).join("")}</tbody></table>
+    ${al.uno ? "" : m.porEquipo.length ? `<h2>Por equipo</h2><table class="tabla"><thead><tr><th>Equipo</th><th class="n">Pendientes</th><th class="n">El más viejo lleva</th><th class="n">Resueltos en el período</th></tr></thead><tbody>
+      ${m.porEquipo.map((x) => `<tr><td>${esc(nombreCompleto(d, x.id))}</td><td class="n">${x.pendientes.length}</td><td class="n ${x.masViejo >= 7 ? "fuera" : ""}">${x.masViejo == null ? "—" : `${x.masViejo} d`}</td><td class="n">${x.completados}</td></tr>`).join("")}</tbody></table>` : ""}
+    <h2>Pendiente</h2>
+    ${m.pendientes.length ? m.porEquipo.filter((x) => x.pendientes.length).map((x) => `${al.uno ? "" : `<p style="margin:10px 0 4px"><b>${esc(nombreCompleto(d, x.id))}</b></p>`}<table class="tabla">${cabeza}<tbody>${x.pendientes.map(fila).join("")}</tbody></table>`).join("") : `<p class="vacio-doc">Nada pendiente.</p>`}
+    <h2>Resuelto en el período</h2>
+    ${m.completados.length ? `<table class="tabla"><thead><tr><th>N.º</th><th>Tipo</th><th>Equipo</th><th>Qué se encontró</th><th>Anotado</th><th>Validado</th><th>Validó</th><th class="n">Tardó</th></tr></thead><tbody>
+      ${m.completados.map((h) => { const s = validado(h); return `<tr><td class="n">${numeroHallazgo(h)}</td><td>${esc(TIPOS_DANO[h.tipo])}</td><td>${esc(nombreCompleto(d, h.equipo_id))}</td><td>${esc(h.descripcion)}</td>
+        <td>${esc(fechaCorta(diaDe(h.creado)))}</td><td>${esc(fechaCorta(diaDe(h.cerrado)))}</td><td>${esc(s ? nombreCorto(d, s.persona_id) : "—")}</td><td class="n">${diasAbierto(h, hoy)} d</td></tr>`; }).join("")}</tbody></table>` : `<p class="vacio-doc">Ninguno en el período.</p>`}
+    ${firmas(yo)}${pie(d, yo)}</article>`;
+}
+
 // ------------------------------------------------------------------------------- textos para mandar
 
-function textoCorreo(d, yo, per, al, r) {
+function lineasMantenimiento(d, per, al, hoy, vineta) {
+  const m = datosMantenimiento(d, per, al, hoy);
+  return [
+    `${plural(m.pendientes.length, "pendiente", "pendientes")}${m.pendientes.length ? `, llevan en promedio ${dias1(m.abiertoProm).replace(" d", " días")}` : ""}; ${m.completados.length} ${m.completados.length === 1 ? "resuelto" : "resueltos"} en el período${m.completados.length ? `, tardaron en promedio ${dias1(m.tardaProm).replace(" d", " días")}` : ""}.`,
+    ...(m.pendientes.length ? ["", vineta === "•" ? "*Pendiente:*" : "Pendiente:", ...m.pendientes.map((h) => `${vineta} ${numeroHallazgo(h)} [${TIPOS_DANO[h.tipo]}] ${nombreCompleto(d, h.equipo_id)}: ${h.descripcion} — lleva ${diasAbierto(h, hoy)} ${diasAbierto(h, hoy) === 1 ? "día" : "días"}${h.responsable_id ? ` (${nombreCorto(d, h.responsable_id)})` : ""}`)] : []),
+    ...(m.completados.length ? ["", vineta === "•" ? "*Resuelto:*" : "Resuelto en el período:", ...m.completados.map((h) => `${vineta} ${numeroHallazgo(h)} [${TIPOS_DANO[h.tipo]}] ${nombreCompleto(d, h.equipo_id)}: ${h.descripcion} — tardó ${diasAbierto(h, hoy)} ${diasAbierto(h, hoy) === 1 ? "día" : "días"}`)] : []),
+  ];
+}
+
+function textoCorreo(d, yo, per, al, r, tipo, hoy) {
   const nuevos = [...r.nuevos].sort((a, b) => ORDEN[a.prioridad] - ORDEN[b.prioridad]);
-  const asunto = `Reporte de inspecciones · ${al.texto} · ${fechaCorta(per.desde)} al ${fechaCorta(per.hasta)}`;
+  const mant = tipo === "mantenimiento";
+  const asunto = `Reporte de ${mant ? "mantenimiento" : "inspecciones"} · ${al.texto} · ${fechaCorta(per.desde)} al ${fechaCorta(per.hasta)}`;
   const firma = [yo.nombre, yo.puesto, d.ajustes?.empresa].filter(Boolean).join("\n");
+  if (mant) {
+    return { asunto, cuerpo: ["Buenos días:", "", `Les comparto lo de mantenimiento (mecánico, eléctrico y de lógica) de ${al.planta ? "la planta" : al.texto}: lo pendiente al ${fechaLarga(hoy)} y lo resuelto del ${fechaLarga(per.desde)} al ${fechaLarga(per.hasta)}.`,
+      "", ...lineasMantenimiento(d, per, al, hoy, "-"), "", "Quedo atento a cualquier comentario.", "", "Saludos,", firma].join("\n") };
+  }
   const cuerpo = [
     "Buenos días:",
     "",
@@ -284,7 +367,7 @@ function textoCorreo(d, yo, per, al, r) {
     "",
     parrafoResumen(r, per),
     ...(nuevos.length ? ["", "Hallazgos del período:", ...nuevos.map((h) => `- ${numeroHallazgo(h)} [${TEXTO_PRIORIDAD[h.prioridad]}] ${nombreEquipo(equipo(d, h.equipo_id))}: ${h.descripcion}${h.accion ? `. Acción: ${h.accion}` : ""}${h.ot ? ` (${h.ot})` : ""}. Estado: ${TEXTO_ESTADO[h.estado].toLowerCase()}.`)] : []),
-    ...(r.atrasadas.length ? ["", "Inspecciones atrasadas:", ...r.atrasadas.map((i) => `- ${queInspeccion(d, i)} · ${plantilla(d, i.plantilla_id)?.nombre}: ${nombreCorto(d, i.asignada_a)}, vencía el ${fechaCorta(i.vence)}.`)] : []),
+    ...(r.atrasadas.length ? ["", "Inspecciones atrasadas:", ...r.atrasadas.map((i) => `- ${[queInspeccion(d, i), plantilla(d, i.plantilla_id)?.nombre].filter(Boolean).join(" · ")}: ${nombreCorto(d, i.asignada_a)}, vencía el ${fechaCorta(i.vence)}.`)] : []),
     "",
     "Quedo atento a cualquier comentario.",
     "",
@@ -294,13 +377,14 @@ function textoCorreo(d, yo, per, al, r) {
   return { asunto, cuerpo };
 }
 
-function textoWhatsApp(d, yo, per, al, r) {
+function textoWhatsApp(d, yo, per, al, r, tipo, hoy) {
   const nuevos = [...r.nuevos].sort((a, b) => ORDEN[a.prioridad] - ORDEN[b.prioridad]);
+  if (tipo === "mantenimiento") return [`*Reporte de mantenimiento* — ${al.texto}, ${fechaCorta(per.desde)} al ${fechaCorta(per.hasta)}`, ...lineasMantenimiento(d, per, al, hoy, "•"), "", `Preparó: ${yo.nombre}`].join("\n");
   return [
     `*Reporte de inspecciones* — ${al.texto}, ${fechaCorta(per.desde)} al ${fechaCorta(per.hasta)}`,
     parrafoResumen(r, per),
     ...(nuevos.length ? ["", "*Hallazgos:*", ...nuevos.map((h) => `• ${numeroHallazgo(h)} [${TEXTO_PRIORIDAD[h.prioridad]}] ${nombreEquipo(equipo(d, h.equipo_id))}: ${h.descripcion}${h.accion ? ` → ${h.accion}` : ""} (${TEXTO_ESTADO[h.estado]})`)] : []),
-    ...(r.atrasadas.length ? ["", "*Atrasadas:*", ...r.atrasadas.map((i) => `• ${queInspeccion(d, i)} · ${plantilla(d, i.plantilla_id)?.nombre} — ${nombreCorto(d, i.asignada_a)}, vencía el ${fechaCorta(i.vence)}`)] : []),
+    ...(r.atrasadas.length ? ["", "*Atrasadas:*", ...r.atrasadas.map((i) => `• ${[queInspeccion(d, i), plantilla(d, i.plantilla_id)?.nombre].filter(Boolean).join(" · ")} — ${nombreCorto(d, i.asignada_a)}, vencía el ${fechaCorta(i.vence)}`)] : []),
     "", `Preparó: ${yo.nombre}`,
   ].join("\n");
 }
@@ -336,6 +420,7 @@ export function excelDe(d, per, al, hoy) {
       ["Empresa", d.ajustes?.empresa ?? ""], ["Planta", d.ajustes?.planta ?? ""], ["Alcance", al.texto], ["Desde", fechaLarga(per.desde)], ["Hasta", fechaLarga(per.hasta)],
       ["Inspecciones programadas", r.programadas.length], ["Hechas de las programadas", r.progHechas], ["Cumplimiento", pct(r.cumplimiento)], ["Hechas a tiempo", pct(r.aTiempoPct)],
       ["Inspecciones hechas en el período", r.hechas.length], ["Atrasadas", r.atrasadas.length], ["Hallazgos nuevos", r.nuevos.length], ["Hallazgos cerrados", r.cerrados.length],
+      ...(al.turno ? [["Turno", TEXTO_TURNO_REPORTE(al.turno)]] : []),
       ["Hallazgos abiertos hoy", r.abiertos.length], ["Cierre promedio (días)", r.cierreMedio == null ? "" : numero(r.cierreMedio, 1)], ["Preparó", nombre(d, d.yo?.id)], ["Generado", fechaHora(new Date().toISOString())],
     ] },
     { nombre: "Inspecciones", columnas: [
@@ -359,10 +444,10 @@ export function excelDe(d, per, al, hoy) {
         x.r.valor, x.r.texto ?? "", x.r.fotos?.length ?? 0, nombre(d, x.i.hecha_por)]) },
     { nombre: "Hallazgos", columnas: [
       { titulo: "N.º", ancho: 9 }, { titulo: "Anotado", tipo: "fechahora" }, { titulo: "Tag", ancho: 14 }, { titulo: "Equipo", ancho: 28 }, { titulo: "Área", ancho: 22 }, { titulo: "Revisión", ancho: 30 },
-      { titulo: "Qué se encontró", ancho: 48 }, { titulo: "Prioridad", ancho: 10 }, { titulo: "Estado", ancho: 14 }, { titulo: "Qué hay que hacer", ancho: 40 }, { titulo: "A cargo", ancho: 22 },
+      { titulo: "Qué se encontró", ancho: 48 }, { titulo: "Prioridad", ancho: 10 }, { titulo: "Tipo de daño", ancho: 13 }, { titulo: "Estado", ancho: 14 }, { titulo: "Qué hay que hacer", ancho: 40 }, { titulo: "A cargo", ancho: 22 },
       { titulo: "OT / aviso", ancho: 14 }, { titulo: "Compromiso", tipo: "fecha" }, { titulo: "Cerrado", tipo: "fechahora" }, { titulo: "Días abierto", tipo: "entero" }, { titulo: "Anotó", ancho: 20 }],
       filas: hall.sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0)).map((h) => [numeroHallazgo(h), h.creado, eqTag(h.equipo_id), eqNom(h.equipo_id), eqArea(h.equipo_id), h.item ?? "", h.descripcion,
-        TEXTO_PRIORIDAD[h.prioridad], TEXTO_ESTADO[h.estado], h.accion ?? "", h.responsable_id ? nombre(d, h.responsable_id) : "", h.ot ?? "", h.vence, h.cerrado,
+        TEXTO_PRIORIDAD[h.prioridad], TIPOS_DANO[h.tipo] ?? "", TEXTO_ESTADO[h.estado], h.accion ?? "", h.responsable_id ? nombre(d, h.responsable_id) : "", h.ot ?? "", h.vence, h.cerrado,
         diasEntre(diaDe(h.creado), diaDe(h.cerrado) ?? hoy), nombre(d, h.creado_por)]) },
     { nombre: "Seguimientos", columnas: [{ titulo: "Fecha", tipo: "fechahora" }, { titulo: "Hallazgo", ancho: 10 }, { titulo: "Quién", ancho: 22 }, { titulo: "Pasó a", ancho: 14 }, { titulo: "Comentario", ancho: 60 }],
       filas: d.seguimientos.filter((s) => hall.some((h) => h.id === s.hallazgo_id)).map((s) => [s.fecha, numeroHallazgo(d.hallazgos.find((h) => h.id === s.hallazgo_id)), nombre(d, s.persona_id),
@@ -415,22 +500,31 @@ const archivoSeguro = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(
 
 const PLANTILLAS_PDF = [
   { id: "formal", titulo: "Formal", desc: "Membrete, resumen, tablas y firmas.", rayas: [8, 16, 26, 34, 42] },
-  { id: "equipo", titulo: "Por equipo", desc: "Una hoja por equipo o por área.", rayas: [8, 14, 30, 36, 42] },
+  { id: "equipo", titulo: "Por equipo", desc: "Una hoja por equipo.", rayas: [8, 14, 30, 36, 42] },
   { id: "ejecutivo", titulo: "Ejecutivo", desc: "Una página con indicadores.", rayas: [8, 18, 24, 30, 44] },
+  { id: "mantenimiento", titulo: "Mantenimiento", desc: "Lo pendiente con sus días y lo resuelto.", rayas: [8, 20, 26, 32, 38] },
 ];
 
-export function vistaReportes({ d, yo, hoy, query }) {
+export function vistaReportes({ d: todo, yo, hoy, query }) {
+  const turno = TURNOS.some((t) => t.id === query.get("turno")) ? query.get("turno") : "";
+  // lo de un turno: todo el reporte (documento, Excel y textos) sale de los datos de ese turno
+  const d = deTurno(todo, turno);
   const per = periodo(query, hoy, d);
-  const al = alcanceDe(d, query.get("alcance") ?? "planta");
-  const tipo = query.get("plantilla") ?? (al.uno ? "equipo" : "formal");
-  const o = { fotos: query.get("fotos") !== "0", agrupar: query.get("agrupar") === "area" ? "area" : "equipo" };
+  const base = alcanceDe(d, query.get("alcance") ?? "planta");
+  const al = turno ? { ...base, turno, texto: `${base.texto} · ${textoTurno(turno)}` } : base;
+  const tipo = PLANTILLAS_PDF.some((p) => p.id === query.get("plantilla")) ? query.get("plantilla") : al.uno ? "equipo" : "formal";
+  const o = { fotos: query.get("fotos") !== "0" };
   const r = calcularReporte(d, per.desde, per.hasta, hoy, al);
-  const doc = tipo === "equipo" ? docPorEquipo(d, yo, hoy, per, al, r, o) : tipo === "ejecutivo" ? docEjecutivo(d, yo, hoy, per, al, r) : docFormal(d, yo, hoy, per, al, r, o);
-  const enlace = (cambios) => `#/reportes?${new URLSearchParams({ ...Object.fromEntries(query), ...cambios })}`;
-  const areas = [...new Set(d.equipos.map((e) => e.area).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const doc = tipo === "equipo" ? docPorEquipo(d, yo, hoy, per, al, r, o) : tipo === "ejecutivo" ? docEjecutivo(d, yo, hoy, per, al, r)
+    : tipo === "mantenimiento" ? docMantenimiento(d, yo, hoy, per, al, o) : docFormal(d, yo, hoy, per, al, r, o);
+  const enlace = (cambios) => `#/reportes?${new URLSearchParams(Object.entries({ ...Object.fromEntries(query), ...cambios }).filter(([, v]) => v))}`;
+  // «De qué»: toda la planta o un equipo (Eduardo, 30-oct-2026: sin áreas ni colectores)
+  const equiposDeQue = todo.equipos.filter((e) => !e.padre_id && e.tipo !== "colector" && (e.activo || al.valor === `equipo:${e.id}`))
+    .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || nombreEquipo(a).localeCompare(nombreEquipo(b)));
+  const otroAlcance = al.valor !== "planta" && !al.uno;
   return {
     titulo: "Reportes",
-    atras: matchMedia("(max-width: 899px)").matches ? "#/mas" : null,
+    atras: matchMedia("(max-width: 899px)").matches ? "#/planta" : null,
     html: `<div class="cabeza no-imprimir"><div><h1>Reportes</h1><p class="bajada">Elige qué y de cuándo; abajo se ve tal como sale.${d.ajustes?.logo ? "" : ` El logo de la empresa se pone en <a href="#/ajustes">Ajustes</a>.`}</p></div></div>
       <div class="reporte-opciones no-imprimir">
         <div class="campo ancho-total"><span class="rotulo">Plantilla</span>
@@ -438,18 +532,16 @@ export function vistaReportes({ d, yo, hoy, query }) {
             <span class="mini">${p.rayas.map((y, k) => `<i style="top:${y}px;${k === 0 ? "width:40%;background:#1c1c1e" : k % 2 ? "right:30%" : ""}"></i>`).join("")}</span>
             <b>${p.titulo}</b><small>${p.desc}</small></button>`).join("")}</div></div>
         <div class="campo"><label for="r-alcance">De qué</label>
-          <select id="r-alcance"><option value="planta" ${al.valor === "planta" ? "selected" : ""}>Toda la planta</option>
-            ${d.equipos.some((e) => e.tipo === "colector") ? `<option value="colectores" ${al.valor === "colectores" ? "selected" : ""}>Colectores de polvo</option>` : ""}
-            <optgroup label="Un área">${areas.map((a) => `<option value="area:${esc(a)}" ${al.valor === `area:${a}` ? "selected" : ""}>${esc(a)}</option>`).join("")}</optgroup>
-            <optgroup label="Un equipo">${d.equipos.filter((e) => !e.padre_id && (e.activo || al.valor === `equipo:${e.id}`)).map((e) => `<option value="equipo:${esc(e.id)}" ${al.valor === `equipo:${e.id}` ? "selected" : ""}>${esc(nombreEquipo(e))}</option>`).join("")}</optgroup>
+          <select id="r-alcance"><option value="planta" ${al.valor === "planta" ? "selected" : ""}>Todos los equipos</option>
+            ${otroAlcance ? `<option value="${esc(al.valor)}" selected>${esc(base.texto)}</option>` : ""}
+            <optgroup label="Un equipo">${equiposDeQue.map((e) => `<option value="equipo:${esc(e.id)}" ${al.valor === `equipo:${e.id}` ? "selected" : ""}>${esc(nombreEquipo(e))}</option>`).join("")}</optgroup>
           </select></div>
         <div class="campo"><label for="r-periodo">De cuándo</label>
           <select id="r-periodo">${PERIODOS.map(([id, t]) => `<option value="${id}" ${per.p === id ? "selected" : ""}>${t}</option>`).join("")}</select></div>
-        <div class="campo"><span class="rotulo">Opciones</span>
-          <div class="herramientas-item">
-            ${tipo === "equipo" && !al.uno ? `<div class="segmento chico" role="group" aria-label="Una hoja por"><a href="${enlace({ agrupar: "equipo" })}" ${o.agrupar === "equipo" ? 'aria-current="true"' : ""}>Hoja por equipo</a><a href="${enlace({ agrupar: "area" })}" ${o.agrupar === "area" ? 'aria-current="true"' : ""}>Por área</a></div>` : ""}
-            ${tipo !== "ejecutivo" ? `<label class="ajuste" style="padding:0;min-height:38px;gap:10px"><span class="interruptor"><input type="checkbox" data-fotos ${o.fotos ? "checked" : ""}><span></span></span>Con fotos</label>` : ""}
-          </div></div>
+        <div class="campo"><label for="r-turno">Turno</label>
+          <select id="r-turno"><option value="">Todos los turnos</option>${TURNOS.map((t) => `<option value="${t.id}" ${turno === t.id ? "selected" : ""}>${esc(t.nombre)} · ${esc(t.horas)}</option>`).join("")}</select></div>
+        ${tipo !== "ejecutivo" ? `<div class="campo"><span class="rotulo">Opciones</span>
+          <div class="herramientas-item"><label class="ajuste" style="padding:0;min-height:38px;gap:10px"><span class="interruptor"><input type="checkbox" data-fotos ${o.fotos ? "checked" : ""}><span></span></span>Con fotos</label></div></div>` : ""}
         ${per.p === "rango" ? `<form class="ancho-total" id="form-rango"><div class="rejilla-campos tres" style="max-width:640px;align-items:end">
           <div class="campo"><label for="r-desde">Desde</label><input id="r-desde" type="date" value="${per.desde}"></div>
           <div class="campo"><label for="r-hasta">Hasta</label><input id="r-hasta" type="date" value="${per.hasta}"></div>
@@ -468,6 +560,7 @@ export function vistaReportes({ d, yo, hoy, query }) {
       const ir2 = (c) => { location.hash = enlace(c); };
       m.querySelector("#r-alcance").addEventListener("change", (e) => ir2({ alcance: e.target.value }));
       m.querySelector("#r-periodo").addEventListener("change", (e) => ir2({ p: e.target.value }));
+      m.querySelector("#r-turno").addEventListener("change", (e) => ir2({ turno: e.target.value }));
       m.querySelector("[data-fotos]")?.addEventListener("change", (e) => ir2({ fotos: e.target.checked ? "1" : "0" }));
       m.querySelector("#form-rango")?.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -480,20 +573,20 @@ export function vistaReportes({ d, yo, hoy, query }) {
         const a = b.dataset.accion;
         if (a === "imprimir") print();
         if (a === "correo") {
-          const c = textoCorreo(d, yo, per, al, r);
+          const c = textoCorreo(d, yo, per, al, r, tipo, hoy);
           copiar(`Asunto: ${c.asunto}\n\n${c.cuerpo}`, "Correo copiado");
         }
         if (a === "mailto") {
-          const c = textoCorreo(d, yo, per, al, r);
+          const c = textoCorreo(d, yo, per, al, r, tipo, hoy);
           const cuerpo = c.cuerpo.length > 1800 ? `${c.cuerpo.slice(0, 1700)}\n…\n(El reporte completo va en el PDF adjunto.)` : c.cuerpo;
           location.href = `mailto:?subject=${encodeURIComponent(c.asunto)}&body=${encodeURIComponent(cuerpo)}`;
         }
-        if (a === "whatsapp") copiar(textoWhatsApp(d, yo, per, al, r), "Resumen copiado");
+        if (a === "whatsapp") copiar(textoWhatsApp(d, yo, per, al, r, tipo, hoy), "Resumen copiado");
         if (a === "excel") {
           b.disabled = true;
           try {
             const bytes = excelDe(d, per, al, hoy);
-            await entregarArchivo(bytes, `bitacora-${archivoSeguro(al.texto)}-${per.desde}-a-${per.hasta}.xlsx`, TIPO_XLSX);
+            await entregarArchivo(bytes, `bitacora-${archivoSeguro(al.texto)}${tipo === "mantenimiento" ? "-mantenimiento" : ""}-${per.desde}-a-${per.hasta}.xlsx`, TIPO_XLSX);
           } catch (x) { aviso(`No se pudo armar el Excel: ${x.message}`, { error: true }); }
           b.disabled = false;
         }

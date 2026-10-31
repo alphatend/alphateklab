@@ -53,39 +53,27 @@ export function vistaEquipos({ d, yo, hoy, query }) {
   const archivados = query.get("archivados") === "1";
   const xs = d.equipos.filter((e) => e.tipo !== "colector" && !e.padre_id && (archivados ? !e.activo : e.activo)
     && (!buscar || normal(`${e.tag} ${e.nombre} ${e.area} ${e.nota} ${d.equipos.filter((x) => x.padre_id === e.id).map((x) => `${x.tag} ${x.nombre}`).join(" ")}`).includes(normal(buscar))));
-  const porArea = {};
-  for (const e of xs) (porArea[e.area || "Sin área"] ??= []).push(e);
-  const tarjeta = (e) => {
+  // en cuadros, como en Planta, sin títulos por área (Eduardo, 30-oct-2026: «que sea por equipo»)
+  const cuadro = (e) => {
     const fam = familia(d, e.id);
-    const pend = d.inspecciones.filter((i) => i.estado === "pendiente" && equiposDe(i).includes(e.id));
-    const atr = pend.filter((i) => i.vence < hoy).length;
-    const abiertos = d.hallazgos.filter((h) => fam.has(h.equipo_id) && h.estado !== "cerrado");
-    const subs = d.equipos.filter((x) => x.padre_id === e.id && x.activo).length;
+    const pend = d.inspecciones.filter((i) => i.estado === "pendiente" && equiposDe(i).includes(e.id)).length;
+    const abiertos = d.hallazgos.filter((h) => fam.has(h.equipo_id) && h.estado !== "cerrado").length;
     const parado = enCurso(d).some((p) => fam.has(p.equipo_id));
-    const altas = abiertos.filter((h) => h.prioridad === "alta").length;
-    const ult = d.inspecciones.filter((i) => i.estado === "hecha" && equiposDe(i).includes(e.id)).sort((a, b) => (b.hecha_en ?? "").localeCompare(a.hecha_en ?? ""))[0];
-    return `<a class="equipo" href="#/equipo/${encodeURIComponent(e.id)}">
-      <div class="arriba">${marcaTag(e.tag)}${parado ? `<span class="marca parado">${icono("paros")}Parado</span>` : ""}<span class="area">${esc(subs ? plural(subs, "subequipo", "subequipos") : e.nota || "")}</span></div>
-      <h3>${esc(e.nombre)}</h3>
-      <div class="estado-equipo">
-        <span>${pend.length ? plural(pend.length, "inspección pendiente", "inspecciones pendientes") : "Nada pendiente"}${atr ? ` · <span class="malo">${atr} atrasada${atr === 1 ? "" : "s"}</span>` : ""}</span>
-        <span>${abiertos.length ? `${plural(abiertos.length, "hallazgo abierto", "hallazgos abiertos")}${altas ? ` · <span class="malo">${altas} alta${altas === 1 ? "" : "s"}</span>` : ""}` : "Sin hallazgos abiertos"}</span>
-        ${ult ? `<span>Última: ${esc(haceCuanto(ult.hecha_en, hoy))}</span>` : ""}
-      </div></a>`;
+    const resumen = abiertos ? plural(abiertos, "hallazgo abierto", "hallazgos abiertos") : pend ? plural(pend, "inspección pendiente", "inspecciones pendientes") : "Al día";
+    return `<a href="#/equipo/${encodeURIComponent(e.id)}"><span class="icono-fila ${parado ? "rojo" : ""}">${icono(parado ? "paros" : "equipos")}</span>
+      <b>${esc(e.nombre)}</b><small>${e.tag ? `<span class="mono">${esc(e.tag)}</span> · ` : ""}${parado ? "Parado · " : ""}${esc(resumen)}</small></a>`;
   };
   return {
     titulo: "Equipos",
     html: `<div class="cabeza"><div><h1>Equipos</h1>
-        <p class="bajada">Por área. En cada uno, qué se revisa (sus plantillas), cómo vienen las medidas y su reporte. Los colectores de polvo están en <a href="#/colectores">Colectores</a>.</p></div>
+        <p class="bajada">Toca un equipo para ver qué se revisa, cómo vienen las medidas, su historia y su QR. Los colectores de polvo están en <a href="#/colectores">Colectores</a>.</p></div>
         <div class="acciones">${admin ? `<button type="button" class="boton primario" data-accion="nuevo">${icono("mas1")}Agregar equipo</button>` : ""}
           <a class="boton" href="#/etiquetas?de=todos">${icono("escanear")}Etiquetas QR</a></div></div>
       <div class="tablero-barra">
         <div class="buscador" style="flex:1 1 260px;max-width:420px">${icono("buscar")}<input type="search" placeholder="Buscar por nombre, tag o área" value="${esc(buscar)}" data-buscar aria-label="Buscar"></div>
         <nav class="filtros" style="margin:0"><a href="#/equipos" ${archivados ? "" : 'aria-current="true"'}>En uso</a><a href="#/equipos?archivados=1" ${archivados ? 'aria-current="true"' : ""}>Archivados</a></nav>
       </div>
-      ${Object.keys(porArea).length ? `<div class="areas">${Object.entries(porArea).sort(([a], [b]) => a.localeCompare(b)).map(([area, es]) => `<section>
-          <div class="area-titulo"><h2>${esc(area)}</h2><small>${plural(es.length, "equipo", "equipos")}</small></div>
-          <div class="equipos-rejilla">${es.map(tarjeta).join("")}</div></section>`).join("")}</div>`
+      ${xs.length ? `<div class="mosaico mosaico-equipos" data-lista-equipos>${[...xs].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre)).map(cuadro).join("")}</div>`
         : vacio(buscar ? "Ningún equipo con eso." : archivados ? "No hay equipos archivados." : "Todavía no hay equipos.")}`,
     montar(m) {
       m.querySelector('[data-accion="nuevo"]')?.addEventListener("click", () => editarEquipo(d, { tipo: "proceso" }));
@@ -99,24 +87,36 @@ export function vistaEquipos({ d, yo, hoy, query }) {
           const v = vistaEquipos({ d: api.obtener(), yo, hoy, query: q });
           const tmp = document.createElement("div");
           tmp.innerHTML = v.html;
-          const nuevo = tmp.querySelector(".areas, .vacio");
-          m.querySelector(".areas, .vacio")?.replaceWith(nuevo);
+          const nuevo = tmp.querySelector("[data-lista-equipos], .vacio");
+          m.querySelector("[data-lista-equipos], .vacio")?.replaceWith(nuevo);
         }, 160);
       });
     },
   };
 }
 
-/** Agregar o editar un equipo (o un colector). */
+/**
+ * Agregar o editar un equipo (o un colector). Al agregar uno de proceso se elige si es un equipo o un subequipo de otro
+ * (Eduardo, 31-oct-2026: «si le da al horno, pueda elegir subequipo, que puede ser motor principal»); `sugerirPadre`
+ * deja ese equipo ya puesto. Devuelve el id de lo guardado, o null.
+ */
 export async function editarEquipo(d, eq) {
   const colector = eq.tipo === "colector";
+  // con la opción: lo nuevo de proceso que no viene ya colgado de un equipo
+  const elegirQue = !eq.id && !colector && !eq.padre_id;
+  let esSub = elegirQue && !!eq.sugerirPadre;
+  let guardado = null;
   const r = await dialogo({
-    titulo: eq.id ? `Editar ${eq.padre_id ? "subequipo" : colector ? "colector" : "equipo"}` : `Agregar ${eq.padre_id ? `subequipo de ${equipo(d, eq.padre_id)?.nombre ?? ""}` : colector ? "colector" : "equipo"}`,
+    titulo: eq.id ? `Editar ${eq.padre_id ? "subequipo" : colector ? "colector" : "equipo"}` : eq.padre_id ? `Agregar subequipo de ${equipo(d, eq.padre_id)?.nombre ?? ""}` : colector ? "Agregar colector" : "Agregar equipo o subequipo",
     html: `<datalist id="areas-lista">${areasDe(d).map((a) => `<option value="${esc(a)}">`).join("")}</datalist>
+      ${elegirQue ? `<div class="campo"><span class="rotulo" id="e-r-que">Qué es</span>
+        <div class="segmento" role="group" aria-labelledby="e-r-que"><button type="button" data-que="equipo" aria-pressed="${!esSub}">Un equipo</button><button type="button" data-que="sub" aria-pressed="${esSub}">Parte de un equipo</button></div></div>
+      <div class="campo" data-solo-sub ${esSub ? "" : "hidden"}><span class="rotulo">De qué equipo es parte</span>${campoEquipo(d, { id: "e-padre", valor: eq.sugerirPadre ?? "", soloArriba: true, crear: false, titulo: "¿De qué equipo es parte?", placeholder: "Elegir el equipo" })}
+        <p class="ayuda">Un subequipo es la parte donde se encuentra la falla: motor principal, banda, elevador, ventilador…</p></div>` : ""}
       <div class="rejilla-campos dos">
         <div class="campo"><label for="e-tag">Tag ${colector ? "" : "<small>(opcional)</small>"}</label><input id="e-tag" type="text" value="${esc(eq.tag ?? "")}" autocapitalize="characters" spellcheck="false" placeholder="${colector ? "Por ejemplo: 431-FM-01" : "Por ejemplo: 541-RM-01"}"></div>
-        <div class="campo"><label for="e-nombre">Nombre</label><input id="e-nombre" type="text" value="${esc(eq.nombre ?? "")}" placeholder="${colector ? "Filtro de mangas del separador" : "Horomill"}"></div>
-        ${eq.padre_id ? "" : `<div class="campo"><label for="e-area">Área</label><input id="e-area" type="text" list="areas-lista" value="${esc(eq.area ?? "")}" placeholder="Molienda de cemento"></div>`}
+        <div class="campo"><label for="e-nombre">Nombre</label><input id="e-nombre" type="text" value="${esc(eq.nombre ?? "")}" placeholder="${colector ? "Filtro de mangas del separador" : eq.padre_id || esSub ? "Motor principal" : "Horomill"}"></div>
+        ${eq.padre_id ? "" : `<div class="campo" data-solo-equipo ${esSub ? "hidden" : ""}><label for="e-area">Área</label><input id="e-area" type="text" list="areas-lista" value="${esc(eq.area ?? "")}" placeholder="Molienda de cemento"></div>`}
         ${colector ? `<div class="campo"><label for="e-sirve">A qué le sirve <small>(opcional)</small></label><input id="e-sirve" type="text" value="${esc(eq.sirve_a ?? "")}" placeholder="Separador del Horomill"></div>` : ""}
       </div>
       <div class="campo"><label for="e-nota">Nota <small>(opcional)</small></label><input id="e-nota" type="text" value="${esc(eq.nota ?? "")}" placeholder="${colector ? "Número de mangas, fabricante…" : "Fabricante, modelo…"}"></div>
@@ -127,10 +127,12 @@ export async function editarEquipo(d, eq) {
       { texto: "Guardar", valor: "guardar", clase: "primario", alElegir: async (velo) => {
         const v = (id) => velo.querySelector(id)?.value ?? "";
         const err = velo.querySelector(".error-form");
+        const padre = esSub ? v("#e-padre") : eq.padre_id ?? null;
+        if (esSub && !padre) { err.hidden = false; err.textContent = "Elige de qué equipo es parte."; return false; }
         if (!v("#e-nombre").trim() && !v("#e-tag").trim()) { err.hidden = false; err.textContent = "Ponle un nombre o un tag."; return false; }
         try {
-          await api.escribir("equipos", { id: eq.id, tipo: eq.tipo ?? "proceso", padre_id: eq.padre_id ?? null, tag: v("#e-tag"), nombre: v("#e-nombre"), area: v("#e-area"), sirve_a: v("#e-sirve"), nota: v("#e-nota"), activo: eq.activo !== false, orden: eq.orden });
-          aviso(eq.id ? "Guardado." : `${colector ? "Colector" : "Equipo"} agregado.`);
+          guardado = await api.escribir("equipos", { id: eq.id, tipo: eq.tipo ?? "proceso", padre_id: padre, tag: v("#e-tag"), nombre: v("#e-nombre"), area: padre ? "" : v("#e-area"), sirve_a: v("#e-sirve"), nota: v("#e-nota"), activo: eq.activo !== false, orden: eq.orden });
+          aviso(eq.id ? "Guardado." : padre ? `Subequipo agregado a ${equipo(d, padre)?.nombre ?? "su equipo"}.` : `${colector ? "Colector" : "Equipo"} agregado.`);
         } catch (x) {
           err.hidden = false;
           err.textContent = x.sinRed ? "Para esto hace falta señal." : x.message;
@@ -138,7 +140,21 @@ export async function editarEquipo(d, eq) {
         }
       } },
     ],
+    alMontar(velo) {
+      velo.querySelector('[aria-labelledby="e-r-que"]')?.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-que]");
+        if (!b) return;
+        esSub = b.dataset.que === "sub";
+        b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+        velo.querySelector("[data-solo-sub]").hidden = !esSub;
+        const area = velo.querySelector("[data-solo-equipo]");
+        if (area) area.hidden = esSub;
+        velo.querySelector("#e-nombre").placeholder = esSub ? "Motor principal" : "Horomill";
+        velo.querySelector(".error-form").hidden = true;
+      });
+    },
   });
+  if (r === "guardar") return guardado?.id ?? eq.id ?? null;
   if (r === "archivar") {
     if (eq.activo === false) {
       try { await api.escribir("equipos", { ...eq, activo: true }); aviso("De vuelta en uso."); } catch (x) { aviso(x.message, { error: true }); }

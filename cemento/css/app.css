@@ -187,7 +187,7 @@ body.en-detalle .contenido { padding-top: calc(max(10px, calc(env(safe-area-inse
   position: fixed; z-index: 30; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom));
   display: flex; align-items: center; gap: 8px; max-width: 632px; margin: 0 auto;
 }
-.pestanas { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 6px; border-radius: 999px; }
+.pestanas { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; padding: 6px; border-radius: 999px; }
 /* «Crear»: un círculo de vidrio aparte, a la derecha de las pestañas (como el botón de buscar en iOS 26) */
 .crear-flotante {
   flex: none; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; color: var(--tinte); cursor: pointer; padding: 0;
@@ -783,7 +783,7 @@ html.arrastrando, html.arrastrando * { cursor: grabbing !important; -webkit-user
 .velo.cerrando .dialogo { animation: bajarse 200ms ease-in both; }
 .dialogo {
   width: min(560px, calc(100% - 16px)); max-height: 90dvh; overflow: auto; margin-bottom: max(8px, env(safe-area-inset-bottom));
-  border-radius: var(--r-hoja); padding: 24px 20px 20px; display: grid; gap: 16px; overscroll-behavior: contain;
+  border-radius: var(--r-hoja); padding: 24px 20px 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; overscroll-behavior: contain;
   --vidrio-fondo: var(--vidrio-denso);
   animation: subir 380ms var(--resorte);
 }
@@ -796,7 +796,7 @@ html.arrastrando, html.arrastrando * { cursor: grabbing !important; -webkit-user
 @keyframes aparecer { from { opacity: 0; } }
 @keyframes desaparecer { to { opacity: 0; } }
 .dialogo .botones { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
-@media (max-width: 699px) { .dialogo .botones { display: grid; grid-auto-flow: row; } .dialogo .botones .boton { width: 100%; } .dialogo .botones .primario { order: -1; } }
+@media (max-width: 699px) { .dialogo .botones { display: grid; grid-auto-flow: row; justify-content: stretch; } .dialogo .botones .boton { width: 100%; } .dialogo .botones .primario { order: -1; } }
 .acciones-hoja { display: grid; gap: 2px; background: var(--hoja); border-radius: var(--r-grupo); overflow: hidden; }
 .acciones-hoja button { display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 0 16px; border: 0; background: transparent; color: var(--tinta); font: 500 17px var(--letra); cursor: pointer; text-align: left; position: relative; }
 .acciones-hoja button + button::before { content: ""; position: absolute; top: 0; left: 52px; right: 0; border-top: 0.5px solid var(--linea); }
@@ -855,7 +855,7 @@ html.arrastrando, html.arrastrando * { cursor: grabbing !important; -webkit-user
 
 .reporte-opciones { display: grid; gap: 16px; margin-bottom: 22px; }
 @media (min-width: 900px) { .reporte-opciones { grid-template-columns: repeat(3, minmax(0, 1fr)); } .reporte-opciones .ancho-total { grid-column: 1 / -1; } }
-.plantillas-pdf { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.plantillas-pdf { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .plantillas-pdf button {
   display: grid; gap: 6px; text-align: left; padding: 12px; border-radius: 14px; border: 0; cursor: pointer; background: var(--hoja); color: var(--tinta); font: inherit;
   box-shadow: 0 0 0 1px var(--linea); transition: transform var(--dur-respuesta) var(--resorte);
@@ -1276,3 +1276,107 @@ html.arrastrando, html.arrastrando * { cursor: grabbing !important; -webkit-user
   }
 }
 @media print { body.en-detalle::before { display: none; } }
+/* el resumen del tablero: los tres números (Pendiente, En proceso, Terminado); en el teléfono llevan a su columna */
+.resumen-tres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 16px; }
+.resumen-tres button {
+  display: grid; gap: 1px; align-content: start; text-align: left; min-width: 0; padding: 10px 12px 11px; border: 0; border-radius: 16px; cursor: pointer;
+  background: var(--hoja); color: var(--tinta); font: inherit; box-shadow: 0 0 0 0.5px var(--filo-tarjeta);
+  -webkit-tap-highlight-color: transparent; transition: transform var(--dur-respuesta) var(--resorte);
+}
+.resumen-tres button:active { transform: scale(0.97); }
+.resumen-tres button:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+.resumen-tres .t { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--tinta-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.resumen-tres .t .punto { width: 8px; height: 8px; }
+.resumen-tres b { font: 700 30px/1.1 var(--titulo); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.resumen-tres small { font-size: 12.5px; color: var(--tinta-3); min-height: 1.3em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.resumen-tres small.alerta { color: var(--rojo); font-weight: 600; }
+@media (max-width: 899px) { .resumen-tres button[aria-current="true"] { box-shadow: inset 0 0 0 2px var(--tinte-boton); } }
+@media (min-width: 900px) {
+  .resumen-tres { max-width: 760px; }
+  .resumen-tres button { cursor: default; }
+  .resumen-tres button:active { transform: none; }
+}
+/* de qué es cada tarjeta (todo junto en un tablero) */
+.tipo-tarjeta { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--tinta-3); }
+.tipo-tarjeta .ico { width: 14px; height: 14px; }
+.tipo-tarjeta .num { font-family: var(--mono); font-weight: 600; color: var(--tinta-2); }
+
+/* debajo de «Hola»: cuántas tareas pendientes tiene uno, y la semana */
+.pendientes-hoy { margin: 4px 0 0; font-size: 19px; letter-spacing: -0.01em; color: var(--tinta-2); }
+.pendientes-hoy a { color: inherit; text-decoration: none; }
+.pendientes-hoy b { color: var(--tinta); font-weight: 700; font-variant-numeric: tabular-nums; }
+.semana-tablero { background: var(--hoja); border-radius: var(--r-grupo); padding: 10px 6px 8px; margin: 0 0 16px; box-shadow: 0 0 0 0.5px var(--filo-tarjeta); }
+.semana-tablero .cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 8px 6px; }
+.semana-tablero .cab b { font-size: 15px; font-weight: 700; }
+.semana-tablero .cab a { display: inline-flex; align-items: center; gap: 2px; min-height: 32px; font-size: 14.5px; font-weight: 600; color: var(--tinte); }
+.semana-tablero .dias { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.semana-tablero .dias a {
+  display: grid; justify-items: center; gap: 3px; padding: 6px 0; border-radius: 12px; color: var(--tinta);
+  -webkit-tap-highlight-color: transparent; transition: transform var(--dur-respuesta) var(--resorte);
+}
+.semana-tablero .dias a:active { transform: scale(0.94); }
+.semana-tablero .dias a:focus-visible { outline: 3px solid var(--foco); outline-offset: 1px; }
+.semana-tablero .dias small { font-size: 11.5px; font-weight: 600; color: var(--tinta-3); text-transform: uppercase; }
+@media (hover: hover) and (pointer: fine) { .semana-tablero .dias a:hover { background: var(--relleno); } }
+@media (min-width: 900px) { .semana-tablero, .tiras { max-width: 760px; } }
+
+/* el inicio: arriba a la derecha, avisos y configuración (en la computadora están en el riel) */
+.cabeza-inicio { position: relative; }
+.iconos-inicio { display: flex; gap: 8px; align-self: flex-start; }
+.iconos-inicio .boton-icono { width: 44px; height: 44px; }
+.iconos-inicio .globo { top: -2px; right: -2px; left: auto; }
+@media (min-width: 900px) { .iconos-inicio { display: none; } }
+/* la semana del inicio: los días se tocan (debajo sale lo de ese día) */
+.semana-tablero .cab .flechas { display: flex; margin-left: auto; }
+.semana-tablero .cab .flechas .boton-icono { width: 36px; height: 36px; }
+.semana-tablero .dias button {
+  border: 0; background: transparent; font: inherit; cursor: pointer;
+  display: grid; justify-items: center; gap: 3px; padding: 6px 0; border-radius: 12px; color: var(--tinta);
+  -webkit-tap-highlight-color: transparent; transition: transform var(--dur-respuesta) var(--resorte);
+}
+.semana-tablero .dias button:active { transform: scale(0.94); }
+.semana-tablero .dias button:focus-visible { outline: 3px solid var(--foco); outline-offset: 1px; }
+.semana-tablero .dias button.elegido .num-dia { background: var(--tinta); color: var(--fondo); }
+.semana-tablero .dias button.hoy .num-dia { color: var(--rojo); }
+.semana-tablero .dias button.hoy.elegido .num-dia { background: var(--rojo-boton); color: #fff; }
+@media (hover: hover) and (pointer: fine) { .semana-tablero .dias button:not(.elegido):hover { background: var(--relleno); } }
+[data-calendario-inicio] .agenda-dia { margin-bottom: 18px; }
+[data-calendario-inicio] .agenda-dia h3 { margin: 0 4px 8px; }
+@media (min-width: 900px) { [data-calendario-inicio] { max-width: 760px; } }
+/* Tareas: ordenar y el modo de vista, en una fila */
+.tareas-controles { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; margin: 0 0 16px; }
+.control-con-rotulo { display: flex; align-items: center; gap: 8px; }
+.control-con-rotulo > span { font-size: 14px; font-weight: 600; color: var(--tinta-3); }
+.tareas-controles .segmento a { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.tareas-controles .segmento .ico { width: 16px; height: 16px; }
+/* en la lista, hallazgos e inspecciones llevan su ícono donde la tarea lleva el círculo */
+.icono-lista { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; margin-top: 1px; flex: none; }
+.icono-lista .ico { width: 16px; height: 16px; }
+.icono-lista.rojo { background: var(--rojo-tinte); color: var(--rojo); }
+.icono-lista.azul { background: var(--azul-tinte); color: var(--tinte); }
+
+@media (min-width: 700px) { .mosaico-equipos { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); } }
+.mosaico small .mono { font-family: var(--mono); }
+.rejilla-campos.alineados { align-items: end; }
+/* Mantenimiento: lo validado, en verde; lo sin tipo se clasifica con los botones debajo del texto */
+.icono-lista.verde { background: var(--verde-tinte); color: var(--verde); }
+.lista-clasificar .clasificar { grid-column: 2 / -1; margin-top: 8px; justify-self: start; }
+@media (max-width: 599px) {
+  /* los cuatro en un renglón, también en el iPhone */
+  .lista-clasificar .clasificar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); justify-self: stretch; }
+  .lista-clasificar .clasificar button { padding-inline: 4px; }
+}
+.cuenta-grupo { white-space: normal; }
+.cifras.cuatro { grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 700px) { .cifras.cuatro { grid-template-columns: repeat(4, 1fr); } }
+.seccion > h2:has(.cuenta-grupo) { flex-wrap: wrap; row-gap: 2px; }
+@media (max-width: 599px) { .cuenta-grupo { flex-basis: 100%; } }
+/* «Validar»: en el teléfono va debajo del texto (no le quita ancho); en pantallas anchas, a la derecha */
+.lista-mant .validar { grid-column: 2 / -1; justify-self: start; margin-top: 8px; }
+@media (min-width: 700px) {
+  .lista-mant > li { grid-template-columns: auto 1fr auto auto; }
+  .lista-mant .validar { grid-column: 4; grid-row: 1; margin-top: 0; }
+}
+/* el selector de equipo: agregar lo que falte, al final de la lista */
+.opcion-equipo.nueva { color: var(--tinte); font-weight: 600; margin-top: 6px; border-top: 0.5px solid var(--linea); border-radius: 0 0 12px 12px; }
+.opcion-equipo.nueva .ico { width: 20px; height: 20px; flex: none; }

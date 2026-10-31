@@ -59,7 +59,8 @@ export function dialogo({ titulo, html = "", botones = [{ texto: "Listo", valor:
       velo.classList.add("cerrando");
       setTimeout(() => velo.remove(), 200);
     };
-    const tecla = (e) => e.key === "Escape" && cerrar(null);
+    // Escape cierra solo la hoja de encima (con una abierta sobre otra, la de abajo se queda)
+    const tecla = (e) => e.key === "Escape" && velo === [...document.querySelectorAll(".velo:not(.cerrando)")].at(-1) && cerrar(null);
     velo.addEventListener("click", async (e) => {
       if (e.target === velo) return cerrar(null);
       const b = e.target.closest("[data-i]");
@@ -112,6 +113,12 @@ export const ESTADOS = ["abierto", "en_proceso", "paro", "cerrado"];
 export const ICONO_ESTADO = { abierto: "hallazgos", en_proceso: "repetir", paro: "paro", cerrado: "bien" };
 export const PUNTO_ESTADO = { abierto: "rojo", en_proceso: "azul", paro: "morado", cerrado: "verde" };
 
+/** El tipo de daño de un hallazgo (Eduardo, 30-oct-2026): los de mantenimiento van a su reporte. */
+export const TIPOS_DANO = { mecanico: "Mecánico", electrico: "Eléctrico", logica: "Lógica", otro: "Otro" };
+export const DE_MANTENIMIENTO = new Set(["mecanico", "electrico", "logica"]);
+/** Los botones para elegir el tipo de daño (data-tipo-dano). */
+export const segmentoTipoDano = (actual, id = "tipo") => `<div class="campo"><span class="rotulo" id="r-${id}">Tipo de daño <small>(mecánico, eléctrico o de lógica van al reporte de mantenimiento)</small></span>
+  <div class="segmento" role="group" aria-labelledby="r-${id}">${Object.entries(TIPOS_DANO).map(([k, t]) => `<button type="button" data-tipo-dano="${k}" aria-pressed="${(actual ?? "") === k}">${t}</button>`).join("")}</div></div>`;
 export const marcaPrioridad = (p) => `<span class="marca ${p}">${icono(p === "baja" ? "na" : "hallazgos")}${TEXTO_PRIORIDAD[p] ?? p}</span>`;
 export const marcaEstado = (e) => `<span class="marca ${e}">${icono(ICONO_ESTADO[e] ?? "na")}${TEXTO_ESTADO[e] ?? e}</span>`;
 export const marcaSinEnviar = () => `<span class="marca sinenviar">${icono("nube")}Sin enviar</span>`;
@@ -130,21 +137,22 @@ export function marcaVence(insp, hoy) {
 
 export const persona = (d, id) => d.personas.find((p) => p.id === id);
 /** El nombre completo; lo asignado a todo un turno, «Turno A (todo el turno)». */
-export const nombre = (d, id) => (String(id ?? "").startsWith("turno:") ? `Turno ${id.slice(6)} (todo el turno)` : persona(d, id)?.nombre ?? "—");
+export const nombre = (d, id) => (id === "todos" ? "Todos" : String(id ?? "").startsWith("turno:") ? `${textoTurno(id.slice(6))} (todo el turno)` : persona(d, id)?.nombre ?? "—");
 /**
  * El nombre de pila («Pedro»); si otra persona activa empieza igual (los de ejemplo: «Jefe de turno A», «…B»), el
  * nombre completo. Lo de todo un turno, «Turno A». (Antes decía «Turno C» por la persona: con dos en el turno no se
  * sabía quién.)
  */
 export const nombreCorto = (d, id) => {
-  if (String(id ?? "").startsWith("turno:")) return `Turno ${id.slice(6)}`;
+  if (id === "todos") return "Todos";
+  if (String(id ?? "").startsWith("turno:")) return textoTurno(id.slice(6));
   const p = persona(d, id);
   if (!p) return "—";
   const pila = p.nombre.split(" ")[0];
   return d.personas.some((x) => x.id !== p.id && x.activo && x.nombre.split(" ")[0] === pila) ? p.nombre : pila;
 };
 /** Para elegir a alguien: «Turno A · Jefe de turno A» o el nombre. */
-export const etiquetaPersona = (p, yo) => `${p.turno ? `Turno ${p.turno} · ` : ""}${p.nombre}${p.id === yo?.id ? " (yo)" : ""}`;
+export const etiquetaPersona = (p, yo) => `${p.turno ? `${textoTurno(p.turno)} · ` : ""}${p.nombre}${p.id === yo?.id ? " (yo)" : ""}`;
 export const equipo = (d, id) => d.equipos.find((e) => e.id === id);
 export const plantilla = (d, id) => d.plantillas.find((p) => p.id === id);
 export const inicial = (n) => (n || "?").trim().charAt(0).toUpperCase();
@@ -164,6 +172,23 @@ export function queInspeccion(d, i) {
   return nombreEquipo(equipo(d, ids[0]));
 }
 export const esAdmin = (yo) => yo?.rol === "admin";
+/**
+ * Los turnos (Eduardo, 30-oct-2026: «solo existen 3»). Por dentro siguen siendo A, B y C (lo guardado no cambia); se
+ * muestran por número y su horario. Un turno D de antes se ve como «Turno D».
+ */
+export const TURNOS = [
+  { id: "A", nombre: "Turno 1", horas: "12 a. m. – 7 a. m.", desde: 0, hasta: 7 },
+  { id: "B", nombre: "Turno 2", horas: "7 a. m. – 5 p. m.", desde: 7, hasta: 17 },
+  { id: "C", nombre: "Turno 3", horas: "5 p. m. – 12 a. m.", desde: 17, hasta: 24 },
+];
+export const textoTurno = (t) => TURNOS.find((x) => x.id === String(t ?? "").toUpperCase())?.nombre ?? `Turno ${t}`;
+/** En qué turno cae una hora (en Panamá). */
+export const turnoDeHora = (iso) => { const h = new Date(Date.parse(iso) - 5 * 3600e3).getUTCHours(); return TURNOS.find((x) => h >= x.desde && h < x.hasta)?.id ?? null; };
+/**
+ * Laboratorio y curva de Tromp los llena ingeniería de procesos (Eduardo, 30-oct-2026: «él lo llena, los demás solo lo
+ * ven»): el administrador y quien tenga de cargo procesos, gerencia o coordinación. La curva de Tromp solo la ven ellos.
+ */
+export const esDeProceso = (p) => p?.rol === "admin" || /proceso|gerent|gerenc|coordin/i.test(p?.puesto ?? "");
 /** ¿Esta persona puede…? (editar, asignar, tareas, equipos, revisar). El administrador, todo. */
 export const puede = (yo, permiso) => yo?.rol === "admin" || (yo?.permisos ?? ["editar"]).includes(permiso);
 export const PERFILES = {

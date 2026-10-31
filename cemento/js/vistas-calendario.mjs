@@ -13,7 +13,7 @@ function eventos(d, yo, hoy, quien, fam) {
   const turno = yo.turno ? `turno:${yo.turno}` : "-";
   for (const i of d.inspecciones) {
     if (!enFiltro(fam, equiposDe(i))) continue;
-    if (quien === "mios" && i.asignada_a !== yo.id && i.asignada_a !== turno && i.hecha_por !== yo.id) continue;
+    if (quien === "mios" && i.asignada_a !== yo.id && i.asignada_a !== turno && i.asignada_a !== "todos" && i.hecha_por !== yo.id) continue;
     const clase = i.estado === "hecha" ? "hecha" : i.vence < hoy ? "atrasada" : "";
     poner(i.vence, { tipo: "insp", i, clase, texto: `${queInspeccion(d, i)} · ${plantilla(d, i.plantilla_id)?.nombre ?? ""}` });
   }
@@ -55,6 +55,27 @@ function agenda(d, yo, hoy, porDia, dia, admin) {
   return `<div class="agenda-dia${dia === hoy ? " es-hoy" : ""}"><h3>${esc(fechaDia(dia))}${dia === hoy ? " · hoy" : ""}</h3>
     ${filas.length ? `<ul class="lista">${filas.join("")}</ul>` : vacio("Nada este día.")}
     ${admin ? `<div style="margin-top:10px"><a class="boton chico" href="#/asignar?vence=${dia}">${icono("mas1")}Asignar para el ${esc(fechaCorta(dia))}</a></div>` : ""}</div>`;
+}
+
+/**
+ * El calendario del inicio (Eduardo, 30-oct-2026: «justo debajo venga el calendario»): la semana, con flechas, y debajo
+ * lo del día que se toque. «Ver el mes» abre el calendario entero.
+ */
+export function calendarioInicio(d, yo, hoy, quien, dia) {
+  const porDia = eventos(d, yo, hoy, quien, null);
+  const lunes = sumarDias(dia, -diaSemana(dia));
+  const dias = [0, 1, 2, 3, 4, 5, 6].map((k) => {
+    const x = sumarDias(lunes, k);
+    const xs = porDia.get(x) ?? [];
+    return `<button type="button" data-dia="${x}" class="${x === hoy ? "hoy" : ""}${x === dia ? " elegido" : ""}" aria-pressed="${x === dia}" aria-label="${esc(fechaDia(x))}: ${xs.length ? plural(xs.length, "cosa", "cosas") : "nada"}">
+      <small>${DIAS_CORTOS[k]}</small><span class="num-dia">${Number(x.slice(8))}</span><span class="puntos-dia">${xs.slice(0, 3).map((ev) => `<i class="${ev.clase}"></i>`).join("")}</span></button>`;
+  });
+  return `<section class="semana-tablero" aria-label="Calendario"><div class="cab"><b>${esc(nombreMes(dia))}</b>
+      <span class="flechas"><button type="button" class="boton-icono" data-semana="-7" aria-label="Semana anterior">${icono("flecha")}</button>
+        <button type="button" class="boton-icono" data-semana="7" aria-label="Semana siguiente">${icono("derecha")}</button></span>
+      <a href="#/calendario?${new URLSearchParams({ d: dia, q: quien })}">Ver el mes</a></div>
+      <div class="dias">${dias.join("")}</div></section>
+    ${agenda(d, yo, hoy, porDia, dia, puede(yo, "asignar"))}`;
 }
 
 export function vistaCalendario({ d, yo, hoy, query }) {

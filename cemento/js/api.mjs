@@ -266,7 +266,7 @@ function aplicarPendientes(d) {
     if (mh) {
       const h = d.hallazgos.find((x) => x.id === mh[1]);
       if (h) {
-        for (const k of ["estado", "prioridad", "accion", "responsable_id", "ot", "vence", "descripcion", "paro_id", "equipo_id"]) if (p.datos[k] !== undefined) h[k] = p.datos[k];
+        for (const k of ["estado", "prioridad", "accion", "responsable_id", "ot", "vence", "descripcion", "paro_id", "equipo_id", "tipo"]) if (p.datos[k] !== undefined) h[k] = p.datos[k];
         if (p.datos.estado && p.datos.estado !== "paro") h.paro_id = null;
         if (p.datos.estado === "cerrado") h.cerrado ??= p.datos.fecha;
         if (p.datos.estado && p.datos.estado !== "cerrado") h.cerrado = null;

@@ -3,7 +3,7 @@
 // funciona sin señal (entra a la cola). Se le asignan a una persona o a un turno entero.
 import { esc, icono, fechaCorta, fechaHora, plural, diasEntre, normal, numeroHallazgo, sumarDias } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, confirmar, vacio, persona, nombre, nombreCorto, avatar, esAdmin, puede, etiquetaPersona, galeria, botonesMedio, marcaSinEnviar, TEXTO_PRIORIDAD } from "./ui.mjs";
+import { aviso, confirmar, vacio, persona, nombre, nombreCorto, avatar, esAdmin, puede, etiquetaPersona, galeria, botonesMedio, marcaSinEnviar, TEXTO_PRIORIDAD, textoTurno, TURNOS } from "./ui.mjs";
 import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, campoEquipo } from "./componentes.mjs";
 import { prepararArchivo } from "./medios.mjs";
 
@@ -11,7 +11,7 @@ export const TEXTO_ESTADO_TAREA = { pendiente: "Por hacer", en_curso: "En curso"
 const CHECK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/></svg>`;
 
 /** ¿Es mía? (a mí o a mi turno) */
-export const esMia = (t, yo) => t.asignada_a === yo.id || (yo.turno && t.asignada_a === `turno:${yo.turno}`);
+export const esMia = (t, yo) => t.asignada_a === yo.id || t.asignada_a === "todos" || (yo.turno && t.asignada_a === `turno:${yo.turno}`);
 /** ¿La puede cambiar? Las suyas (a él, a su turno, sin asignar o que pidió) con «editar»; las de otros, con «tareas». */
 export const puedeTocar = (yo, t) => puede(yo, "editar") && (!t || !t.asignada_a || esMia(t, yo) || t.creada_por === yo.id || puede(yo, "tareas"));
 /** «Turno A», «Eduardo» o «Sin asignar». */
@@ -28,7 +28,8 @@ export function opcionesQuien(d, yo, actual, { elegir = false } = {}) {
   const turnos = [...new Set(hacen.filter((p) => p.turno).map((p) => p.turno))].sort()
     .filter((t) => aOtros || t === yo.turno || actual === `turno:${t}`);
   return `${elegir ? `<option value="" ${actual ? "" : "selected"} disabled>Elegir a quién…</option>` : ""}<optgroup label="Personas">${hacen.filter((p) => aOtros || p.id === yo.id || p.id === actual).map((p) => `<option value="${esc(p.id)}" ${p.id === actual ? "selected" : ""}>${esc(etiquetaPersona(p, yo))}</option>`).join("")}</optgroup>
-    ${turnos.length ? `<optgroup label="Todo un turno">${turnos.map((t) => `<option value="turno:${esc(t)}" ${actual === `turno:${t}` ? "selected" : ""}>Turno ${esc(t)} (le toca a quien esté)</option>`).join("")}</optgroup>` : ""}`;
+    ${aOtros ? `<optgroup label="Todos"><option value="todos" ${actual === "todos" ? "selected" : ""}>Todos (la hace el primero que pueda)</option></optgroup>` : ""}
+    ${turnos.length ? `<optgroup label="Todo un turno">${turnos.map((t) => `<option value="turno:${esc(t)}" ${actual === `turno:${t}` ? "selected" : ""}>${esc(textoTurno(t))} · ${esc(TURNOS.find((x) => x.id === t)?.horas ?? "")} (le toca a quien esté)</option>`).join("")}</optgroup>` : ""}`;
 }
 
 export function filaTarea(d, t, hoy, { mostrarQuien = true } = {}) {

@@ -3,7 +3,7 @@
 // molino, el d50 y el bypass del separador al lado (para cruzarlos, como pidió Eduardo). Registrar funciona sin señal.
 import { esc, icono, fechaHora, numero, plural, leerNumero, conPunto } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, dialogo, confirmar, vacio, nombre, nombreCorto, esAdmin, puede, marcaSinEnviar } from "./ui.mjs";
+import { aviso, dialogo, confirmar, vacio, nombre, nombreCorto, esAdmin, puede, esDeProceso, marcaSinEnviar } from "./ui.mjs";
 import { nombreCompleto } from "./componentes.mjs";
 import { lineaTiempo, montarRotulos } from "./graficas.mjs";
 import { haciaFuera } from "./tendencia.mjs";
@@ -47,12 +47,12 @@ export function vistaLaboratorio({ d, yo, query }) {
     titulo: "Laboratorio",
     html: `<div class="cabeza"><div><h1>Laboratorio</h1>
         <p class="bajada">${muestras.length ? `${plural(muestras.length, "muestra", "muestras")} de ${esc(nombreCompleto(d, eq))}; la última, ${esc(conPunto(fechaHora(ultima.en)))}` : `Sin muestras de ${esc(nombreCompleto(d, eq))} todavía.`}</p></div>
-        ${puede(yo, "editar") ? `<div class="acciones"><button class="boton primario" data-registrar>${icono("laboratorio")}Registrar resultado</button></div>` : ""}</div>
+        ${esDeProceso(yo) && puede(yo, "editar") ? `<div class="acciones"><button class="boton primario" data-registrar>${icono("laboratorio")}Registrar resultado</button></div>` : ""}</div>
       <nav class="filtros" aria-label="Molino">${ms.map((e) => `<a href="#/laboratorio?m=${encodeURIComponent(e.id)}" ${e.id === eq ? 'aria-current="true"' : ""}>${esc(e.tag || e.nombre)}</a>`).join("")}</nav>
       <div class="kpis-app">${ps.map(kpi).join("")}</div>
       <div class="graficas">${ps.map((p) => `<div class="grafica"><h3>${esc(p.nombre)} <small>${esc(p.unidad ?? "")} · ${esc(rango(p))}</small></h3>
         ${lineaTiempo({ series: [{ nombre: p.nombre, puntos: muestras.filter((x) => x.valores?.[p.id] != null).slice(-40).map((x) => ({ t: Date.parse(x.en), v: x.valores[p.id] })) }], min: p.min, max: p.max, unidad: p.unidad, decimales: 2 })}</div>`).join("")}
-        ${tromps.length ? `<div class="grafica"><h3>Separador: corte d50 <small>µm · curva de Tromp</small></h3>
+        ${tromps.length && esDeProceso(yo) ? `<div class="grafica"><h3>Separador: corte d50 <small>µm · curva de Tromp</small></h3>
           ${lineaTiempo({ series: [{ nombre: "d50", puntos: tromps.filter((x) => x.r.d50 != null).map((x) => ({ t: Date.parse(x.en), v: x.r.d50 })) }], unidad: "µm" })}
           <p class="ayuda" style="margin:4px 2px 6px">Bypass del último muestreo: <b>${numero((tromps.at(-1).r.bypass ?? 0) * 100, 1)} %</b> · <a href="#/tromp">Ver la curva</a></p></div>` : ""}
       </div>
@@ -61,7 +61,7 @@ export function vistaLaboratorio({ d, yo, query }) {
           ${tabla.map((x) => `<tr><td>${esc(fechaHora(x.en))}${x._sinEnviar ? ` ${marcaSinEnviar()}` : ""}${x.nota ? `<br><small style="color:var(--tinta-3)">${esc(x.nota)}</small>` : ""}</td>
             ${ps.map((p) => { const v = x.valores?.[p.id]; return `<td class="n" style="${v != null && fuera(p, v) ? "color:var(--rojo);font-weight:700" : ""}">${v == null ? "" : numero(v, 2)}</td>`; }).join("")}
             <td>${esc(nombreCorto(d, x.por))}</td>
-            <td>${puede(yo, "editar") && (x.por === yo.id || esAdmin(yo)) && !x._sinEnviar ? `<button type="button" class="boton-icono" data-borrar-lab="${esc(x.id)}" aria-label="Borrar la muestra del ${esc(fechaHora(x.en))}">${icono("basura")}</button>` : ""}</td></tr>`).join("")}</tbody></table></div>` : vacio(puede(yo, "editar") ? "Registra la primera muestra." : "Todavía no hay muestras.")}
+            <td>${esDeProceso(yo) && (x.por === yo.id || esAdmin(yo)) && !x._sinEnviar ? `<button type="button" class="boton-icono" data-borrar-lab="${esc(x.id)}" aria-label="Borrar la muestra del ${esc(fechaHora(x.en))}">${icono("basura")}</button>` : ""}</td></tr>`).join("")}</tbody></table></div>` : vacio(esDeProceso(yo) ? "Registra la primera muestra." : "Todavía no hay muestras.")}
       </section>`,
     montar(m) {
       montarRotulos(m);
@@ -74,7 +74,7 @@ export function vistaLaboratorio({ d, yo, query }) {
         catch (x) { aviso(x.sinRed ? "Para borrar hace falta señal." : x.message, { error: true }); }
       });
       // desde «Crear»: abre el registro de una vez (y se quita del enlace, para que no se vuelva a abrir)
-      if (query.get("registrar") && puede(yo, "editar")) {
+      if (query.get("registrar") && esDeProceso(yo)) {
         history.replaceState(null, "", `#/laboratorio${query.get("m") ? `?m=${encodeURIComponent(query.get("m"))}` : ""}`);
         registrar(d, eq, ps);
       }

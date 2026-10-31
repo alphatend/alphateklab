@@ -4,8 +4,8 @@
 import "./tema.mjs";
 import { esc, icono, iconoNav, hoyPanama, plural, fechaHora, haceCuanto, conPunto } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, confirmar, dialogo, vacio, persona, nombre, avatar, esAdmin, puede, cerrarHojas, nombrePerfil } from "./ui.mjs";
-import { vistaTablero } from "./vistas-tablero.mjs";
+import { aviso, confirmar, dialogo, vacio, persona, nombre, avatar, esAdmin, puede, esDeProceso, cerrarHojas, nombrePerfil } from "./ui.mjs";
+import { vistaTablero, vistaTareasTablero } from "./vistas-tablero.mjs";
 import { vistaCalendario } from "./vistas-calendario.mjs";
 import { vistaInspecciones, vistaInspeccion, vistaAsignar } from "./vistas-inspecciones.mjs";
 import { vistaHallazgos, vistaHallazgo, vistaNuevoHallazgo } from "./vistas-hallazgos.mjs";
@@ -14,12 +14,13 @@ import { vistaColectores } from "./vistas-colectores.mjs";
 import { vistaReportes, vistaReporteInspeccion } from "./vistas-reportes.mjs";
 import { vistaTromp } from "./vistas-tromp.mjs";
 import { vistaAjustes, vistaUsuarios } from "./vistas-ajustes.mjs";
-import { vistaTareas, vistaTarea } from "./vistas-tareas.mjs";
+import { vistaTarea } from "./vistas-tareas.mjs";
 import { vistaTurno, vistaEntrega, vistaNuevaEntrega } from "./vistas-turno.mjs";
 import { vistaParos, vistaParo } from "./vistas-paros.mjs";
 import { vistaLaboratorio } from "./vistas-laboratorio.mjs";
 import { vistaIndicadores } from "./vistas-indicadores.mjs";
 import { vistaPlanta, vistaEscanear, vistaQr, vistaEtiquetas } from "./vistas-planta.mjs";
+import { vistaMantenimiento } from "./vistas-mantenimiento.mjs";
 import { usarDatos } from "./componentes.mjs";
 
 const raiz = document.getElementById("app");
@@ -36,10 +37,11 @@ const NAV = [
     { ruta: "equipos", texto: "Equipos", icono: "equipos" },
     { ruta: "colectores", texto: "Colectores", icono: "colector" },
     { ruta: "paros", texto: "Paros", icono: "paros" },
+    { ruta: "mantenimiento", texto: "Mantenimiento", icono: "herramienta" },
   ] },
   { grupo: "Proceso", items: [
     { ruta: "laboratorio", texto: "Laboratorio", icono: "laboratorio" },
-    { ruta: "tromp", texto: "Curva de Tromp", icono: "tromp" },
+    { ruta: "tromp", texto: "Curva de Tromp", icono: "tromp", si: esDeProceso },
   ] },
   { grupo: "Informes", items: [
     { ruta: "indicadores", texto: "Indicadores", icono: "indicadores" },
@@ -49,9 +51,7 @@ const NAV = [
 const PESTANAS = [
   { ruta: "tablero", texto: "Tablero", icono: "tablero" },
   { ruta: "tareas", texto: "Tareas", icono: "tareas" },
-  { ruta: "escanear", texto: "Escanear", icono: "escanear", clase: "escanear" },
   { ruta: "planta", texto: "Planta", icono: "planta" },
-  { ruta: "mas", texto: "Más", icono: "mas" },
 ];
 const VISTAS = {
   tablero: vistaTablero,
@@ -73,8 +73,8 @@ const VISTAS = {
   usuarios: vistaUsuarios,
   avisos: vistaAvisos,
   pendientes: vistaPendientes,
-  mas: vistaMas,
-  tareas: vistaTareas,
+  mas: () => ({ titulo: "Planta", html: "", montar: () => { location.replace("#/planta"); } }), // «Más» ya no existe (30-oct-2026)
+  tareas: vistaTareasTablero,
   tarea: vistaTarea,
   turno: vistaTurno,
   entrega: vistaEntrega,
@@ -84,6 +84,7 @@ const VISTAS = {
   laboratorio: vistaLaboratorio,
   indicadores: vistaIndicadores,
   planta: vistaPlanta,
+  mantenimiento: vistaMantenimiento,
   escanear: vistaEscanear,
   qr: vistaQr,
   etiquetas: vistaEtiquetas,
@@ -92,11 +93,14 @@ const VISTAS = {
 const SECCION = {
   inicio: "tablero", inspeccion: "inspecciones", asignar: "inspecciones", hallazgo: "hallazgos", "nuevo-hallazgo": "hallazgos",
   plantilla: "equipos", reporte: "reportes", usuarios: "ajustes", tarea: "tareas", entrega: "turno", "nueva-entrega": "turno", paro: "paros",
-  etiquetas: "equipos", qr: "escanear",
+  etiquetas: "equipos", qr: "planta", escanear: "planta",
 };
 // en el teléfono, qué pestaña se marca para las secciones que no tienen la suya
-const EN_PLANTA = new Set(["equipos", "colectores", "paros", "laboratorio", "tromp", "planta"]);
-const EN_MAS = new Set(["inspecciones", "hallazgos", "reportes", "indicadores", "turno", "calendario", "ajustes", "avisos", "pendientes", "mas"]);
+// sin «Más» (Eduardo, 30-oct-2026): lo de inspecciones y hallazgos es de Tareas; lo de la planta, de Planta; el calendario,
+// los avisos y la configuración, del inicio
+const EN_PLANTA = new Set(["equipos", "colectores", "paros", "laboratorio", "tromp", "planta", "turno", "reportes", "indicadores", "mantenimiento"]);
+const EN_TAREAS = new Set(["tareas", "inspecciones", "hallazgos"]);
+const EN_INICIO = new Set(["tablero", "calendario", "ajustes", "avisos", "pendientes"]);
 
 function ruta() {
   const [camino, consulta = ""] = location.hash.replace(/^#\/?/, "").split("?");
@@ -196,14 +200,14 @@ export const ir = (hash) => {
 };
 
 function armarArmazon() {
-  const { d } = contexto();
+  const { d, yo } = contexto();
   const logo = d.ajustes?.logo;
   raiz.innerHTML = `<div class="armazon">
     <aside class="riel vidrio" aria-label="Navegación">
       <div class="marca-riel">${logo ? `<img src="${esc(logo)}" alt="">` : ""}<div><div class="nombre-app">${esc(nombreApp())}</div>
         <div class="sub">${esc(d.ajustes?.planta || d.ajustes?.empresa || "Inspecciones y hallazgos")}</div></div></div>
       <button type="button" class="crear-riel" data-crear hidden>${icono("mas1")}<span>Crear</span><kbd>N</kbd></button>
-      <nav>${NAV.map((g) => `${g.grupo ? `<div class="grupo-nav">${g.grupo}</div>` : ""}${g.items.map((n) => `<a href="#/${n.ruta}" data-seccion="${n.ruta}">${iconoNav(n.icono)}<span>${n.texto}</span></a>`).join("")}`).join("")}</nav>
+      <nav>${NAV.map((g) => `${g.grupo ? `<div class="grupo-nav">${g.grupo}</div>` : ""}${g.items.filter((n) => !n.si || n.si(yo)).map((n) => `<a href="#/${n.ruta}" data-seccion="${n.ruta}">${iconoNav(n.icono)}<span>${n.texto}</span></a>`).join("")}`).join("")}</nav>
       <div class="pie-riel">
         <nav><a href="#/avisos" data-seccion="avisos">${iconoNav("campana")}<span>Avisos</span></a>
           <a href="#/ajustes" data-seccion="ajustes">${iconoNav("ajustes")}<span>Ajustes</span></a></nav>
@@ -235,7 +239,7 @@ function opcionesCrear(yo, r = ruta()) {
     puede(yo, "asignar") && { icono: "inspecciones", texto: "Asignar inspección", detalle: "A una persona o a un turno", ir: con("#/asignar"), color: "indigo" },
     puede(yo, "editar") && { icono: "paros", texto: "Paro", detalle: "Un equipo que paró", ir: con("#/paro/nuevo"), color: "naranja" },
     puede(yo, "editar") && { icono: "turno", texto: "Entregar turno", detalle: "Lo que pasó y lo pendiente", ir: "#/nueva-entrega", color: "verde" },
-    puede(yo, "editar") && { icono: "laboratorio", texto: "Resultado de laboratorio", detalle: "Blaine, residuo, humedad…", ir: "#/laboratorio?registrar=1", color: "morado" },
+    esDeProceso(yo) && puede(yo, "editar") && { icono: "laboratorio", texto: "Resultado de laboratorio", detalle: "Blaine, residuo, humedad…", ir: "#/laboratorio?registrar=1", color: "morado" },
   ].filter(Boolean);
 }
 
@@ -270,23 +274,22 @@ function actualizarArmazon(r) {
   const actual = SECCION[r.nombre] ?? r.nombre;
   document.querySelectorAll("[data-seccion]").forEach((a) => {
     const enPestanas = !!a.closest(".pestanas");
-    const es = a.dataset.seccion === actual || (enPestanas && ((a.dataset.seccion === "mas" && EN_MAS.has(actual)) || (a.dataset.seccion === "planta" && EN_PLANTA.has(actual))));
+    const es = a.dataset.seccion === actual || (enPestanas && ((a.dataset.seccion === "tareas" && EN_TAREAS.has(actual)) || (a.dataset.seccion === "planta" && EN_PLANTA.has(actual)) || (a.dataset.seccion === "tablero" && EN_INICIO.has(actual))));
     if (es) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
   // globos: las inspecciones vencidas o de hoy que me tocan; los avisos sin ver
   const turnoMio = yo.turno ? `turno:${yo.turno}` : "-";
-  const mias = d.inspecciones.filter((i) => i.estado === "pendiente" && (i.asignada_a === yo.id || i.asignada_a === turnoMio) && i.vence <= hoy).length;
+  const mias = d.inspecciones.filter((i) => i.estado === "pendiente" && (i.asignada_a === yo.id || (i.asignada_a === turnoMio || i.asignada_a === "todos")) && i.vence <= hoy).length;
   const nuevos = avisosNuevos(d);
   const globo = (sel, n, etiqueta) => document.querySelectorAll(sel).forEach((a) => {
     a.querySelector(".globo")?.remove();
     if (n) a.insertAdjacentHTML("beforeend", `<span class="globo" aria-label="${etiqueta}">${n > 99 ? "99+" : n}</span>`);
   });
   globo('[data-seccion="tablero"]', mias, `${mias} para hoy o atrasadas`);
-  const tareasHoy = (d.tareas ?? []).filter((t) => t.estado !== "hecha" && (t.asignada_a === yo.id || t.asignada_a === turnoMio) && t.vence && t.vence <= hoy).length;
+  const tareasHoy = (d.tareas ?? []).filter((t) => t.estado !== "hecha" && (t.asignada_a === yo.id || (t.asignada_a === turnoMio || t.asignada_a === "todos")) && t.vence && t.vence <= hoy).length;
   globo('[data-seccion="tareas"]', tareasHoy, `${tareasHoy} tareas para hoy o atrasadas`);
   globo('[data-seccion="avisos"]', nuevos, `${nuevos} avisos nuevos`);
-  globo('.pestanas [data-seccion="mas"]', nuevos, `${nuevos} avisos nuevos`);
   const crea = opcionesCrear(yo, r).length > 0;
   document.querySelectorAll("[data-crear]").forEach((b) => { b.hidden = !crea; });
   document.body.classList.toggle("con-crear", crea);
@@ -396,36 +399,6 @@ function dibujarCambiarClave() {
 
 // ------------------------------------------------------------------------------- más (teléfono)
 
-function vistaMas({ d, yo }) {
-  const nuevos = avisosNuevos(d);
-  const fila = (href, ic, color, titulo, detalle = "", extra = "") => `<li><a class="fila con-icono" href="${href}">
-      <span class="icono-fila ${color}">${icono(ic)}</span><span class="titulo">${titulo}</span>
-      ${detalle ? `<span class="detalle">${detalle}</span>` : ""}<span class="lado horizontal">${extra}${icono("derecha", "ico chevron")}</span></a></li>`;
-  const pend = d.inspecciones.filter((i) => i.estado === "pendiente").length;
-  const abiertos = d.hallazgos.filter((h) => h.estado !== "cerrado").length;
-  return {
-    titulo: "Más",
-    html: `<div class="cabeza"><div><h1>Más</h1></div></div>
-      <ul class="lista"><li><a class="fila con-icono" href="#/ajustes">${avatar(yo)}<span class="titulo">${esc(yo.nombre)}</span>
-        <span class="detalle">${esc(yo.puesto || nombrePerfil(yo))} · ${esc(yo.usuario)}</span><span class="lado horizontal">${icono("derecha", "ico chevron")}</span></a></li></ul>
-      <section class="seccion"><ul class="lista">
-        ${fila("#/turno", "turno", "", "Entrega de turno", (d.entregas ?? []).some((e) => !e.recibida_por && e.de !== yo.id) ? "Hay una por recibir" : "Lo que deja el que sale")}
-        ${fila("#/calendario", "calendario", "rojo", "Calendario", "Inspecciones, tareas y paros")}
-        ${fila("#/inspecciones", "inspecciones", "", "Inspecciones", `${pend} pendientes`)}
-        ${fila("#/hallazgos", "hallazgos", "naranja", "Hallazgos", `${abiertos} abiertos`)}
-      </ul></section>
-      <section class="seccion"><ul class="lista">
-        ${fila("#/indicadores", "indicadores", "verde", "Indicadores", "Cumplimiento, cierre y disponibilidad")}
-        ${fila("#/reportes", "reportes", "verde", "Reportes", "Por equipo, PDF, Excel y correo")}
-      </ul></section>
-      <section class="seccion"><ul class="lista">
-        ${fila("#/avisos", "campana", "rojo", "Avisos", "", nuevos ? `<span class="marca alta">${nuevos} nuevos</span>` : "")}
-        ${fila("#/pendientes", "nube", "gris", "Por enviar", api.cola.pendientes.length ? plural(api.cola.pendientes.length, "cosa en cola", "cosas en cola") : "Todo enviado")}
-        ${fila("#/ajustes", "ajustes", "gris", "Ajustes", "Apariencia, notificaciones, calendario")}
-      </ul></section>`,
-  };
-}
-
 // ------------------------------------------------------------------------------- avisos (la bandeja)
 
 function vistaAvisos({ d, hoy }) {
@@ -466,7 +439,7 @@ function vistaPendientes({ d }) {
   const p = api.cola.pendientes, r = api.cola.rechazados;
   return {
     titulo: "Por enviar",
-    atras: "#/mas",
+    atras: "#/tablero",
     html: `<div class="cabeza"><div><h1>Por enviar</h1>
         <p class="bajada">Lo que se hace sin señal queda guardado en este aparato y se envía solo, en orden, cuando vuelve la conexión.
         ${api.ultimaCarga() ? `Los datos que ves se bajaron el ${esc(conPunto(fechaHora(api.ultimaCarga())))}` : ""}</p></div>

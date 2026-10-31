@@ -78,7 +78,7 @@ export function vistaIndicadores({ d, yo, hoy, query }) {
   const cl = (v, bien, regular) => (v == null ? "" : v >= bien ? "bueno" : v >= regular ? "regular" : "malo");
   return {
     titulo: "Indicadores",
-    atras: matchMedia("(max-width: 899px)").matches ? "#/mas" : null,
+    atras: matchMedia("(max-width: 899px)").matches ? "#/planta" : null,
     html: `<div class="cabeza"><div><h1>Indicadores</h1>
         <p class="bajada">${esc(eq ? nombreCompleto(d, eq) : d.ajustes?.planta || "Toda la planta")} · del ${esc(fechaCorta(desde))} a hoy. Para imprimirlo: <a href="#/reportes?plantilla=ejecutivo&p=mes">reporte ejecutivo</a>.</p></div></div>
       ${barraFiltros(d, query, { placeholder: "Buscar", extra: `<nav class="filtros" style="margin:0">${[7, 30, 90].map((n) => `<a href="${enlace({ dias: n })}" ${dias === n ? 'aria-current="true"' : ""}>${n} días</a>`).join("")}</nav>` }).replace('<div class="buscador">', '<div class="buscador" hidden>')}

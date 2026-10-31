@@ -1,11 +1,13 @@
 // Piezas de la interfaz con comportamiento propio, que usan varias pantallas:
-// - el selector de equipo: una hoja con búsqueda (área › equipo › subequipo; los colectores aparte), porque con
-//   subequipos y colectores ya son decenas y un <select> largo no sirve en el teléfono;
+// - el selector de equipo: una hoja con búsqueda (equipo › subequipo; los colectores aparte), porque con subequipos y
+//   colectores ya son decenas y un <select> largo no sirve en el teléfono. En un formulario, quien edita equipos agrega
+//   ahí mismo el equipo o el subequipo que falte (Eduardo, 31-oct-2026: «que él mismo lo pueda crear ahí»);
 // - la barra de filtros (buscar y equipo; Eduardo: «que pueda filtrar por equipos y una parte de buscar»);
 // - la firma con el dedo (al terminar una inspección);
 // - el escáner de QR (abre el equipo, o marca «en sitio» la inspección que se está llenando).
 import { esc, icono, normal } from "./util.mjs";
-import { dialogo, aviso } from "./ui.mjs";
+import { dialogo, aviso, puede, persona } from "./ui.mjs";
+import * as api from "./api.mjs";
 
 // ------------------------------------------------------------------------------- equipos
 
@@ -23,25 +25,29 @@ export const familia = (d, id) => (id ? new Set([id, ...d.equipos.filter((e) => 
 /** ¿Algo de estos equipos cae en el filtro? (una ronda tiene varios) */
 export const enFiltro = (fam, ...ids) => !fam || ids.flat().some((x) => fam.has(x));
 
-/** Los equipos agrupados para elegir: por área (con sus subequipos debajo) y los colectores al final. */
+/** Los equipos para elegir, con sus subequipos debajo (sin títulos por área, como en Equipos), y los colectores al final. */
 function grupos(d, { incluirArchivados = false } = {}) {
   const vivos = d.equipos.filter((e) => incluirArchivados || e.activo);
   const arriba = vivos.filter((e) => !e.padre_id);
   const hijos = (id) => vivos.filter((e) => e.padre_id === id).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
-  const porArea = new Map();
-  for (const e of arriba.filter((x) => x.tipo !== "colector")) (porArea.get(e.area || "Sin área") ?? porArea.set(e.area || "Sin área", []).get(e.area || "Sin área")).push(e);
-  const salida = [...porArea.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([area, es]) => ({ titulo: area, filas: es.flatMap((e) => [{ e, nivel: 0 }, ...hijos(e.id).map((h) => ({ e: h, nivel: 1 }))]) }));
+  const procesos = arriba.filter((x) => x.tipo !== "colector").sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre));
+  const salida = procesos.length ? [{ titulo: "Equipos", filas: procesos.flatMap((e) => [{ e, nivel: 0 }, ...hijos(e.id).map((h) => ({ e: h, nivel: 1 }))]) }] : [];
   const cols = arriba.filter((x) => x.tipo === "colector").sort((a, b) => (a.tag || a.nombre).localeCompare(b.tag || b.nombre, "es", { numeric: true }));
   if (cols.length) salida.push({ titulo: "Colectores", filas: cols.flatMap((e) => [{ e, nivel: 0 }, ...hijos(e.id).map((h) => ({ e: h, nivel: 1 }))]) });
   return salida;
 }
 
+/** ¿La persona que usa la app puede agregar equipos? */
+const editaEquipos = (d) => !!d?.yo && puede({ ...persona(d, d.yo.id), ...d.yo }, "equipos");
+
 /**
  * La hoja para elegir un equipo. Devuelve su id, "" si se eligió «Todos» (con `todos`), o null si se cerró.
- * `soloArriba`: sin subequipos (para elegir el padre de un subequipo).
+ * `soloArriba`: sin subequipos (para elegir el padre de un subequipo). `crear`: abajo va «Agregar un equipo o
+ * subequipo» (para quien edita equipos); si lo toca, devuelve { nuevo: lo que estaba buscando }.
  */
-export function elegirEquipo(d, { titulo = "Elegir equipo", actual = null, todos = null, soloArriba = false } = {}) {
+export function elegirEquipo(d, { titulo = "Elegir equipo", actual = null, todos = null, soloArriba = false, crear = false } = {}) {
   let elegido = null;
+  const conCrear = crear && !soloArriba && editaEquipos(d);
   const html = `<div class="buscador" style="margin-top:-4px">${icono("buscar")}<input type="search" data-q placeholder="Buscar por nombre, tag o área" autocomplete="off" aria-label="Buscar equipo"></div>
     <div class="selector-equipos" data-lista>${pintar("")}</div>`;
   function pintar(q) {
@@ -52,7 +58,8 @@ export function elegirEquipo(d, { titulo = "Elegir equipo", actual = null, todos
       ${gs.length ? gs.map((g) => `<div class="grupo-equipos">${esc(g.titulo)}</div>${g.filas.map(({ e, nivel }) => `<button type="button" class="opcion-equipo${nivel ? " hijo" : ""}${e.id === actual ? " elegida" : ""}" data-id="${esc(e.id)}">
         ${nivel ? `<span class="rama" aria-hidden="true"></span>` : ""}${e.tag ? `<span class="tag">${esc(e.tag)}</span>` : ""}<span class="nombre">${esc(e.nombre)}</span>
         ${e.id === actual ? icono("bien", "ico marca-elegida") : ""}</button>`).join("")}`).join("")
-      : `<p class="ayuda" style="padding:18px 8px">Ningún equipo con «${esc(q)}».</p>`}`;
+      : `<p class="ayuda" style="padding:18px 8px">Ningún equipo con «${esc(q)}».</p>`}
+      ${conCrear ? `<button type="button" class="opcion-equipo nueva" data-nuevo>${icono("mas1")}<span class="nombre">${q.trim() ? `Agregar «${esc(q.trim())}»` : "Agregar un equipo o subequipo"}</span></button>` : ""}`;
   }
   return dialogo({
     titulo, html, ancho: false,
@@ -73,6 +80,7 @@ export function elegirEquipo(d, { titulo = "Elegir equipo", actual = null, todos
         if (b) { elegido = b.dataset.id; cerrar(elegido); }
       });
       lista.addEventListener("click", (e) => {
+        if (e.target.closest("[data-nuevo]")) return cerrar({ nuevo: q.value.trim() });
         const b = e.target.closest("[data-id]");
         if (b) { elegido = b.dataset.id; cerrar(elegido); }
       });
@@ -85,9 +93,9 @@ export function elegirEquipo(d, { titulo = "Elegir equipo", actual = null, todos
  * Un campo de formulario para elegir equipo: un botón que muestra el elegido y un <input type=hidden> con el id. Al
  * elegir, el input dispara «change» (la vista lo escucha como cualquier otro campo).
  */
-export function campoEquipo(d, { id, valor = "", titulo = "Elegir equipo", placeholder = "Elegir…", soloArriba = false, todos = null } = {}) {
+export function campoEquipo(d, { id, valor = "", titulo = "Elegir equipo", placeholder = "Elegir…", soloArriba = false, todos = null, crear = true } = {}) {
   return `<input type="hidden" id="${esc(id)}" name="${esc(id)}" value="${esc(valor ?? "")}">
-    <button type="button" class="campo-equipo" data-campo-equipo="${esc(id)}" data-titulo="${esc(titulo)}" data-solo-arriba="${soloArriba ? "1" : ""}" data-todos="${esc(todos ?? "")}"
+    <button type="button" class="campo-equipo" data-campo-equipo="${esc(id)}" data-titulo="${esc(titulo)}" data-solo-arriba="${soloArriba ? "1" : ""}" data-todos="${esc(todos ?? "")}" data-crear="${crear ? "1" : ""}"
       data-placeholder="${esc(placeholder)}" aria-label="${esc(titulo)}">${icono("equipos")}<span>${valor ? esc(nombreCompleto(d, valor)) : `<span class="vacio-campo">${esc(placeholder)}</span>`}</span>${icono("abajo", "ico flechita")}</button>`;
 }
 let datosCampos = null; // los datos con que se pinta el campo (los pone la app al dibujar)
@@ -96,8 +104,17 @@ document.addEventListener("click", async (e) => {
   const b = e.target.closest?.("[data-campo-equipo]");
   if (!b || !datosCampos) return;
   const input = document.getElementById(b.dataset.campoEquipo);
-  const r = await elegirEquipo(datosCampos, { titulo: b.dataset.titulo, actual: input.value || null, soloArriba: !!b.dataset.soloArriba, todos: b.dataset.todos || null });
+  let r = await elegirEquipo(datosCampos, { titulo: b.dataset.titulo, actual: input.value || null, soloArriba: !!b.dataset.soloArriba, todos: b.dataset.todos || null, crear: !!b.dataset.crear });
   if (r === null) return;
+  if (typeof r === "object") {
+    // agregar el equipo o subequipo que falta, y dejarlo elegido (si es un subequipo, sugiere el equipo que ya estaba)
+    const { editarEquipo } = await import("./vistas-equipos.mjs");
+    const sugerido = input.value ? (equipoDe(datosCampos, input.value)?.padre_id ?? input.value) : null;
+    const nuevo = await editarEquipo(api.obtener() ?? datosCampos, { tipo: "proceso", nombre: r.nuevo, sugerirPadre: sugerido });
+    if (!nuevo) return;
+    datosCampos = api.obtener() ?? datosCampos;
+    r = nuevo;
+  }
   input.value = r;
   b.querySelector("span").innerHTML = r ? esc(nombreCompleto(datosCampos, r)) : `<span class="vacio-campo">${esc(b.dataset.todos || b.dataset.placeholder)}</span>`;
   input.dispatchEvent(new Event("change", { bubbles: true }));

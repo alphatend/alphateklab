@@ -2,7 +2,7 @@
 // para el administrador, la empresa (nombre y logo de los reportes), los usuarios, mandar avisos y los datos.
 import { esc, icono, plural, hoyPanama, normal, leerNumero } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, dialogo, confirmar, vacio, avatar, esAdmin, etiquetaPersona, PERFILES, PERMISOS, perfilDe, nombrePerfil } from "./ui.mjs";
+import { aviso, dialogo, confirmar, vacio, avatar, esAdmin, etiquetaPersona, PERFILES, PERMISOS, perfilDe, nombrePerfil, textoTurno, TURNOS } from "./ui.mjs";
 import { preferencia, elegir as elegirTema } from "./tema.mjs";
 import { cerrarSesion } from "./app.mjs";
 import { excelDe, alcanceDe, periodo, entregarArchivo } from "./vistas-reportes.mjs";
@@ -21,10 +21,10 @@ export function vistaAjustes({ d, yo }) {
   const version = document.querySelector('meta[name="version"]')?.content ?? "local";
   return {
     titulo: "Ajustes",
-    atras: matchMedia("(max-width: 899px)").matches ? "#/mas" : null,
+    atras: matchMedia("(max-width: 899px)").matches ? "#/tablero" : null,
     html: `<div class="cabeza"><div><h1>Ajustes</h1></div></div>
       <div class="ajustes">
-      <div class="lista"><div class="ajuste">${avatar(yo)}<span class="texto"><b>${esc(yo.nombre)}</b><small>${esc([yo.puesto, yo.turno ? `Turno ${yo.turno}` : "", `usuario ${yo.usuario}`].filter(Boolean).join(" · "))}</small></span>
+      <div class="lista"><div class="ajuste">${avatar(yo)}<span class="texto"><b>${esc(yo.nombre)}</b><small>${esc([yo.puesto, yo.turno ? textoTurno(yo.turno) : "", `usuario ${yo.usuario}`].filter(Boolean).join(" · "))}</small></span>
         <span class="marca ${admin ? "en_proceso" : ""}">${esc(nombrePerfil(yo))}</span></div>
         <div class="ajuste"><span class="icono-fila gris">${icono("llave")}</span><span class="texto"><b>Contraseña</b></span><button type="button" class="boton chico" data-accion="clave">Cambiar</button></div>
         <div class="ajuste"><span class="icono-fila rojo">${icono("salir")}</span><span class="texto"><b>Salir de este aparato</b><small>Lo que no se haya enviado se queda guardado.</small></span><button type="button" class="boton chico peligro" data-accion="salir">Salir</button></div></div>
@@ -325,7 +325,7 @@ export function vistaUsuarios({ d, yo }) {
   if (!esAdmin(yo)) return { titulo: "Usuarios", atras: "#/ajustes", html: vacio("Los usuarios los maneja el administrador.") };
   const fila = (p) => `<li><button type="button" class="fila con-icono" data-persona="${esc(p.id)}" style="${p.activo ? "" : "opacity:.55"}">${avatar(p)}
       <span class="titulo">${esc(p.nombre)}${p.id === yo.id ? " <small>(tú)</small>" : ""}</span>
-      <span class="detalle"><span class="mono">${esc(p.usuario)}</span>${p.puesto ? `<span>${esc(p.puesto)}</span>` : ""}${p.turno ? `<span>Turno ${esc(p.turno)}</span>` : ""}
+      <span class="detalle"><span class="mono">${esc(p.usuario)}</span>${p.puesto ? `<span>${esc(p.puesto)}</span>` : ""}${p.turno ? `<span>${esc(textoTurno(p.turno))}</span>` : ""}
         ${p.aviso_hora ? `<span>${icono("reloj", "ico chico")} ${esc(p.aviso_hora)}</span>` : ""}</span>
       <span class="lado"><span class="marca ${p.rol === "admin" ? "en_proceso" : ""}">${esc(nombrePerfil(p))}</span>
         ${!p.activo ? `<span class="marca">Desactivado</span>` : !p.tiene_clave ? `<span class="marca media">Sin contraseña</span>` : p.debe_cambiar ? `<span class="marca">Contraseña temporal</span>` : ""}</span>
@@ -360,7 +360,7 @@ async function editarPersona(d, yo, p) {
         <div class="campo"><label for="u-usuario">Usuario</label><input id="u-usuario" type="text" value="${esc(p?.usuario ?? "")}" placeholder="juan.perez" autocapitalize="none" spellcheck="false" autocomplete="off"></div>
         <div class="campo"><label for="u-puesto">Puesto</label><input id="u-puesto" type="text" value="${esc(p?.puesto ?? "")}" placeholder="Jefe de turno" list="u-puestos">
           <datalist id="u-puestos"><option value="Jefe de turno"><option value="Ingeniero de procesos"><option value="Técnico mecánico"><option value="Técnico eléctrico"><option value="Operador"></datalist></div>
-        <div class="campo"><label for="u-turno">Turno</label><select id="u-turno">${["", "A", "B", "C", "D"].map((t) => `<option value="${t}" ${(p?.turno ?? "") === t ? "selected" : ""}>${t ? `Turno ${t}` : "Sin turno"}</option>`).join("")}</select></div>
+        <div class="campo"><label for="u-turno">Turno</label><select id="u-turno"><option value="">Sin turno</option>${TURNOS.map((t) => `<option value="${t.id}" ${(p?.turno ?? "") === t.id ? "selected" : ""}>${t.nombre} · ${t.horas}</option>`).join("")}${p?.turno && !TURNOS.some((t) => t.id === p.turno) ? `<option value="${esc(p.turno)}" selected>Turno ${esc(p.turno)} (ya no existe)</option>` : ""}</select></div>
         <div class="campo"><label for="u-hora">Aviso diario <small>(hora)</small></label><input id="u-hora" type="time" value="${esc(p?.aviso_hora ?? "06:00")}"></div>
       </div>
       ${elegirPerfil(p, yo)}
