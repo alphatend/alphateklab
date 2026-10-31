@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.alphateklab.bitacora",
+      "sha256_cert_fingerprints": ["90:3B:7E:DB:89:D7:97:0A:52:BD:95:6A:98:96:6A:85:A6:0C:A7:F0:DB:AF:4A:D6:9E:69:72:35:8A:46:1A:35"]
+    }
+  }
+]
