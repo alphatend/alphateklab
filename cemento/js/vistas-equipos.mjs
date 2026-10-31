@@ -521,7 +521,9 @@ export function vistaPlantilla({ d, yo, param, query, ir }) {
           const r = await api.escribir("plantillas", { ...P, items, id: original?.id });
           sucio = false;
           aviso("Plantilla guardada.");
-          ir(`#/plantilla/${encodeURIComponent(r.id)}`);
+          // desde Asignar («Crear una plantilla»): de vuelta, con la plantilla nueva elegida
+          const vuelta = query.get("volver") ?? "";
+          ir(vuelta.startsWith("#/asignar") ? `${vuelta}${vuelta.includes("?") ? "&" : "?"}plantilla=${encodeURIComponent(r.id)}` : `#/plantilla/${encodeURIComponent(r.id)}`);
         } catch (x) {
           b.disabled = false;
           aviso(x.sinRed ? "Para guardar la plantilla hace falta señal. Tus cambios siguen aquí." : x.message, { error: true });

@@ -175,6 +175,9 @@ export function vistaTarea({ d, yo, hoy, param, query, ir }) {
         ${!nueva && t._sinEnviar ? marcaSinEnviar() : ""}</div>
       <div class="hoja-insp">
         ${solo ? soloVer(d, T, hoy) : `<form class="panel" id="form-tarea" novalidate>
+          ${nueva && puede(yo, "asignar") ? `<div class="campo"><span class="rotulo" id="t-r-modo">¿Con plantilla?</span>
+            <div class="segmento" role="group" aria-labelledby="t-r-modo"><button type="button" aria-pressed="true">Tarea simple</button><button type="button" data-con-plantilla-tarea aria-pressed="false">Con plantilla</button></div>
+            <span class="ayuda">Con plantilla es una inspección: lleva las revisiones de la plantilla, y también sale en Tareas.</span></div>` : ""}
           <div class="campo"><label for="t-titulo">Qué hay que hacer</label><input id="t-titulo" type="text" value="${esc(T.titulo)}" placeholder="Por ejemplo: cambiar el manómetro del acumulador 2" style="font-size:19px;font-weight:600"></div>
           <div class="campo"><label for="t-detalle">Detalle <small>(opcional)</small></label><textarea id="t-detalle" style="min-height:80px" placeholder="Cómo, con qué, dónde…">${esc(T.detalle ?? "")}</textarea></div>
           ${camposEquipoSub(d, { id: "t-equipo", valor: T.equipo_id ?? "", titulo: "Equipo de la tarea", ninguno: "Ninguno" })}
@@ -200,6 +203,14 @@ export function vistaTarea({ d, yo, hoy, param, query, ir }) {
       </div>`,
     montar(m) {
       const f = m.querySelector("#form-tarea");
+      // «Con plantilla» (Eduardo, 31-oct-2026): es una inspección; se sigue en Asignar con lo que ya se eligió
+      f?.querySelector("[data-con-plantilla-tarea]")?.addEventListener("click", () => {
+        const q = new URLSearchParams({ modo: "con" });
+        if (f["t-equipo"]?.value) q.set("equipo", f["t-equipo"].value);
+        if (f["t-quien"]?.value) q.set("quien", f["t-quien"].value);
+        if (f["t-vence"]?.value) q.set("vence", f["t-vence"].value);
+        location.hash = `#/asignar?${q}`;
+      });
       if (!f) return;
       if (nueva) setTimeout(() => f["t-titulo"].focus({ preventScroll: true }), 300);
       f.addEventListener("click", async (e) => {

@@ -76,8 +76,9 @@ const REPETIR = [[0, "Una sola vez"], [1, "Cada día"], [7, "Cada semana"], [15,
 
 export function vistaAsignar({ d, yo, hoy, query, ir }) {
   if (!puede(yo, "asignar")) return { titulo: "Asignar", atras: "#/tablero", html: vacio("Asignar inspecciones no está entre tus permisos: lo da el administrador.") };
-  // Lo que se asigna es lo que se escribe como tareas (Eduardo, 30-oct-2026: «quita "qué revisar", al final lo coloca
-  // como tarea»). Solo si se llega desde un enlace con una plantilla (la ronda de colectores) van además sus revisiones.
+  // Primero se pregunta si va con plantilla (Eduardo, 31-oct-2026: «que me consulte si quiero utilizar una plantilla
+  // existente o crear una»): con plantilla, se elige una del equipo o se crea; sin plantilla, lo que se escriba como
+  // tareas (30-oct: «al final lo coloca como tarea»). Nada viene marcado: una plantilla no puede ir escondida.
   let plFija = plantilla(d, query.get("plantilla")) ?? null;
   const elegidosInicial = [...new Set((query.get("equipos") ?? "").split(",").filter(Boolean))];
   // la ronda de colectores: los que vengan en el enlace o, si no, todos los activos
@@ -86,6 +87,25 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
   let eqId = query.get("equipo") && query.get("equipo") !== "colectores" ? query.get("equipo") : plFija?.equipo_id ?? ronda?.[0] ?? elegidosInicial[0] ?? "";
   const vence = query.get("vence") ?? hoy;
   const tareas = []; // { id, titulo, equipo_id }
+  let modo = ronda ? "con" : plFija ? "con" : query.get("modo") === "con" ? "con" : null; // "con", "sin" o sin elegir
+  const editaPlantillas = puede(yo, "equipos");
+  /** Las plantillas del equipo (las de un subequipo son las de su equipo; las de un colector, la común). */
+  const plantillasDe = () => {
+    const e = eqId ? equipoDe(d, eqId) : null;
+    if (!e) return [];
+    const arriba = e.padre_id ? equipoDe(d, e.padre_id) ?? e : e;
+    return d.plantillas.filter((p) => p.equipo_id === arriba.id || (arriba.tipo === "colector" && p.tipo_equipo === "colector"));
+  };
+  const htmlPlantillas = () => {
+    if (!eqId) return `<p class="ayuda" style="margin:8px 2px 0">Elige primero el equipo.</p>`;
+    const ps = plantillasDe();
+    const arriba = equipoDe(d, eqId)?.padre_id ?? eqId;
+    const volverA = () => `#/asignar?equipo=${encodeURIComponent(eqId)}&modo=con`;
+    return `<div class="opciones-plantilla">${ps.map((p) => `<button type="button" class="opcion-plantilla" data-elegir-plantilla="${esc(p.id)}" aria-pressed="${plFija?.id === p.id}">
+        <b>${esc(p.nombre)}</b><small>${plural(p.items.filter((x) => x.tipo !== "texto").length, "revisión", "revisiones")} · ${p.cuando === "parada" ? "en parada" : "en marcha"}${p.frecuencia_dias ? ` · cada ${p.frecuencia_dias === 1 ? "día" : `${p.frecuencia_dias} días`}` : ""}</small></button>`).join("")}
+      ${!ps.length ? `<p class="ayuda" style="margin:4px 2px">${esc(nombreCompleto(d, arriba))} todavía no tiene plantillas.</p>` : ""}
+      ${editaPlantillas ? `<a class="boton chico" data-crear-plantilla href="#/plantilla/nueva?equipo=${encodeURIComponent(arriba)}&volver=${encodeURIComponent(volverA())}">${icono("mas1")}Crear una plantilla</a>` : ""}</div>`;
+  };
   const conPlantilla = () => (plFija ? `<p class="ayuda" data-con-plantilla style="margin:0 2px 6px">Lleva las ${plural(plFija.items.filter((x) => x.tipo !== "texto").length, "revisión", "revisiones")} de «${esc(plFija.nombre)}»${ronda ? ` en ${plural(ronda.length, "colector", "colectores")}` : ""}; lo que agregues aquí va además.</p>` : "");
   const subequipos = () => (eqId ? d.equipos.filter((e) => e.padre_id === eqId && e.activo) : []);
   const htmlTareas = () => tareas.length ? `<ul class="lista-tareas" style="margin-top:8px">${tareas.map((t, k) => `<li><span class="check-tarea" aria-hidden="true"></span>
@@ -99,7 +119,11 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
         <p class="bajada">Le aparece en su tablero y le llega un aviso. Si se repite, al terminarla queda programada la siguiente (con las tareas que no se hicieron).</p></div></div>
       <form class="panel" id="form-asignar" novalidate style="max-width:760px">
         ${ronda ? `<div class="campo"><span class="rotulo">Equipos</span><p style="margin:0">${esc(plFija.nombre)}: ${esc(ronda.map((id) => equipoDe(d, id)?.tag || equipoDe(d, id)?.nombre || id).join(", "))}</p></div>`
-          : `<div data-zona-equipo>${camposEquipoSub(d, { id: "a-equipo", valor: eqId, titulo: "Qué equipo", placeholder: "Elegir el equipo" })}</div>`}
+          : `<div data-zona-equipo>${camposEquipoSub(d, { id: "a-equipo", valor: eqId, titulo: "Qué equipo", placeholder: "Elegir el equipo" })}</div>
+        <div class="campo"><span class="rotulo" id="a-r-modo">¿Con plantilla?</span>
+          <div class="segmento" role="group" aria-labelledby="a-r-modo" data-modo><button type="button" data-modo-v="con" aria-pressed="${modo === "con"}">Con plantilla</button><button type="button" data-modo-v="sin" aria-pressed="${modo === "sin"}">Sin plantilla</button></div>
+          <span class="ayuda">Con plantilla: lleva sus revisiones. Sin plantilla: escribes lo que tiene que hacer.</span>
+          <div data-plantillas ${modo === "con" ? "" : "hidden"}>${htmlPlantillas()}</div></div>`}
         <div class="rejilla-campos dos alineados">
           <div class="campo"><label for="a-quien">A quién</label><select id="a-quien">${opcionesQuien(d, yo, query.get("quien") ?? "", { elegir: true })}</select></div>
           <div class="campo"><label for="a-vence">Para cuándo</label><input id="a-vence" type="date" value="${esc(vence)}" min="${sumarDias(hoy, -30)}"></div>
@@ -110,7 +134,7 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
             <select id="a-repetir">${REPETIR.map(([n, t]) => `<option value="${n}">${t}</option>`).join("")}</select>
             <span class="ayuda" id="a-sugerida"></span></div>
         </div>
-        <div class="campo"><span class="rotulo">Qué tiene que hacer</span>${conPlantilla()}
+        <div class="campo" data-zona-tareas ${modo ? "" : "hidden"}><span class="rotulo" data-rotulo-tareas>${modo === "con" ? "Tareas además de la plantilla <small>(opcional)</small>" : "Qué tiene que hacer"}</span>${ronda ? conPlantilla() : ""}
           <div style="display:flex;gap:8px;flex-wrap:wrap"><input type="text" id="a-tarea" placeholder="Por ejemplo: medir la holgura en el punto 3" style="flex:1 1 260px" enterkeyhint="done">
             <select id="a-tarea-sub" style="flex:0 1 220px" ${subequipos().length ? "" : "hidden"}><option value="">Todo el equipo</option>${subequipos().map((e) => `<option value="${esc(e.id)}">${esc(e.tag ? `${e.tag} · ${e.nombre}` : e.nombre)}</option>`).join("")}</select>
             <button type="button" class="boton chico" data-agregar-tarea>${icono("mas1")}Agregar</button></div>
@@ -135,9 +159,19 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
         sel.hidden = !subs.length;
         sel.innerHTML = `<option value="">Todo el equipo</option>${subs.map((e) => `<option value="${esc(e.id)}">${esc(e.tag ? `${e.tag} · ${e.nombre}` : e.nombre)}</option>`).join("")}`;
       };
+      const pintarModo = () => {
+        f.querySelectorAll("[data-modo-v]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.modoV === modo)));
+        const zp = f.querySelector("[data-plantillas]");
+        if (zp) { zp.hidden = modo !== "con"; zp.innerHTML = htmlPlantillas(); }
+        f.querySelector("[data-zona-tareas]").hidden = !modo;
+        f.querySelector("[data-rotulo-tareas]").innerHTML = modo === "con" ? "Tareas además de la plantilla <small>(opcional)</small>" : "Qué tiene que hacer";
+        f.querySelector(".error-form").hidden = true;
+      };
       f.addEventListener("click", (e) => {
         const b = e.target.closest("button");
         if (!b) return;
+        if (b.dataset.modoV) { modo = b.dataset.modoV; if (modo === "sin") plFija = null; pintarModo(); sugerir(); }
+        if (b.dataset.elegirPlantilla) { plFija = plantilla(d, b.dataset.elegirPlantilla); pintarModo(); sugerir(); }
         if (b.hasAttribute("data-agregar-tarea")) agregarTarea();
         if (b.dataset.quitarTarea != null) { tareas.splice(Number(b.dataset.quitarTarea), 1); f.querySelector("[data-tareas]").innerHTML = htmlTareas(); }
       });
@@ -155,7 +189,8 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
         if (e.target.id === "a-equipo") {
           eqId = e.target.value;
           // la plantilla del enlace era de otro equipo: ya no va
-          if (plFija && plFija.equipo_id !== eqId) { plFija = null; f.querySelector("[data-con-plantilla]")?.remove(); sugerir(); }
+          if (plFija && !ronda && !plantillasDe().some((p) => p.id === plFija.id)) { plFija = null; sugerir(); }
+          if (!ronda) pintarModo();
           pintarSub();
           const fam = familia(d, eqId);
           let cambio = false;
@@ -171,13 +206,15 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
         if (!eqId) return fallo(ronda ? "No hay colectores activos para la ronda." : "Elige el equipo.");
         // lo escrito sin tocar «Agregar» también cuenta
         const pendiente = f.querySelector("#a-tarea").value.trim();
-        if (!plFija && !tareas.length && !pendiente) return fallo("Escribe por lo menos una cosa que tiene que hacer.");
+        if (!modo) return fallo("Elige si va con plantilla o sin plantilla.");
+        if (modo === "con" && !plFija) return fallo("Elige la plantilla, o «Crear una plantilla».");
+        if (modo === "sin" && !tareas.length && !pendiente) return fallo("Escribe por lo menos una cosa que tiene que hacer.");
         if (!f["a-quien"].value) return fallo("Elige a quién se le asigna.");
         if (pendiente) { tareas.push({ id: crypto.randomUUID(), titulo: pendiente, equipo_id: f.querySelector("#a-tarea-sub").value || null }); f.querySelector("#a-tarea").value = ""; }
         const equipos = ronda ?? undefined;
         const boton = f.querySelector("button[type=submit]");
         boton.disabled = true;
-        const datos = { id: crypto.randomUUID(), plantilla_id: plFija?.id ?? "", equipo_id: eqId, asignada_a: f["a-quien"].value, vence: f["a-vence"].value, repetir_dias: Number(selRep.value) || null,
+        const datos = { id: crypto.randomUUID(), plantilla_id: modo === "con" ? plFija?.id ?? "" : "", equipo_id: eqId, asignada_a: f["a-quien"].value, vence: f["a-vence"].value, repetir_dias: Number(selRep.value) || null,
           nota: f["a-nota"].value, equipos, tareas };
         try {
           await api.escribir("inspecciones", datos);

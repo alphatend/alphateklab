@@ -1392,3 +1392,12 @@ html.arrastrando, html.arrastrando * { cursor: grabbing !important; -webkit-user
 .filtros-historial { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; margin-bottom: 14px; }
 @media (min-width: 640px) { .filtros-historial { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .filtros-historial select, .filtros-historial input { width: 100%; min-width: 0; }
+
+/* Asignar: elegir la plantilla (31-oct-2026). Cada una es un botón con su nombre y cuántas revisiones lleva */
+.opciones-plantilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 10px; }
+@media (min-width: 640px) { .opciones-plantilla { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.opciones-plantilla > .boton, .opciones-plantilla > .ayuda { grid-column: 1 / -1; justify-self: start; }
+.opcion-plantilla { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; text-align: left; padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--borde, rgba(0,0,0,.12)); background: var(--hundido); color: var(--tinta); font: inherit; cursor: pointer; transition: border-color .2s, background .2s; }
+.opcion-plantilla small { color: var(--tinta-3); font-size: 13.5px; }
+.opcion-plantilla[aria-pressed="true"] { border-color: var(--tinte); background: color-mix(in srgb, var(--tinte) 10%, var(--hundido)); }
+.opcion-plantilla:focus-visible { outline: 2px solid var(--foco, var(--tinte)); outline-offset: 2px; }
