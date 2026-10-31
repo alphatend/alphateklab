@@ -1380,3 +1380,10 @@ html.arrastrando, html.arrastrando * { cursor: grabbing !important; -webkit-user
 /* el selector de equipo: agregar lo que falte, al final de la lista */
 .opcion-equipo.nueva { color: var(--tinte); font-weight: 600; margin-top: 6px; border-top: 0.5px solid var(--linea); border-radius: 0 0 12px 12px; }
 .opcion-equipo.nueva .ico { width: 20px; height: 20px; flex: none; }
+
+/* Equipo y Subequipo (31-oct-2026): con un nombre largo («COL-03 · Filtro principal del Loesche») la columna se
+   encoge y el nombre se corta con «…», en vez de empujar el formulario fuera de la pantalla */
+.equipo-y-sub { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .equipo-y-sub.dos { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.equipo-y-sub > .campo { min-width: 0; }
+.equipo-y-sub .campo-equipo { min-width: 0; max-width: 100%; }

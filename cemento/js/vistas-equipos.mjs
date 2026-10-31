@@ -1,9 +1,10 @@
 // Equipos (los de proceso, por área: la «parte seccionada»), la ficha de un equipo o colector (cómo vienen sus
 // medidas, lo pendiente, sus hallazgos y su reporte) y el editor de plantillas (de un equipo o la común de colectores).
-import { esc, icono, plural, numero, fechaCorta, fechaHora, diaDe, normal, haceCuanto, leerNumero } from "./util.mjs";
+import { esc, icono, plural, numero, fechaCorta, fechaHora, diaDe, normal, haceCuanto, leerNumero, numeroHallazgo, diasEntre } from "./util.mjs";
 import * as api from "./api.mjs";
 import {
   puede, aviso, dialogo, confirmar, vacio, equipo, plantilla, filaInspeccion, filaHallazgo, nombreEquipo, marcaTag, equiposDe, esAdmin, chispa,
+  nombreCorto, queInspeccion, TEXTO_PRIORIDAD,
 } from "./ui.mjs";
 import { fueraDeRango, textoRango } from "./vistas-inspecciones.mjs";
 import { familia, nombreCompleto, leerLista, campoEquipo, barraFiltros, montarFiltros, enFiltro } from "./componentes.mjs";
@@ -171,6 +172,88 @@ export async function editarEquipo(d, eq) {
 
 // ------------------------------------------------------------------------------- un equipo (o colector)
 
+// ------------------------------------------------------------------------------- historial
+
+/**
+ * Lo hecho y lo anotado en un equipo y sus subequipos, lo más nuevo arriba (Eduardo, 31-oct-2026: «que quede un
+ * historial de lo que se ha realizado en cada equipo»; «eso mismo para inspecciones, para hallazgos, para tareas»):
+ * tareas hechas, inspecciones hechas, hallazgos anotados y cerrados, y paros. Los paros programados que no han
+ * empezado no son historia todavía.
+ */
+export function historialDe(d, eq) {
+  const fam = familia(d, eq.id);
+  const donde = (id) => (id && id !== eq.id ? nombreCompleto(d, id).split(" › ").pop() : "");
+  const por = (id) => (id ? `por ${nombreCorto(d, id)}` : "");
+  const xs = [];
+  for (const t of d.tareas ?? []) {
+    if (t.estado !== "hecha" || !t.hecha_en || !fam.has(t.equipo_id)) continue;
+    xs.push({ tipo: "tareas", en: t.hecha_en, url: `#/tarea/${encodeURIComponent(t.id)}`, icono: "tareas", color: "verde", titulo: t.titulo,
+      detalle: ["Tarea hecha", por(t.hecha_por), donde(t.equipo_id), t.nota_cierre ?? ""] });
+  }
+  for (const i of d.inspecciones) {
+    if (i.estado !== "hecha" || !i.hecha_en || !equiposDe(i).some((x) => fam.has(x))) continue;
+    const n = d.hallazgos.filter((h) => h.inspeccion_id === i.id).length;
+    xs.push({ tipo: "inspecciones", en: i.hecha_en, url: `#/inspeccion/${encodeURIComponent(i.id)}`, icono: "inspecciones", color: "indigo",
+      titulo: plantilla(d, i.plantilla_id)?.nombre || queInspeccion(d, i), detalle: ["Inspección hecha", por(i.hecha_por), n ? plural(n, "hallazgo", "hallazgos") : "sin hallazgos"] });
+  }
+  for (const h of d.hallazgos) {
+    if (!fam.has(h.equipo_id)) continue;
+    const titulo = `${numeroHallazgo(h)} · ${h.descripcion}`, url = `#/hallazgo/${encodeURIComponent(h.id)}`;
+    xs.push({ tipo: "hallazgos", en: h.creado, url, icono: "hallazgos", color: h.prioridad === "alta" ? "rojo" : "naranja", titulo,
+      detalle: ["Hallazgo anotado", por(h.creado_por), `prioridad ${(TEXTO_PRIORIDAD[h.prioridad] ?? "").toLowerCase()}`, donde(h.equipo_id)] });
+    if (h.estado === "cerrado" && h.cerrado) {
+      const dias = diasEntre(diaDe(h.creado), diaDe(h.cerrado));
+      xs.push({ tipo: "hallazgos", en: h.cerrado, url, icono: "bien", color: "verde", titulo,
+        detalle: ["Hallazgo cerrado", dias ? `tardó ${plural(dias, "día", "días")}` : "el mismo día", donde(h.equipo_id)] });
+    }
+  }
+  for (const p of d.paros ?? []) {
+    if (!fam.has(p.equipo_id) || Date.parse(p.inicio) > Date.now()) continue;
+    xs.push({ tipo: "paros", en: p.inicio, url: `#/paro/${encodeURIComponent(p.id)}`, icono: "paros", color: p.tipo === "programado" ? "gris" : "morado",
+      titulo: p.tipo === "programado" ? "Paro programado" : `Paro: ${p.causa || "no programado"}`,
+      detalle: [p.fin ? duracion((Date.parse(p.fin) - Date.parse(p.inicio)) / 3600e3) : "sigue parado", donde(p.equipo_id), p.descripcion ?? ""] });
+  }
+  return xs.filter((x) => x.en).sort((a, b) => b.en.localeCompare(a.en));
+}
+const TIPOS_HISTORIAL = [["todo", "Todo"], ["tareas", "Tareas"], ["inspecciones", "Inspecciones"], ["hallazgos", "Hallazgos"], ["paros", "Paros"]];
+const PRIMEROS = 15;
+function seccionHistorial(d, eq) {
+  const xs = historialDe(d, eq);
+  const cuenta = (t) => xs.filter((x) => x.tipo === t).length;
+  const fila = (x, k) => `<li data-tipo="${x.tipo}" ${k >= PRIMEROS ? "hidden" : ""}><a class="fila con-icono" href="${x.url}"><span class="icono-fila ${x.color}">${icono(x.icono)}</span>
+      <span class="titulo">${esc(x.titulo)}</span>
+      <span class="detalle"><span>${esc(fechaHora(x.en))}</span>${x.detalle.filter(Boolean).map((t) => `<span>${esc(t)}</span>`).join("")}</span>
+      <span class="lado">${icono("derecha", "ico chevron")}</span></a></li>`;
+  return `<section class="seccion" data-historial><h2>Historial <small>${xs.length || ""}</small></h2>
+    ${xs.length ? `<nav class="filtros" aria-label="Qué ver del historial">${TIPOS_HISTORIAL.filter(([t]) => t === "todo" || cuenta(t)).map(([t, n]) => `<button type="button" data-ver="${t}" aria-pressed="${t === "todo"}">${n}${t === "todo" ? "" : ` <b>${cuenta(t)}</b>`}</button>`).join("")}</nav>
+      <ul class="lista">${xs.map(fila).join("")}</ul>
+      <p class="pie-seccion" data-zona-mas ${xs.length > PRIMEROS ? "" : "hidden"}><button type="button" class="boton chico plano" data-ver-mas>Ver todo</button></p>`
+      : vacio("Todavía no hay nada hecho ni anotado en este equipo. Aquí quedan las tareas hechas, las inspecciones, los hallazgos y los paros.")}</section>`;
+}
+/** Los filtros del historial y «Ver todo», sin volver a dibujar la pantalla. */
+function montarHistorial(m) {
+  const z = m.querySelector("[data-historial]");
+  if (!z) return;
+  let ver = "todo", todo = false;
+  const pintar = () => {
+    let k = 0;
+    z.querySelectorAll("li[data-tipo]").forEach((li) => {
+      if (ver !== "todo" && li.dataset.tipo !== ver) { li.hidden = true; return; }
+      li.hidden = !todo && k >= PRIMEROS;
+      k++;
+    });
+    const mas = z.querySelector("[data-zona-mas]");
+    if (mas) mas.hidden = todo || k <= PRIMEROS;
+  };
+  z.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.ver) { ver = b.dataset.ver; z.querySelectorAll("[data-ver]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }
+    if (b.hasAttribute("data-ver-mas")) todo = true;
+    pintar();
+  });
+}
+
 export function vistaEquipo({ d, yo, hoy, param }) {
   const eq = equipo(d, param);
   if (!eq) return { titulo: "No está", atras: "#/equipos", html: vacio("Ese equipo no existe.") };
@@ -192,7 +275,6 @@ export function vistaEquipo({ d, yo, hoy, param }) {
   const atras = padre ? `#/equipo/${encodeURIComponent(padre.id)}` : colector ? "#/colectores" : "#/equipos";
   const curso = enCurso(d).filter((p) => fam.has(p.equipo_id));
   const disp = !colector && !padre ? disponibilidad(d, eq.id, Date.now() - 30 * 86400e3, Date.now()) : null;
-  const paros = (d.paros ?? []).filter((p) => fam.has(p.equipo_id) && Date.parse(p.inicio) > Date.now() - 90 * 86400e3).sort((a, b) => b.inicio.localeCompare(a.inicio));
   // sin laboratorio (Eduardo, 31-oct-2026: «elimina laboratorio»; se quitó de toda la app)
   return {
     titulo: nombreCompleto(d, eq.id),
@@ -229,10 +311,7 @@ export function vistaEquipo({ d, yo, hoy, param }) {
       ${pendientes.length ? `<section class="seccion"><h2>Inspecciones pendientes <small>${pendientes.length}</small></h2><ul class="lista">${pendientes.map((i) => filaInspeccion(d, i, hoy)).join("")}</ul></section>` : ""}
       ${abiertos.length ? `<section class="seccion"><h2>Hallazgos abiertos <small>${abiertos.length}</small></h2><ul class="lista">${abiertos.map((h) => filaHallazgo(d, h, hoy)).join("")}</ul></section>` : ""}
       ${ss.length ? `<section class="seccion"><h2>Cómo vienen las medidas</h2><div class="lista">${ss.map(tendencia).join("")}</div></section>` : ""}
-      ${paros.length ? `<section class="seccion"><h2>Paros <small>últimos 90 días</small></h2><ul class="lista">${paros.slice(0, 8).map((p) => `<li><a class="fila" href="#/paro/${encodeURIComponent(p.id)}">
-          <span class="titulo">${p.tipo === "programado" ? "Programado" : esc(p.causa || "No programado")} <small>· ${esc(nombreCompleto(d, p.equipo_id))}</small></span>
-          <span class="detalle"><span>${esc(fechaHora(p.inicio))}</span><span>${p.fin ? duracion((Date.parse(p.fin) - Date.parse(p.inicio)) / 3600e3) : "en curso"}</span></span>
-          <span class="lado">${icono("derecha", "ico chevron")}</span></a></li>`).join("")}</ul></section>` : ""}
+      ${seccionHistorial(d, eq)}
       ${padre ? `<section class="seccion"><h2>Se revisa en</h2>${seRevisaEn.length ? `<ul class="lista">${seRevisaEn.map((p) => `<li><a class="fila" href="#/plantilla/${encodeURIComponent(p.id)}"><span class="titulo">${esc(p.nombre)} <small>· ${esc(padre.nombre)}</small></span>
           <span class="detalle"><span>${plural(p.items.filter((it) => it.subequipo_id === eq.id).length, "revisión de este subequipo", "revisiones de este subequipo")}</span></span><span class="lado">${icono("derecha", "ico chevron")}</span></a></li>`).join("")}</ul>`
           : vacio(`Ninguna revisión de las plantillas de ${esc(padre.nombre)} es de este subequipo todavía. Al editar una plantilla, a cada revisión se le elige su subequipo.`)}</section>` : `
@@ -244,11 +323,10 @@ export function vistaEquipo({ d, yo, hoy, param }) {
           <span class="lado">${icono("derecha", "ico chevron")}</span></a></li>`).join("")}</ul>` : vacio("Todavía no tiene plantillas.")}
         ${admin ? `<p style="margin:10px 4px"><a class="boton chico" href="#/plantilla/nueva?${colector ? "tipo=colector" : `equipo=${encodeURIComponent(eq.id)}`}">${icono("mas1")}Nueva plantilla</a></p>` : ""}
       </section>`}
-      ${hechas.length ? `<section class="seccion"><h2>Inspecciones hechas <small>${hechas.length}</small></h2><ul class="lista">${hechas.slice(0, 12).map((i) => filaInspeccion(d, i, hoy)).join("")}</ul>
-        ${hechas.length > 12 ? `<p class="pie-seccion">Todas están en el <a href="#/reportes?alcance=${encodeURIComponent(`equipo:${eq.id}`)}&plantilla=equipo&p=todo">reporte del equipo</a>.</p>` : ""}</section>` : ""}
-      ${hall.length > abiertos.length ? `<p class="pie-seccion" style="margin-top:18px"><a href="#/hallazgos?f=todos&eq=${encodeURIComponent(eq.id)}">Todos sus hallazgos (${hall.length})</a></p>` : ""}`,
+`,
     montar(m) {
       montarChecks(m, d);
+      montarHistorial(m);
       const fin = montarEnCurso(m);
       m.addEventListener("click", (e) => {
         const b = e.target.closest("[data-accion]");
