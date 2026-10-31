@@ -29,6 +29,10 @@ export function vistaAjustes({ d, yo }) {
         <div class="ajuste"><span class="icono-fila gris">${icono("llave")}</span><span class="texto"><b>Contraseña</b></span><button type="button" class="boton chico" data-accion="clave">Cambiar</button></div>
         <div class="ajuste"><span class="icono-fila rojo">${icono("salir")}</span><span class="texto"><b>Cerrar sesión</b><small>Lo que no se haya enviado se queda guardado en este aparato.</small></span><button type="button" class="boton chico peligro" data-accion="salir">Cerrar sesión</button></div></div>
 
+      ${admin ? seccion("Firmas", `<label class="ajuste"><span class="icono-fila indigo">${icono("firma")}</span><span class="texto"><b>Pedir firma al terminar una inspección</b>
+          <small>${a.pedir_firma === false ? "Apagado: nadie firma, en ninguna plantilla." : "Con el dedo; sale en el reporte. En cada plantilla se puede quitar."}</small></span>
+          <span class="interruptor"><input type="checkbox" data-firma aria-label="Pedir firma al terminar una inspección" ${a.pedir_firma === false ? "" : "checked"}><span></span></span></label>`) : ""}
+
       ${seccion("Apariencia", `<div class="ajuste"><div class="segmento" role="group" aria-label="Tema" style="flex:1">
           <button type="button" data-tema="auto" aria-pressed="${tema === "auto"}">${icono("auto")}Automático</button>
           <button type="button" data-tema="claro" aria-pressed="${tema === "claro"}">${icono("sol")}Claro</button>
@@ -60,10 +64,7 @@ export function vistaAjustes({ d, yo }) {
 
       ${admin ? seccion("Reglas de la planta", `<div class="ajuste"><span class="icono-fila rojo">${icono("alerta")}</span><span class="texto"><b>Escalar hallazgos de prioridad alta</b>
           <small>Te avisa en el resumen de la mañana cuando uno lleva abierto más de estos días.</small></span>
-          <input type="number" min="1" max="60" value="${esc(a.escalar_dias ?? 3)}" data-escalar aria-label="Días" style="width:84px;min-height:38px;text-align:center"><span class="ayuda">días</span></div>
-        <label class="ajuste"><span class="icono-fila indigo">${icono("firma")}</span><span class="texto"><b>Firma al terminar una inspección</b>
-          <small>Con el dedo; sale en el reporte. Cada plantilla puede cambiarlo.</small></span>
-          <span class="interruptor"><input type="checkbox" data-firma ${a.pedir_firma === false ? "" : "checked"}><span></span></span></label>`) : ""}
+          <input type="number" min="1" max="60" value="${esc(a.escalar_dias ?? 3)}" data-escalar aria-label="Días" style="width:84px;min-height:38px;text-align:center"><span class="ayuda">días</span></div>`) : ""}
 
       ${admin ? seccion("Equipo de trabajo", `<a class="fila con-icono" href="#/usuarios"><span class="icono-fila indigo">${icono("personas")}</span><span class="titulo">Usuarios</span>
           <span class="detalle">${plural(d.personas.filter((p) => p.activo).length, "activo", "activos")}${d.personas.some((p) => p.activo && !p.tiene_clave) ? ` · ${d.personas.filter((p) => p.activo && !p.tiene_clave).length} sin contraseña` : ""}</span>
@@ -131,7 +132,9 @@ export function vistaAjustes({ d, yo }) {
         try { await api.escribir("ajustes", { escalar_dias: Number(e.target.value) }); aviso(`Se escala a los ${e.target.value} días.`); } catch (x) { aviso(x.sinRed ? "Hace falta señal." : x.message, { error: true }); }
       });
       m.querySelector("[data-firma]")?.addEventListener("change", async (e) => {
-        try { await api.escribir("ajustes", { pedir_firma: e.target.checked }); aviso(e.target.checked ? "Se pide firma al terminar." : "Ya no se pide firma (salvo en las plantillas que la pidan)."); }
+        try { await api.escribir("ajustes", { pedir_firma: e.target.checked }); aviso(e.target.checked ? "Se pide firma al terminar (salvo en las plantillas que la quitan)." : "Firmas apagadas: nadie firma, en ninguna plantilla.");
+          const nota = e.target.closest(".ajuste")?.querySelector("small");
+          if (nota) nota.textContent = e.target.checked ? "Con el dedo; sale en el reporte. En cada plantilla se puede quitar." : "Apagado: nadie firma, en ninguna plantilla."; }
         catch (x) { e.target.checked = !e.target.checked; aviso(x.sinRed ? "Hace falta señal." : x.message, { error: true }); }
       });
       const fEmp = m.querySelector("[data-empresa]");

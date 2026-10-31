@@ -439,9 +439,9 @@ export function vistaPlantilla({ d, yo, param, query, ir }) {
             <option value="parada" ${P.cuando === "parada" ? "selected" : ""}>Con el equipo parado</option></select></div>
           <div class="campo"><label for="p-frec">Cada cuántos días (sugerido)</label><input id="p-frec" type="number" min="1" max="365" value="${esc(P.frecuencia_dias ?? "")}" ${dis}>
             <span class="ayuda">Es lo que se propone al asignarla. Ajústalo con lo que vayas viendo.</span></div>
-          <div class="campo"><label for="p-firma">Firma al terminar</label><select id="p-firma" ${dis}>
-            <option value="" ${P.pedir_firma == null ? "selected" : ""}>Lo que diga Ajustes (${d.ajustes?.pedir_firma === false ? "no" : "sí"})</option>
-            <option value="1" ${P.pedir_firma === 1 ? "selected" : ""}>Siempre</option><option value="0" ${P.pedir_firma === 0 ? "selected" : ""}>No pedirla</option></select></div>
+          <div class="campo"><label for="p-firma">Firma al terminar</label><select id="p-firma" ${d.ajustes?.pedir_firma === false ? "disabled" : dis}>
+            <option value="" ${P.pedir_firma !== 0 ? "selected" : ""}>Pedirla</option><option value="0" ${P.pedir_firma === 0 ? "selected" : ""}>No pedirla</option></select>
+            ${d.ajustes?.pedir_firma === false ? `<span class="ayuda" data-firmas-apagadas>Las firmas están apagadas en Ajustes: nadie firma.</span>` : ""}</div>
         </div></div>
         <h2 style="margin:0 4px 10px">Revisiones</h2>
         <ol class="editor-items">${P.items.map(htmlItem).join("")}</ol>

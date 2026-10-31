@@ -326,7 +326,8 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
   for (const t of tareas) T[t.id] ??= { hecha: false, nota: "" };
   const verificaciones = () => api.borrador.leer(insp.id)?.verificaciones ?? [];
   const guardar = () => api.borrador.guardar(insp.id, { respuestas: R, paso, tareas: T, verificaciones: verificaciones() });
-  const pedirFirmaAqui = pl?.pedir_firma === 1 || (pl?.pedir_firma !== 0 && d.ajustes?.pedir_firma !== false);
+  // si el administrador apagó las firmas en Ajustes, nadie firma, en ninguna plantilla (Eduardo, 31-oct-2026)
+  const pedirFirmaAqui = d.ajustes?.pedir_firma !== false && pl?.pedir_firma !== 0;
   const esMia = insp.asignada_a === yo.id || insp.asignada_a === "todos" || (!!yo.turno && insp.asignada_a === `turno:${yo.turno}`);
 
   const htmlHallazgo = (eqId, it, r) => {
