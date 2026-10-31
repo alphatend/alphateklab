@@ -1,11 +1,14 @@
 // Fotos, videos y dictado.
-// - Las fotos se achican en el aparato (lado mayor 1600 px, JPEG): de ~4 MB a ~300 KB, para que la cola sin señal no
-//   llene el teléfono y suban rápido con poca señal. Se corrige la orientación (EXIF) al dibujarlas.
-// - Los videos van tal cual, hasta 20 MB (lo que acepta el servidor).
+// - Las fotos se achican en el aparato (lado mayor 1280 px, JPEG al 72 %): de ~4 MB a ~150–300 KB, para que la cola sin
+//   señal no llene el teléfono, suban rápido con poca señal y no llenen el servidor (31-oct-2026: con 1600 px y 82 %
+//   salían de 340 KB a 1 MB; a 1280 px se ve igual en la pantalla y en el reporte, y pesa la mitad). Se corrige la
+//   orientación (EXIF) al dibujarlas.
+// - Los videos van tal cual, hasta 20 MB (lo que acepta el servidor), y el servidor los comprime (api/lib/video.mjs).
 // - Dictado: el reconocimiento de voz del navegador (Chrome en Android, Safari en el iPhone). Necesita señal; sin ella,
 //   o donde no existe, se dice que se use el micrófono del teclado.
 
-const MAX_LADO = 1600;
+const MAX_LADO = 1280;
+const CALIDAD = 0.72;
 export const MAX_VIDEO = 20 * 1024 * 1024;
 
 export async function prepararArchivo(archivo) {
@@ -22,7 +25,7 @@ export async function prepararArchivo(archivo) {
     lienzo.height = Math.round(img.height * k);
     lienzo.getContext("2d").drawImage(img, 0, 0, lienzo.width, lienzo.height);
     img.close?.();
-    const blob = await new Promise((ok) => lienzo.toBlob(ok, "image/jpeg", 0.82));
+    const blob = await new Promise((ok) => lienzo.toBlob(ok, "image/jpeg", CALIDAD));
     if (blob && blob.size) return blob;
   } catch { /* formato que el navegador no sabe abrir (HEIC en algunos Android): se manda tal cual */ }
   if (archivo.size > MAX_VIDEO) throw new Error("La foto es demasiado grande para mandarla.");
