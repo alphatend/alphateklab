@@ -139,17 +139,13 @@ export const persona = (d, id) => d.personas.find((p) => p.id === id);
 /** El nombre completo; lo asignado a todo un turno, «Turno A (todo el turno)». */
 export const nombre = (d, id) => (id === "todos" ? "Todos" : String(id ?? "").startsWith("turno:") ? `${textoTurno(id.slice(6))} (todo el turno)` : persona(d, id)?.nombre ?? "—");
 /**
- * El nombre de pila («Pedro»); si otra persona activa empieza igual (los de ejemplo: «Jefe de turno A», «…B»), el
- * nombre completo. Lo de todo un turno, «Turno A». (Antes decía «Turno C» por la persona: con dos en el turno no se
- * sabía quién.)
+ * Quién: nombre y apellido, como está en Usuarios (Eduardo, 31-oct-2026: «coloque nombre y apellido porque hay gente
+ * que se llama igual»; antes era solo el nombre de pila). Lo de todo un turno, «Turno 1»; lo de todos, «Todos».
  */
 export const nombreCorto = (d, id) => {
   if (id === "todos") return "Todos";
   if (String(id ?? "").startsWith("turno:")) return textoTurno(id.slice(6));
-  const p = persona(d, id);
-  if (!p) return "—";
-  const pila = p.nombre.split(" ")[0];
-  return d.personas.some((x) => x.id !== p.id && x.activo && x.nombre.split(" ")[0] === pila) ? p.nombre : pila;
+  return persona(d, id)?.nombre ?? "—";
 };
 /** Para elegir a alguien: «Turno A · Jefe de turno A» o el nombre. */
 export const etiquetaPersona = (p, yo) => `${p.turno ? `${textoTurno(p.turno)} · ` : ""}${p.nombre}${p.id === yo?.id ? " (yo)" : ""}`;

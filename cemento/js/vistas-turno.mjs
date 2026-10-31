@@ -1,6 +1,6 @@
 // Entrega de turno: el que sale deja las novedades, lo pendiente y el estado de cada equipo (en marcha, parado o con
 // restricción); el que entra la lee y marca «Recibido». Funciona sin señal (entra a la cola).
-import { esc, icono, fechaHora, haceCuanto, plural, diasEntre, diaDe } from "./util.mjs";
+import { esc, icono, fechaHora, haceCuanto, plural, diasEntre, diaDe, fechaCorta } from "./util.mjs";
 import * as api from "./api.mjs";
 import { puede, aviso, dialogo, vacio, nombre, persona, avatar, galeria, botonesMedio, marcaSinEnviar, queInspeccion, plantilla, textoTurno } from "./ui.mjs";
 import { nombreCompleto } from "./componentes.mjs";
@@ -102,7 +102,12 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
     const turno = yo.turno ? `turno:${yo.turno}` : "-";
     const xs = [];
     for (const i of d.inspecciones.filter((i) => i.estado === "pendiente" && (i.asignada_a === yo.id || (i.asignada_a === turno || i.asignada_a === "todos")) && i.vence <= hoy)) xs.push(`- Inspección sin hacer: ${queInspeccion(d, i)} · ${plantilla(d, i.plantilla_id)?.nombre ?? ""}`);
-    for (const t of (d.tareas ?? []).filter((t) => t.estado !== "hecha" && esMia(t, yo) && t.vence && t.vence <= hoy)) xs.push(`- Tarea: ${t.titulo}`);
+    // las tareas abiertas de este turno, de todos o sin asignar, venzan cuando venzan (Eduardo, 31-oct-2026: «ya hay unos
+    // pendientes escritos en las tareas»)
+    for (const t of (d.tareas ?? []).filter((t) => t.estado !== "hecha" && (!t.asignada_a || esMia(t, yo))).sort((a, b) => (a.vence ?? "9").localeCompare(b.vence ?? "9"))) {
+      const extra = [t.equipo_id ? nombreCompleto(d, t.equipo_id) : "", t.vence ? (t.vence < hoy ? `atrasada desde ${fechaCorta(t.vence)}` : t.vence === hoy ? "vence hoy" : `para el ${fechaCorta(t.vence)}`) : ""].filter(Boolean);
+      xs.push(`- Tarea: ${t.titulo}${extra.length ? ` (${extra.join(", ")})` : ""}`);
+    }
     for (const h of d.hallazgos.filter((h) => h.estado !== "cerrado" && h.prioridad === "alta")) xs.push(`- Hallazgo alto abierto: ${nombreCompleto(d, h.equipo_id)}: ${h.descripcion}`);
     for (const p of enCurso.values()) xs.push(`- Sigue parado: ${nombreCompleto(d, p.equipo_id)}${p.causa ? ` (${p.causa})` : ""}`);
     return xs.join("\n");
@@ -111,7 +116,7 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
     const s = estados[e.id];
     return `<div class="estado-equipo-fila" data-eq="${esc(e.id)}"><span><b style="font-weight:600">${esc(e.tag ? `${e.tag} · ${e.nombre}` : e.nombre)}</b><br><small style="color:var(--tinta-3)">${esc(e.area ?? "")}</small></span>
       <div class="segmento chico" role="group" aria-label="Estado de ${esc(e.nombre)}">${["marcha", "restriccion", "parado"].map((x) => `<button type="button" data-valor="${x}" aria-pressed="${s.estado === x}">${TEXTO_ESTADO_EQUIPO[x].replace("Con restricción", "Restricción")}</button>`).join("")}</div>
-      <input type="text" data-nota placeholder="Qué pasa (por ejemplo: sin sacos)" value="${esc(s.nota)}" ${s.estado === "marcha" ? "hidden" : ""} aria-label="Nota de ${esc(e.nombre)}"></div>`;
+      <input type="text" data-nota placeholder="Redacte el motivo" value="${esc(s.nota)}" ${s.estado === "marcha" ? "hidden" : ""} aria-label="Motivo de ${esc(e.nombre)}"></div>`;
   };
   return {
     titulo: "Entregar mi turno",
@@ -157,10 +162,11 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
           resumen();
         }
         if (b.hasAttribute("data-sugerir")) {
-          const s = sugerencia();
           const ta = f["e-pendientes"];
-          ta.value = ta.value ? `${ta.value}\n${s}` : s;
-          if (!s) aviso("No hay nada abierto que sugerir.");
+          const ya = new Set(ta.value.split("\n").map((x) => x.trim()));
+          const s = sugerencia().split("\n").filter((x) => x && !ya.has(x.trim())).join("\n");
+          ta.value = ta.value && s ? `${ta.value.replace(/\s+$/, "")}\n${s}` : ta.value || s;
+          if (!s) aviso(ta.value.trim() && sugerencia() ? "Ya está todo lo abierto." : "No hay nada abierto que sugerir.");
         }
         if (b.dataset.quitar) { fotos.splice(fotos.indexOf(b.dataset.quitar), 1); m.querySelector("[data-galeria-nueva]").innerHTML = galeria(fotos, { quitar: true }); }
         if (b.dataset.dictar) {

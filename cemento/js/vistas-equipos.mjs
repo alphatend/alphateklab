@@ -193,7 +193,7 @@ export function vistaEquipo({ d, yo, hoy, param }) {
   const curso = enCurso(d).filter((p) => fam.has(p.equipo_id));
   const disp = !colector && !padre ? disponibilidad(d, eq.id, Date.now() - 30 * 86400e3, Date.now()) : null;
   const paros = (d.paros ?? []).filter((p) => fam.has(p.equipo_id) && Date.parse(p.inicio) > Date.now() - 90 * 86400e3).sort((a, b) => b.inicio.localeCompare(a.inicio));
-  const lab = d.ajustes?.lab?.[eq.id] ? (d.laboratorio ?? []).filter((x) => x.equipo_id === eq.id).sort((a, b) => a.en.localeCompare(b.en)) : null;
+  // el laboratorio no va aquí (Eduardo, 31-oct-2026: «no es necesario ver el tema de laboratorio»): está en su pantalla
   return {
     titulo: nombreCompleto(d, eq.id),
     tituloCorto: eq.tag || eq.nombre,
@@ -229,11 +229,6 @@ export function vistaEquipo({ d, yo, hoy, param }) {
       ${pendientes.length ? `<section class="seccion"><h2>Inspecciones pendientes <small>${pendientes.length}</small></h2><ul class="lista">${pendientes.map((i) => filaInspeccion(d, i, hoy)).join("")}</ul></section>` : ""}
       ${abiertos.length ? `<section class="seccion"><h2>Hallazgos abiertos <small>${abiertos.length}</small></h2><ul class="lista">${abiertos.map((h) => filaHallazgo(d, h, hoy)).join("")}</ul></section>` : ""}
       ${ss.length ? `<section class="seccion"><h2>Cómo vienen las medidas</h2><div class="lista">${ss.map(tendencia).join("")}</div></section>` : ""}
-      ${lab ? `<section class="seccion"><h2>Laboratorio <small><a href="#/laboratorio?m=${encodeURIComponent(eq.id)}">ver todo</a></small></h2>
-        <div class="kpis-app">${(d.ajustes.lab[eq.id] ?? []).map((p) => { const vs = lab.filter((x) => x.valores?.[p.id] != null); const v = vs.at(-1)?.valores[p.id];
-          const fuera = v != null && ((p.min != null && v < p.min) || (p.max != null && v > p.max));
-          return `<div class="kpi ${v == null ? "" : fuera ? "malo" : "bueno"}"><span class="rotulo-kpi">${esc(p.nombre)}</span><span class="valor-kpi">${v == null ? "—" : numero(v, 2)}<small>${esc(p.unidad ?? "")}</small></span>
-            <span class="pie-kpi">${vs.length ? esc(haceCuanto(vs.at(-1).en, hoy)) : "sin muestras"}</span></div>`; }).join("")}</div></section>` : ""}
       ${paros.length ? `<section class="seccion"><h2>Paros <small>últimos 90 días</small></h2><ul class="lista">${paros.slice(0, 8).map((p) => `<li><a class="fila" href="#/paro/${encodeURIComponent(p.id)}">
           <span class="titulo">${p.tipo === "programado" ? "Programado" : esc(p.causa || "No programado")} <small>· ${esc(nombreCompleto(d, p.equipo_id))}</small></span>
           <span class="detalle"><span>${esc(fechaHora(p.inicio))}</span><span>${p.fin ? duracion((Date.parse(p.fin) - Date.parse(p.inicio)) / 3600e3) : "en curso"}</span></span>

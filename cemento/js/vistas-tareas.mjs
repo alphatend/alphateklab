@@ -4,7 +4,7 @@
 import { esc, icono, fechaCorta, fechaHora, plural, diasEntre, normal, numeroHallazgo, sumarDias } from "./util.mjs";
 import * as api from "./api.mjs";
 import { aviso, confirmar, vacio, persona, nombre, nombreCorto, avatar, esAdmin, puede, etiquetaPersona, galeria, botonesMedio, marcaSinEnviar, TEXTO_PRIORIDAD, textoTurno, TURNOS } from "./ui.mjs";
-import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, campoEquipo } from "./componentes.mjs";
+import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, camposEquipoSub } from "./componentes.mjs";
 import { prepararArchivo } from "./medios.mjs";
 
 export const TEXTO_ESTADO_TAREA = { pendiente: "Por hacer", en_curso: "En curso", hecha: "Hecha" };
@@ -177,8 +177,8 @@ export function vistaTarea({ d, yo, hoy, param, query, ir }) {
         ${solo ? soloVer(d, T, hoy) : `<form class="panel" id="form-tarea" novalidate>
           <div class="campo"><label for="t-titulo">Qué hay que hacer</label><input id="t-titulo" type="text" value="${esc(T.titulo)}" placeholder="Por ejemplo: cambiar el manómetro del acumulador 2" style="font-size:19px;font-weight:600"></div>
           <div class="campo"><label for="t-detalle">Detalle <small>(opcional)</small></label><textarea id="t-detalle" style="min-height:80px" placeholder="Cómo, con qué, dónde…">${esc(T.detalle ?? "")}</textarea></div>
+          ${camposEquipoSub(d, { id: "t-equipo", valor: T.equipo_id ?? "", titulo: "Equipo de la tarea", ninguno: "Ninguno" })}
           <div class="rejilla-campos dos">
-            <div class="campo"><span class="rotulo">Equipo <small>(opcional)</small></span>${campoEquipo(d, { id: "t-equipo", valor: T.equipo_id ?? "", titulo: "Equipo de la tarea", placeholder: "Ninguno", todos: "Ninguno" })}</div>
             <div class="campo"><label for="t-quien">A quién</label><select id="t-quien"><option value="">Sin asignar</option>${opcionesQuien(d, yo, T.asignada_a)}</select></div>
             <div class="campo"><label for="t-vence">Para cuándo <small>(opcional)</small></label><input id="t-vence" type="date" value="${esc(T.vence ?? "")}"></div>
             <div class="campo"><span class="rotulo">Prioridad</span><div class="segmento" role="group" aria-label="Prioridad" data-prioridad>${["alta", "media", "baja"].map((p) => `<button type="button" data-valor="${p}" aria-pressed="${prioridad === p}">${TEXTO_PRIORIDAD[p]}</button>`).join("")}</div></div>

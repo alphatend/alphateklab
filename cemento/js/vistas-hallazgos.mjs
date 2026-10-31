@@ -7,7 +7,7 @@ import {
   etiquetaPersona, galeria, botonesMedio, TEXTO_ESTADO, ESTADOS, ICONO_ESTADO, segmentoTipoDano, TIPOS_DANO,
 } from "./ui.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
-import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, campoEquipo } from "./componentes.mjs";
+import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, camposEquipoSub } from "./componentes.mjs";
 import { proximosProgramados } from "./vistas-paros.mjs";
 import { filaTarea, montarChecks } from "./vistas-tareas.mjs";
 
@@ -108,7 +108,7 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
               <select id="h-paro"><option value="">El próximo que se programe</option>${paros.map((p) => `<option value="${esc(p.id)}" ${p.id === h.paro_id ? "selected" : ""}>${esc(nombreCompleto(d, p.equipo_id))} · ${esc(fechaHora(p.inicio))}</option>`).join("")}</select>
               <span class="ayuda">Entra a la lista de trabajos de ese paro.</span></div>
             ${puedeTexto ? `<div class="campo"><label for="h-desc">Qué se encontró</label><textarea id="h-desc" maxlength="2000" style="min-height:70px">${esc(h.descripcion)}</textarea></div>
-              <div class="campo"><span class="rotulo">Equipo o subequipo</span>${campoEquipo(d, { id: "h-equipo", valor: h.equipo_id, titulo: "Dónde está el hallazgo" })}</div>` : ""}
+              ${camposEquipoSub(d, { id: "h-equipo", valor: h.equipo_id, titulo: "Dónde está el hallazgo" })}` : ""}
             <div class="rejilla-campos dos">
               <div class="campo"><label for="h-resp">A cargo de</label>
                 <select id="h-resp"><option value="">Nadie todavía</option>${d.personas.filter((p) => (p.activo && puede(p, "editar")) || p.id === h.responsable_id).map((p) => `<option value="${esc(p.id)}" ${p.id === h.responsable_id ? "selected" : ""}>${esc(etiquetaPersona(p, yo))}</option>`).join("")}</select></div>
@@ -220,9 +220,10 @@ function soloVer(d, h) {
 export function vistaNuevoHallazgo({ d, yo, query, ir }) {
   if (!puede(yo, "editar")) return { titulo: "Anotar un hallazgo", atras: "#/tareas", html: vacio("Tu usuario es de solo ver: los hallazgos los anota quien tiene permiso de editar.") };
   const admin = d.personas.find((p) => p.rol === "admin" && p.activo);
-  // lo que se había escrito y no se mandó (se recargó, se fue atrás…) vuelve; si llegó con otro equipo, no
+  // lo que se había escrito y no se mandó (se recargó, se fue atrás…) vuelve; si llegó con otro equipo, no (un
+  // subequipo del equipo del enlace sí: es el mismo equipo)
   const b0 = api.borrador.leer("nuevo-hallazgo");
-  const B = b0 && (b0.desc || b0.accion || b0.fotos?.length) && (!query.get("equipo") || b0.equipo === query.get("equipo")) ? b0 : null;
+  const B = b0 && (b0.desc || b0.accion || b0.fotos?.length) && (!query.get("equipo") || familia(d, query.get("equipo")).has(b0.equipo)) ? b0 : null;
   const fotos = [...(B?.fotos ?? [])];
   const respInicial = B?.resp ?? (esAdmin(yo) ? yo.id : admin?.id);
   return {
@@ -233,7 +234,7 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
         <p class="bajada">Algo que viste fuera de una inspección. Funciona sin señal: se envía cuando vuelva.</p></div></div>
       <form class="panel" id="form-nh" novalidate style="max-width:680px">
         ${B ? `<p class="nota-asignacion azul" data-nota-borrador>Seguiste donde lo dejaste (${esc(fechaHora(B.guardado))}). <button type="button" class="boton mini plano" data-descartar>Empezar de nuevo</button></p>` : ""}
-        <div class="campo"><span class="rotulo">Equipo o subequipo</span>${campoEquipo(d, { id: "nh-equipo", valor: B?.equipo || (query.get("equipo") ?? ""), titulo: "Dónde está el hallazgo", placeholder: "Elegir el equipo" })}</div>
+        ${camposEquipoSub(d, { id: "nh-equipo", valor: B?.equipo || (query.get("equipo") ?? ""), titulo: "Dónde está el hallazgo", placeholder: "Elegir el equipo" })}
         <div class="campo"><label for="nh-desc">Qué se encontró</label>
           <textarea id="nh-desc" required maxlength="2000" placeholder="Por ejemplo: la vejiga del acumulador 2 no tiene presión">${esc(B?.desc ?? "")}</textarea>
           <div class="herramientas-item">${botonesMedio("nuevo")}${hayDictado ? `<button type="button" class="boton chico" data-dictar>${icono("microfono")}Dictar</button>` : ""}</div>
@@ -292,7 +293,7 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
         e.preventDefault();
         const err = f.querySelector(".error-form");
         const descripcion = f["nh-desc"].value.trim();
-        if (!f["nh-equipo"].value) { err.hidden = false; err.textContent = "Elige el equipo."; const c = f.querySelector('[data-campo-equipo="nh-equipo"]'); c.scrollIntoView({ block: "center", behavior: "smooth" }); c.focus({ preventScroll: true }); return; }
+        if (!f["nh-equipo"].value) { err.hidden = false; err.textContent = "Elige el equipo."; const c = f.querySelector('[data-equipo-sub="nh-equipo"] [data-eq-arriba]'); c.scrollIntoView({ block: "center", behavior: "smooth" }); c.focus({ preventScroll: true }); return; }
         if (!descripcion) { err.hidden = false; err.textContent = "Escribe qué se encontró."; f["nh-desc"].focus(); return; }
         const b = f.querySelector("button[type=submit]");
         b.disabled = true;

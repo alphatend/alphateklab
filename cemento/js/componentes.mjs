@@ -45,21 +45,23 @@ const editaEquipos = (d) => !!d?.yo && puede({ ...persona(d, d.yo.id), ...d.yo }
  * `soloArriba`: sin subequipos (para elegir el padre de un subequipo). `crear`: abajo va «Agregar un equipo o
  * subequipo» (para quien edita equipos); si lo toca, devuelve { nuevo: lo que estaba buscando }.
  */
-export function elegirEquipo(d, { titulo = "Elegir equipo", actual = null, todos = null, soloArriba = false, crear = false } = {}) {
+export function elegirEquipo(d, { titulo = "Elegir equipo", actual = null, todos = null, soloArriba = false, crear = false, buscarHijos = false } = {}) {
   let elegido = null;
-  const conCrear = crear && !soloArriba && editaEquipos(d);
+  const conCrear = crear && editaEquipos(d);
   const html = `<div class="buscador" style="margin-top:-4px">${icono("buscar")}<input type="search" data-q placeholder="Buscar por nombre, tag o área" autocomplete="off" aria-label="Buscar equipo"></div>
     <div class="selector-equipos" data-lista>${pintar("")}</div>`;
   function pintar(q) {
     const b = normal(q);
-    const gs = grupos(d).map((g) => ({ ...g, filas: g.filas.filter(({ e, nivel }) => (!soloArriba || nivel === 0)
+    // `buscarHijos`: la lista es de equipos de arriba, pero al buscar también salen los subequipos (el campo Equipo del
+    // par equipo/subequipo: buscar «BC1» la encuentra en vez de ofrecer agregarla otra vez como equipo)
+    const gs = grupos(d).map((g) => ({ ...g, filas: g.filas.filter(({ e, nivel }) => (!soloArriba || nivel === 0 || (buscarHijos && b))
       && (!b || normal(`${e.tag} ${e.nombre} ${e.area} ${g.titulo} ${nombreCompleto(d, e.id)}`).includes(b))) })).filter((g) => g.filas.length);
     return `${todos ? `<button type="button" class="opcion-equipo${actual ? "" : " elegida"}" data-id="">${icono("lista")}<span class="nombre">${esc(todos)}</span></button>` : ""}
       ${gs.length ? gs.map((g) => `<div class="grupo-equipos">${esc(g.titulo)}</div>${g.filas.map(({ e, nivel }) => `<button type="button" class="opcion-equipo${nivel ? " hijo" : ""}${e.id === actual ? " elegida" : ""}" data-id="${esc(e.id)}">
-        ${nivel ? `<span class="rama" aria-hidden="true"></span>` : ""}${e.tag ? `<span class="tag">${esc(e.tag)}</span>` : ""}<span class="nombre">${esc(e.nombre)}</span>
+        ${nivel ? `<span class="rama" aria-hidden="true"></span>` : ""}${e.tag ? `<span class="tag">${esc(e.tag)}</span>` : ""}<span class="nombre">${esc(nivel && soloArriba ? `${equipoDe(d, e.padre_id)?.nombre ?? ""} › ${e.nombre}` : e.nombre)}</span>
         ${e.id === actual ? icono("bien", "ico marca-elegida") : ""}</button>`).join("")}`).join("")
       : `<p class="ayuda" style="padding:18px 8px">Ningún equipo con «${esc(q)}».</p>`}
-      ${conCrear ? `<button type="button" class="opcion-equipo nueva" data-nuevo>${icono("mas1")}<span class="nombre">${q.trim() ? `Agregar «${esc(q.trim())}»` : "Agregar un equipo o subequipo"}</span></button>` : ""}`;
+      ${conCrear ? `<button type="button" class="opcion-equipo nueva" data-nuevo>${icono("mas1")}<span class="nombre">${q.trim() ? `Agregar «${esc(q.trim())}»` : soloArriba ? "Agregar un equipo" : "Agregar un equipo o subequipo"}</span></button>` : ""}`;
   }
   return dialogo({
     titulo, html, ancho: false,
@@ -98,9 +100,87 @@ export function campoEquipo(d, { id, valor = "", titulo = "Elegir equipo", place
     <button type="button" class="campo-equipo" data-campo-equipo="${esc(id)}" data-titulo="${esc(titulo)}" data-solo-arriba="${soloArriba ? "1" : ""}" data-todos="${esc(todos ?? "")}" data-crear="${crear ? "1" : ""}"
       data-placeholder="${esc(placeholder)}" aria-label="${esc(titulo)}">${icono("equipos")}<span>${valor ? esc(nombreCompleto(d, valor)) : `<span class="vacio-campo">${esc(placeholder)}</span>`}</span>${icono("abajo", "ico flechita")}</button>`;
 }
+/**
+ * Equipo y, aparte, su subequipo (Eduardo, 31-oct-2026: «que no solamente aparezca equipo sino que también aparezca
+ * subequipo»). El <input type=hidden id> lleva el subequipo si se eligió y si no el equipo, así las vistas lo leen como
+ * antes. Quien edita equipos agrega ahí mismo el equipo o el subequipo que falte. `ninguno`: el equipo es opcional y se
+ * puede dejar vacío con esa opción (las tareas).
+ */
+export function camposEquipoSub(d, { id, valor = "", titulo = "Qué equipo", placeholder = "Elegir el equipo", ninguno = null } = {}) {
+  return `<div class="rejilla-campos dos alineados equipo-y-sub" data-equipo-sub="${esc(id)}" data-titulo="${esc(titulo)}" data-placeholder="${esc(placeholder)}" data-ninguno="${esc(ninguno ?? "")}">
+    <input type="hidden" id="${esc(id)}" name="${esc(id)}" value="${esc(valor ?? "")}">${botonesEquipoSub(d, valor, { titulo, placeholder, ninguno })}</div>`;
+}
+const partes = (d, valor) => {
+  const e = valor ? equipoDe(d, valor) : null;
+  return { arriba: e ? e.padre_id ?? e.id : "", sub: e?.padre_id ? e.id : "" };
+};
+function botonesEquipoSub(d, valor, { titulo, placeholder, ninguno }) {
+  const { arriba, sub } = partes(d, valor);
+  const hijos = arriba ? d.equipos.filter((x) => x.padre_id === arriba && (x.activo || x.id === sub)) : [];
+  const conSub = !!arriba && (hijos.length > 0 || editaEquipos(d));
+  const flecha = icono("abajo", "ico flechita");
+  return `<div class="campo"><span class="rotulo">Equipo${ninguno ? " <small>(opcional)</small>" : ""}</span>
+      <button type="button" class="campo-equipo" data-eq-arriba aria-label="${esc(titulo)}">${icono("equipos")}<span>${arriba ? esc(nombreCompleto(d, arriba)) : `<span class="vacio-campo">${esc(ninguno || placeholder)}</span>`}</span>${flecha}</button></div>
+    <div class="campo" data-zona-sub ${conSub ? "" : "hidden"}><span class="rotulo">Subequipo <small>(opcional)</small></span>
+      <button type="button" class="campo-equipo" data-eq-sub aria-label="Subequipo">${icono("equipos")}<span>${sub ? esc(nombreDeSub(d, sub)) : `<span class="vacio-campo">${hijos.length ? "Todo el equipo" : "Ninguno · agregar uno"}</span>`}</span>${flecha}</button></div>`;
+}
+const nombreDeSub = (d, id) => { const e = equipoDe(d, id); return e ? (e.tag ? `${e.tag} · ${e.nombre}` : e.nombre) : "Subequipo"; };
+
+/** La hoja para elegir el subequipo de un equipo: «Todo el equipo», sus subequipos y (quien edita) agregar uno. */
+function elegirSub(d, arriba, actual) {
+  const conCrear = editaEquipos(d);
+  const hijos = d.equipos.filter((x) => x.padre_id === arriba && x.activo).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre.localeCompare(b.nombre));
+  const fila = (e) => `<button type="button" class="opcion-equipo${e.id === actual ? " elegida" : ""}" data-id="${esc(e.id)}">${e.tag ? `<span class="tag">${esc(e.tag)}</span>` : ""}<span class="nombre">${esc(e.nombre)}</span>${e.id === actual ? icono("bien", "ico marca-elegida") : ""}</button>`;
+  const html = `<div class="selector-equipos" data-lista>
+      <button type="button" class="opcion-equipo${actual ? "" : " elegida"}" data-id="">${icono("equipos")}<span class="nombre">Todo el equipo <small style="color:var(--tinta-3)">(sin subequipo)</small></span>${actual ? "" : icono("bien", "ico marca-elegida")}</button>
+      ${hijos.map(fila).join("")}
+      ${!hijos.length ? `<p class="ayuda" style="padding:10px 8px">${esc(nombreCompleto(d, arriba))} todavía no tiene subequipos.</p>` : ""}
+      ${conCrear ? `<button type="button" class="opcion-equipo nueva" data-nuevo>${icono("mas1")}<span class="nombre">Agregar un subequipo</span></button>` : ""}</div>`;
+  return dialogo({
+    titulo: `Subequipo de ${equipoDe(d, arriba)?.nombre ?? "el equipo"}`, html, ancho: false,
+    botones: [{ texto: "Cancelar", valor: null }],
+    alMontar(velo, cerrar) {
+      velo.querySelector("[data-lista]").addEventListener("click", (e) => {
+        if (e.target.closest("[data-nuevo]")) return cerrar({ nuevo: "" });
+        const b = e.target.closest("[data-id]");
+        if (b) cerrar(b.dataset.id);
+      });
+    },
+  });
+}
+
+async function tocarEquipoSub(zona, boton) {
+  const input = zona.querySelector("input[type=hidden]");
+  const { arriba, sub } = partes(datosCampos, input.value);
+  const opciones = { titulo: zona.dataset.titulo, placeholder: zona.dataset.placeholder, ninguno: zona.dataset.ninguno || null };
+  let valor;
+  const { editarEquipo } = await import("./vistas-equipos.mjs");
+  if (boton.hasAttribute("data-eq-arriba")) {
+    let r = await elegirEquipo(datosCampos, { titulo: opciones.titulo, actual: arriba || null, soloArriba: true, crear: true, todos: opciones.ninguno, buscarHijos: true });
+    if (r === null || (r === arriba && r !== "")) return;
+    // un equipo nuevo (o, si eligió «Parte de un equipo», un subequipo: queda con su equipo)
+    if (typeof r === "object") r = await editarEquipo(api.obtener() ?? datosCampos, { tipo: "proceso", nombre: r.nuevo });
+    if (r === null || r === undefined) return;
+    valor = r;
+  } else {
+    let r = await elegirSub(datosCampos, arriba, sub);
+    if (r === null) return;
+    if (typeof r === "object") r = await editarEquipo(api.obtener() ?? datosCampos, { tipo: "proceso", padre_id: arriba, nombre: r.nuevo });
+    if (r === null || r === undefined) return;
+    valor = r || arriba;
+  }
+  datosCampos = api.obtener() ?? datosCampos;
+  input.value = valor;
+  zona.querySelectorAll(".campo").forEach((x) => x.remove());
+  zona.insertAdjacentHTML("beforeend", botonesEquipoSub(datosCampos, valor, opciones));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 let datosCampos = null; // los datos con que se pinta el campo (los pone la app al dibujar)
 export const usarDatos = (d) => { datosCampos = d; };
 document.addEventListener("click", async (e) => {
+  const par = e.target.closest?.("[data-eq-arriba], [data-eq-sub]");
+  if (par && datosCampos) return tocarEquipoSub(par.closest("[data-equipo-sub]"), par);
   const b = e.target.closest?.("[data-campo-equipo]");
   if (!b || !datosCampos) return;
   const input = document.getElementById(b.dataset.campoEquipo);

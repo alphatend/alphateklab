@@ -4,8 +4,8 @@
 // - Ejecutivo: una página con los indicadores (cumplimiento, a tiempo, cierre, por persona, por equipo).
 // - Mantenimiento: los hallazgos mecánicos, eléctricos y de lógica: lo pendiente con los días que lleva y lo resuelto
 //   en el período con lo que tardó.
-// Sale impreso o en PDF (diálogo de impresión, en carta), en Excel (todas las tablas, para filtrar y graficar),
-// copiado como correo (con asunto, saludo y firma) o para WhatsApp. Todo se arma en el aparato: funciona sin señal.
+// Sale impreso o en PDF (diálogo de impresión, en carta) o copiado: con formato para un correo o Word, y en texto
+// para WhatsApp. El Excel de todo está en Ajustes. Todo se arma en el aparato: funciona sin señal.
 import { esc, icono, fechaCorta, fechaLarga, fechaHora, sumarDias, diaDe, numero, plural, numeroHallazgo, diasEntre } from "./util.mjs";
 import * as api from "./api.mjs";
 import {
@@ -14,7 +14,7 @@ import {
 } from "./ui.mjs";
 import { diasAbierto } from "./vistas-mantenimiento.mjs";
 import { fueraDeRango, textoRango } from "./vistas-inspecciones.mjs";
-import { libroXlsx, TIPO_XLSX } from "./xlsx.mjs";
+import { libroXlsx } from "./xlsx.mjs";
 import { nombreCompleto } from "./componentes.mjs";
 import { disponibilidad, duracion } from "./vistas-paros.mjs";
 import { paraQuien, TEXTO_ESTADO_TAREA } from "./vistas-tareas.mjs";
@@ -93,14 +93,15 @@ export function calcularReporte(d, desde, hasta, hoy, alcance = alcanceDe(d)) {
   const cierreMedio = cierres.length ? cierres.reduce((a, b) => a + b, 0) / cierres.length : null;
   // por equipo de arriba (lo de sus subequipos suma al padre)
   const fam = (e) => new Set([e.id, ...d.equipos.filter((x) => x.padre_id === e.id).map((x) => x.id)]);
-  const equipos = d.equipos.filter((e) => !e.padre_id && alcance.ids.has(e.id) && (e.activo || ins.some((i) => equiposDe(i).includes(e.id)) || hall.some((h) => fam(e).has(h.equipo_id))));
+  const deFam = (f) => (i) => equiposDe(i).some((x) => f.has(x));
+  const equipos = d.equipos.filter((e) => !e.padre_id && alcance.ids.has(e.id) && (e.activo || ins.some(deFam(fam(e))) || hall.some((h) => fam(e).has(h.equipo_id))));
   const ms0 = Date.parse(desde + "T05:00:00Z"), ms1 = Math.min(Date.parse(hasta + "T05:00:00Z") + 86400e3, Date.now());
   const porEquipo = equipos.map((e) => {
     const f = fam(e);
     return {
       e,
-      hechas: hechas.filter((i) => equiposDe(i).includes(e.id)).length,
-      atrasadas: atrasadas.filter((i) => equiposDe(i).includes(e.id)).length,
+      hechas: hechas.filter(deFam(f)).length,
+      atrasadas: atrasadas.filter(deFam(f)).length,
       nuevos: nuevos.filter((h) => f.has(h.equipo_id)).length,
       abiertos: abiertos.filter((h) => f.has(h.equipo_id)).length,
       disp: e.tipo === "colector" ? null : disponibilidad(d, e.id, ms0, ms1),
@@ -223,8 +224,8 @@ function docFormal(d, yo, hoy, per, al, r, o) {
 }
 
 function hojaEquipo(d, e, hechas, per, r, o) {
-  const ids = new Set([e.id]);
-  const mias = hechas.filter((i) => equiposDe(i).includes(e.id));
+  const ids = new Set([e.id, ...d.equipos.filter((x) => x.padre_id === e.id).map((x) => x.id)]);
+  const mias = hechas.filter((i) => equiposDe(i).some((x) => ids.has(x)));
   const filas = filasRespuestas(d, mias, ids);
   const medidas = filas.filter((x) => x.it.tipo === "medida" && x.r.valor != null);
   const malas = filas.filter((x) => x.it.tipo !== "medida" && x.r.resultado === "mal");
@@ -233,7 +234,7 @@ function hojaEquipo(d, e, hechas, per, r, o) {
   const hall = [...r.nuevos, ...r.abiertos.filter((h) => !r.nuevos.includes(h))].filter((h) => fam.has(h.equipo_id));
   const paros = r.paros.filter((p) => fam.has(p.equipo_id));
   const disp = r.porEquipo.find((x) => x.e.id === e.id)?.disp;
-  const pend = r.atrasadas.filter((i) => equiposDe(i).includes(e.id));
+  const pend = r.atrasadas.filter((i) => equiposDe(i).some((x) => ids.has(x)));
   return `<h2>${e.tag ? `<span class="tag-doc">${esc(e.tag)}</span>` : ""}${esc(e.nombre)}</h2>
     <p class="sub-doc">${esc([e.area, e.sirve_a ? `sirve a ${e.sirve_a}` : "", plural(mias.length, "inspección en el período", "inspecciones en el período"),
       disp ? `disponibilidad ${numero(disp.disp * 100, 1)} %` : ""].filter(Boolean).join(" · "))}</p>
@@ -377,16 +378,79 @@ function textoCorreo(d, yo, per, al, r, tipo, hoy) {
   return { asunto, cuerpo };
 }
 
-function textoWhatsApp(d, yo, per, al, r, tipo, hoy) {
-  const nuevos = [...r.nuevos].sort((a, b) => ORDEN[a.prioridad] - ORDEN[b.prioridad]);
-  if (tipo === "mantenimiento") return [`*Reporte de mantenimiento* — ${al.texto}, ${fechaCorta(per.desde)} al ${fechaCorta(per.hasta)}`, ...lineasMantenimiento(d, per, al, hoy, "•"), "", `Preparó: ${yo.nombre}`].join("\n");
-  return [
-    `*Reporte de inspecciones* — ${al.texto}, ${fechaCorta(per.desde)} al ${fechaCorta(per.hasta)}`,
-    parrafoResumen(r, per),
-    ...(nuevos.length ? ["", "*Hallazgos:*", ...nuevos.map((h) => `• ${numeroHallazgo(h)} [${TEXTO_PRIORIDAD[h.prioridad]}] ${nombreEquipo(equipo(d, h.equipo_id))}: ${h.descripcion}${h.accion ? ` → ${h.accion}` : ""} (${TEXTO_ESTADO[h.estado]})`)] : []),
-    ...(r.atrasadas.length ? ["", "*Atrasadas:*", ...r.atrasadas.map((i) => `• ${[queInspeccion(d, i), plantilla(d, i.plantilla_id)?.nombre].filter(Boolean).join(" · ")} — ${nombreCorto(d, i.asignada_a)}, vencía el ${fechaCorta(i.vence)}`)] : []),
-    "", `Preparó: ${yo.nombre}`,
-  ].join("\n");
+/**
+ * «Copiar» (Eduardo, 31-oct-2026: en vez de Excel, correo y WhatsApp, «solamente un cuadrito que diga copiar»): el
+ * reporte tal como se ve, con sus tablas, para pegarlo en un correo o en Word; y en texto, para WhatsApp o donde no se
+ * pueda pegar con formato. Los estilos van dentro de cada elemento porque afuera no existe la hoja de estilos de la app.
+ * Sin las fotos del servidor: su dirección lleva el token de las fotos y en un correo lo vería quien lo reciba.
+ */
+// los que se heredan solo se escriben si cambian respecto del de afuera; los demás, si no son el valor por defecto
+const HEREDADOS = ["color", "font-size", "font-weight", "font-style", "text-align", "white-space", "line-height", "text-transform", "letter-spacing", "border-collapse"];
+const PROPIOS = ["background-color", "vertical-align", "padding-top", "padding-right", "padding-bottom", "padding-left", "margin-top", "margin-bottom",
+  "border-top", "border-right", "border-bottom", "border-left"];
+const POR_DEFECTO = /^(0px|rgba\(0, 0, 0, 0\)|baseline|none|normal|auto)$|^0px none|^0px solid|none$/;
+function estiloEnLinea(o, cs, csPadre) {
+  const xs = [];
+  for (const p of HEREDADOS) { const v = cs.getPropertyValue(p); if (!csPadre || v !== csPadre.getPropertyValue(p)) xs.push(`${p}:${v}`); }
+  for (const p of PROPIOS) { const v = cs.getPropertyValue(p); if (!POR_DEFECTO.test(v)) xs.push(`${p}:${v}`); }
+  // el logo y las barras del ejecutivo necesitan su tamaño
+  if (o.tagName === "IMG" || o.tagName === "I") xs.push(`width:${cs.width}`, `height:${cs.height}`, `display:inline-block`);
+  return xs.join(";");
+}
+export function htmlParaCopiar(hojas) {
+  const copia = hojas.cloneNode(true);
+  const orig = [hojas, ...hojas.querySelectorAll("*")], dest = [copia, ...copia.querySelectorAll("*")];
+  const fuera = [], filas = [], bloques = [];
+  orig.forEach((o, i) => {
+    const cs = getComputedStyle(o), x = dest[i];
+    if (cs.display === "none") fuera.push(x);
+    x.removeAttribute("class");
+    x.setAttribute("style", estiloEnLinea(o, cs, i ? getComputedStyle(o.parentElement) : null));
+    // lo que en la app se acomoda con flex o grid, el correo no lo entiende: lo que va lado a lado pasa a una tabla
+    // (el membrete, los cuadros de cifras) y lo que va uno debajo del otro, a bloques
+    if (o.closest("table") || !o.children.length) return;
+    const columnas = cs.display.endsWith("grid") ? cs.gridTemplateColumns.split(" ").filter(Boolean).length
+      : cs.display.endsWith("flex") && !cs.flexDirection.startsWith("column") ? o.children.length : 1;
+    if (columnas > 1 && o.children.length <= 12) filas.push([x, columnas]);
+    else if (cs.display.endsWith("flex") || cs.display.endsWith("grid")) bloques.push(x);
+  });
+  for (const x of bloques) for (const h of x.children) h.style.display = "block";
+  for (const [x, columnas] of filas.reverse()) {
+    const hijos = [...x.children];
+    const tabla = document.createElement("table");
+    tabla.setAttribute("style", `${x.getAttribute("style")};width:100%;border-collapse:collapse;table-layout:fixed`);
+    for (let k = 0; k < hijos.length; k += columnas) {
+      const tr = tabla.insertRow();
+      for (const h of hijos.slice(k, k + columnas)) {
+        const td = tr.insertCell();
+        td.setAttribute("style", `vertical-align:top;padding:4px 12px 4px 0;${h.style.textAlign ? `text-align:${h.style.textAlign}` : ""}`);
+        h.style.display = "block";
+        td.append(h);
+        // lo de adentro (la cifra y su rótulo) va uno debajo del otro
+        for (const n of h.children) n.style.display = "block";
+      }
+    }
+    x.replaceWith(tabla);
+  }
+  fuera.forEach((x) => x.remove());
+  copia.querySelectorAll("img").forEach((img) => {
+    if (!/\/api\/media\//.test(img.getAttribute("src") ?? "")) return;
+    if (img.alt === "Firma") img.replaceWith("Firmada");
+    else img.remove();
+  });
+  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#111">${copia.innerHTML}</div>`;
+}
+async function copiarReporte(hojas, texto) {
+  try {
+    if (!window.ClipboardItem || !navigator.clipboard?.write) throw new Error("sin ClipboardItem");
+    await navigator.clipboard.write([new ClipboardItem({
+      "text/html": new Blob([htmlParaCopiar(hojas)], { type: "text/html" }),
+      "text/plain": new Blob([texto], { type: "text/plain" }),
+    })]);
+    aviso("Reporte copiado: pégalo en el correo, en Word o en WhatsApp.");
+  } catch {
+    copiar(texto, "Reporte copiado");
+  }
 }
 
 async function copiar(texto, que = "Copiado") {
@@ -494,7 +558,6 @@ export async function entregarArchivo(bytes, nombreArchivo, tipo) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
-const archivoSeguro = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").toLowerCase();
 
 // ------------------------------------------------------------------------------- la vista
 
@@ -549,10 +612,7 @@ export function vistaReportes({ d: todo, yo, hoy, query }) {
       </div>
       <div class="salida-reporte no-imprimir">
         <button class="boton primario" data-accion="imprimir">${icono("imprimir")}PDF o imprimir</button>
-        <button class="boton" data-accion="excel">${icono("excel")}Excel</button>
-        <button class="boton" data-accion="correo">${icono("correo")}Copiar como correo</button>
-        <button class="boton" data-accion="mailto">${icono("enviar")}Abrir en el correo</button>
-        <button class="boton" data-accion="whatsapp">${icono("whatsapp")}WhatsApp</button>
+        <button class="boton" data-accion="copiar">${icono("copiar")}Copiar</button>
       </div>
       <div class="hojas">${doc}</div>`,
     ancho: false,
@@ -572,23 +632,9 @@ export function vistaReportes({ d: todo, yo, hoy, query }) {
         if (b.dataset.plantilla) return ir2({ plantilla: b.dataset.plantilla });
         const a = b.dataset.accion;
         if (a === "imprimir") print();
-        if (a === "correo") {
+        if (a === "copiar") {
           const c = textoCorreo(d, yo, per, al, r, tipo, hoy);
-          copiar(`Asunto: ${c.asunto}\n\n${c.cuerpo}`, "Correo copiado");
-        }
-        if (a === "mailto") {
-          const c = textoCorreo(d, yo, per, al, r, tipo, hoy);
-          const cuerpo = c.cuerpo.length > 1800 ? `${c.cuerpo.slice(0, 1700)}\n…\n(El reporte completo va en el PDF adjunto.)` : c.cuerpo;
-          location.href = `mailto:?subject=${encodeURIComponent(c.asunto)}&body=${encodeURIComponent(cuerpo)}`;
-        }
-        if (a === "whatsapp") copiar(textoWhatsApp(d, yo, per, al, r, tipo, hoy), "Resumen copiado");
-        if (a === "excel") {
-          b.disabled = true;
-          try {
-            const bytes = excelDe(d, per, al, hoy);
-            await entregarArchivo(bytes, `bitacora-${archivoSeguro(al.texto)}${tipo === "mantenimiento" ? "-mantenimiento" : ""}-${per.desde}-a-${per.hasta}.xlsx`, TIPO_XLSX);
-          } catch (x) { aviso(`No se pudo armar el Excel: ${x.message}`, { error: true }); }
-          b.disabled = false;
+          copiarReporte(m.querySelector(".hojas"), `${c.asunto}\n\n${c.cuerpo}`);
         }
       });
     },

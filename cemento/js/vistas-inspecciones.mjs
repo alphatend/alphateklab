@@ -6,7 +6,7 @@ import {
   equiposDe, esAdmin, puede, etiquetaPersona, marcaVence, marcaPrioridad, galeria, botonesMedio, marcaSinEnviar, segmentoTipoDano, textoTurno,
 } from "./ui.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
-import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, campoEquipo, escanear, equipoDelQr, pedirFirma, equipoDe } from "./componentes.mjs";
+import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, camposEquipoSub, escanear, equipoDelQr, pedirFirma, equipoDe } from "./componentes.mjs";
 import { opcionesQuien, paraQuien } from "./vistas-tareas.mjs";
 
 const reducir = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -98,7 +98,7 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
         <p class="bajada">Le aparece en su tablero y le llega un aviso. Si se repite, al terminarla queda programada la siguiente (con las tareas que no se hicieron).</p></div></div>
       <form class="panel" id="form-asignar" novalidate style="max-width:760px">
         ${ronda ? `<div class="campo"><span class="rotulo">Equipos</span><p style="margin:0">${esc(plFija.nombre)}: ${esc(ronda.map((id) => equipoDe(d, id)?.tag || equipoDe(d, id)?.nombre || id).join(", "))}</p></div>`
-          : `<div class="campo" data-zona-equipo><span class="rotulo">Equipo</span>${campoEquipo(d, { id: "a-equipo", valor: eqId, titulo: "Qué equipo", placeholder: "Elegir el equipo" })}</div>`}
+          : `<div data-zona-equipo>${camposEquipoSub(d, { id: "a-equipo", valor: eqId, titulo: "Qué equipo", placeholder: "Elegir el equipo" })}</div>`}
         <div class="rejilla-campos dos alineados">
           <div class="campo"><label for="a-quien">A quién</label><select id="a-quien">${opcionesQuien(d, yo, query.get("quien") ?? "", { elegir: true })}</select></div>
           <div class="campo"><label for="a-vence">Para cuándo</label><input id="a-vence" type="date" value="${esc(vence)}" min="${sumarDias(hoy, -30)}"></div>
@@ -156,6 +156,10 @@ export function vistaAsignar({ d, yo, hoy, query, ir }) {
           // la plantilla del enlace era de otro equipo: ya no va
           if (plFija && plFija.equipo_id !== eqId) { plFija = null; f.querySelector("[data-con-plantilla]")?.remove(); sugerir(); }
           pintarSub();
+          const fam = familia(d, eqId);
+          let cambio = false;
+          for (const t of tareas) if (t.equipo_id && !fam?.has(t.equipo_id)) { t.equipo_id = null; cambio = true; }
+          if (cambio) f.querySelector("[data-tareas]").innerHTML = htmlTareas();
         }
       });
       sugerir();
@@ -504,7 +508,7 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
           const t = await escanear({ ayuda: "Apunta al QR pegado en el equipo: queda registrado que pasaste por ahí." });
           if (!t) return;
           const id = equipoDelQr(d, t);
-          const vale = id && (ids.includes(id) || ids.includes(equipo(d, id)?.padre_id));
+          const vale = id && (ids.includes(id) || ids.includes(equipo(d, id)?.padre_id) || ids.some((x) => equipo(d, x)?.padre_id === id));
           if (!vale) return aviso(id ? `Ese QR es de ${nombreCompleto(d, id)}, que no está en esta inspección.` : "Ese QR no es de un equipo de la bitácora.", { error: true });
           const b2 = api.borrador.leer(insp.id) ?? {};
           api.borrador.guardar(insp.id, { ...b2, respuestas: R, paso, tareas: T, verificaciones: [...(b2.verificaciones ?? []).filter((v) => v.equipo_id !== id), { equipo_id: id, en: new Date().toISOString() }] });

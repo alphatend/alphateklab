@@ -373,7 +373,7 @@ function dibujarCambiarClave() {
       <div class="campo"><label for="otra">Otra vez</label><input id="otra" type="password" autocomplete="new-password"></div>
       <p class="aviso-error" role="alert" hidden></p>
       <button class="boton primario ancho" type="submit">Guardar y entrar</button>
-      <button class="boton plano ancho" type="button" data-salir>Salir</button>
+      <button class="boton plano ancho" type="button" data-salir>Cerrar sesión</button>
     </form></main>`;
   const form = document.getElementById("form-clave");
   const err = form.querySelector(".aviso-error");
@@ -483,9 +483,9 @@ function vistaNoExiste() {
 
 export async function cerrarSesion() {
   const mios = api.cola.pendientes.filter((p) => !p.quien || p.quien === api.sesion.persona).length;
-  const ok = await confirmar("¿Salir?", mios
+  const ok = await confirmar("¿Cerrar sesión?", mios
     ? `Hay ${plural(mios, "cosa tuya", "cosas tuyas")} sin enviar. Quedan guardadas en este aparato y se envían cuando vuelvas a entrar.`
-    : "Para volver a entrar vas a necesitar tu contraseña.", "Salir", "peligro");
+    : "Para volver a entrar vas a necesitar tu contraseña.", "Cerrar sesión", "peligro");
   if (!ok) return;
   await api.salir();
   dibujarEntrar();

@@ -27,7 +27,7 @@ export function vistaAjustes({ d, yo }) {
       <div class="lista"><div class="ajuste">${avatar(yo)}<span class="texto"><b>${esc(yo.nombre)}</b><small>${esc([yo.puesto, yo.turno ? textoTurno(yo.turno) : "", `usuario ${yo.usuario}`].filter(Boolean).join(" · "))}</small></span>
         <span class="marca ${admin ? "en_proceso" : ""}">${esc(nombrePerfil(yo))}</span></div>
         <div class="ajuste"><span class="icono-fila gris">${icono("llave")}</span><span class="texto"><b>Contraseña</b></span><button type="button" class="boton chico" data-accion="clave">Cambiar</button></div>
-        <div class="ajuste"><span class="icono-fila rojo">${icono("salir")}</span><span class="texto"><b>Salir de este aparato</b><small>Lo que no se haya enviado se queda guardado.</small></span><button type="button" class="boton chico peligro" data-accion="salir">Salir</button></div></div>
+        <div class="ajuste"><span class="icono-fila rojo">${icono("salir")}</span><span class="texto"><b>Cerrar sesión</b><small>Lo que no se haya enviado se queda guardado en este aparato.</small></span><button type="button" class="boton chico peligro" data-accion="salir">Cerrar sesión</button></div></div>
 
       ${seccion("Apariencia", `<div class="ajuste"><div class="segmento" role="group" aria-label="Tema" style="flex:1">
           <button type="button" data-tema="auto" aria-pressed="${tema === "auto"}">${icono("auto")}Automático</button>
