@@ -22,6 +22,9 @@
 const LOCAL = location.hostname === "127.0.0.1" && location.port !== "";
 const API = (LOCAL && new URLSearchParams(location.search).get("api")) || (LOCAL ? "http://127.0.0.1:5195/api" : "https://cemento.alphateklab.com/api");
 export const URL_API = API;
+// «Mejorar redacción»: el Worker de Cloudflare (redactar/). Vacío, no se ofrece. En local, el de `wrangler dev`.
+const REDACTAR = (LOCAL && new URLSearchParams(location.search).get("redactar")) || (LOCAL ? "http://127.0.0.1:8787/redactar" : "https://bitacora-redactar.jjmc2098.workers.dev/redactar");
+export const hayRedaccion = !!REDACTAR;
 
 const LS = {
   leer(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
@@ -187,6 +190,24 @@ export async function escribir(ruta, cuerpo = {}) {
   if (r?.yo && r?.personas) recibir(r);
   else await refrescar().catch(() => {});
   return r;
+}
+
+/** Lo escrito o dictado, bien redactado (Workers AI). Necesita señal; no entra a la cola. */
+export async function redactar(texto, para) {
+  if (!REDACTAR) throw new ErrorApi("Esto todavía no está disponible.", 404);
+  const corte = new AbortController();
+  const reloj = setTimeout(() => corte.abort(), 30000);
+  let r;
+  try {
+    r = await fetch(REDACTAR, { method: "POST", signal: corte.signal, headers: { Authorization: `Bearer ${sesion.token ?? ""}`, "Content-Type": "application/json" }, body: JSON.stringify({ texto, para }) });
+  } catch {
+    throw new ErrorApi(corte.signal.aborted ? "Tardó demasiado. Prueba otra vez." : "Para mejorar la redacción hace falta señal.", 0);
+  } finally {
+    clearTimeout(reloj);
+  }
+  const d = await r.json().catch(() => null);
+  if (!r.ok || typeof d?.texto !== "string") throw new ErrorApi(d?.error || `No se pudo (${r.status}).`, r.status);
+  return d.texto;
 }
 
 export const urlMedio = (id) =>

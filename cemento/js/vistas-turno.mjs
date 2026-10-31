@@ -6,6 +6,7 @@ import { puede, aviso, dialogo, vacio, nombre, persona, avatar, galeria, botones
 import { nombreCompleto } from "./componentes.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
 import { esMia } from "./vistas-tareas.mjs";
+import { botonRedactar } from "./redactar.mjs";
 
 export const TEXTO_ESTADO_EQUIPO = { marcha: "En marcha", parado: "Parado", restriccion: "Con restricción" };
 const ICONO_EQ = { marcha: "play", parado: "paros", restriccion: "alerta" };
@@ -129,11 +130,11 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
         <div style="display:grid;gap:12px">
           <div class="panel"><div class="campo"><label for="e-novedades">Novedades del turno</label>
             <textarea id="e-novedades" style="min-height:130px" placeholder="Qué pasó: cambios, ajustes, problemas, cómo quedó la producción…">${esc(B?.novedades ?? "")}</textarea>
-            ${hayDictado ? `<div><button type="button" class="boton chico" data-dictar="e-novedades">${icono("microfono")}Dictar</button></div>` : ""}</div></div>
+            <div class="herramientas-item">${hayDictado ? `<button type="button" class="boton chico" data-dictar="e-novedades">${icono("microfono")}Dictar</button>` : ""}${botonRedactar("e-novedades", "novedades")}</div></div></div>
           <div class="panel"><div class="campo"><label for="e-pendientes" style="display:flex;justify-content:space-between;align-items:center">Lo que queda pendiente
               <button type="button" class="boton mini" data-sugerir>${icono("lista")}Sugerir desde lo abierto</button></label>
             <textarea id="e-pendientes" style="min-height:110px" placeholder="Lo que el que entra tiene que seguir">${esc(B?.pendientes ?? "")}</textarea>
-            ${hayDictado ? `<div><button type="button" class="boton chico" data-dictar="e-pendientes">${icono("microfono")}Dictar</button></div>` : ""}</div>
+            <div class="herramientas-item">${hayDictado ? `<button type="button" class="boton chico" data-dictar="e-pendientes">${icono("microfono")}Dictar</button>` : ""}${botonRedactar("e-pendientes", "pendientes")}</div></div>
             <div class="campo"><span class="rotulo">Fotos <small>(opcional)</small></span><div class="herramientas-item">${botonesMedio("entrega")}</div><div data-galeria-nueva>${fotos.length ? galeria(fotos, { quitar: true }) : ""}</div></div></div>
         </div>
         <div class="panel" style="align-content:start"><h2>Cómo quedan los equipos</h2><p class="ayuda" style="margin-top:-8px">Los que están parados por un paro en curso ya vienen marcados.</p>

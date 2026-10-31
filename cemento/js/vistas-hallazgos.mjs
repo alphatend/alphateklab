@@ -8,6 +8,7 @@ import {
 } from "./ui.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
 import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, camposEquipoSub } from "./componentes.mjs";
+import { botonRedactar } from "./redactar.mjs";
 import { filaTarea, montarChecks } from "./vistas-tareas.mjs";
 
 const ORDEN_PRIORIDAD = { alta: 0, media: 1, baja: 2 };
@@ -118,7 +119,7 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
               <textarea id="h-accion" style="min-height:70px" placeholder="Por ejemplo: gestionar el reemplazo con mantenimiento">${esc(h.accion ?? "")}</textarea></div>
             <div class="campo"><label for="h-texto">Comentario o avance</label>
               <textarea id="h-texto" maxlength="2000" placeholder="Qué se hizo, qué falta…"></textarea>
-              <div class="herramientas-item">${botonesMedio("comentario")}${hayDictado ? `<button type="button" class="boton chico" data-dictar>${icono("microfono")}Dictar</button>` : ""}</div>
+              <div class="herramientas-item">${botonesMedio("comentario")}${hayDictado ? `<button type="button" class="boton chico" data-dictar>${icono("microfono")}Dictar</button>` : ""}${botonRedactar("h-texto", "nota")}</div>
               <div data-galeria-nueva></div></div>
             <div><button class="boton primario" type="submit">${icono("bien")}Guardar</button></div>
           </form>` : soloVer(d, h)}
@@ -229,7 +230,7 @@ export function vistaNuevoHallazgo({ d, yo, query, ir }) {
         ${camposEquipoSub(d, { id: "nh-equipo", valor: B?.equipo || (query.get("equipo") ?? ""), titulo: "Dónde está el hallazgo", placeholder: "Elegir el equipo" })}
         <div class="campo"><label for="nh-desc">Qué se encontró</label>
           <textarea id="nh-desc" required maxlength="2000" placeholder="Por ejemplo: la vejiga del acumulador 2 no tiene presión">${esc(B?.desc ?? "")}</textarea>
-          <div class="herramientas-item">${botonesMedio("nuevo")}${hayDictado ? `<button type="button" class="boton chico" data-dictar>${icono("microfono")}Dictar</button>` : ""}</div>
+          <div class="herramientas-item">${botonesMedio("nuevo")}${hayDictado ? `<button type="button" class="boton chico" data-dictar>${icono("microfono")}Dictar</button>` : ""}${botonRedactar("nh-desc", "hallazgo")}</div>
           <div data-galeria-nueva>${fotos.length ? galeria(fotos, { quitar: true }) : ""}</div></div>
         <div class="campo"><span class="rotulo" id="nh-r-prio">Prioridad</span>
           <div class="segmento" role="group" aria-labelledby="nh-r-prio">${["alta", "media", "baja"].map((p) => `<button type="button" data-prioridad="${p}" data-valor="${p}" aria-pressed="${p === (B?.prioridad ?? "media")}">${p[0].toUpperCase() + p.slice(1)}</button>`).join("")}</div></div>

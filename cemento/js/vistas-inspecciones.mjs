@@ -7,6 +7,7 @@ import {
 } from "./ui.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
 import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, camposEquipoSub, escanear, equipoDelQr, pedirFirma, equipoDe } from "./componentes.mjs";
+import { botonRedactar } from "./redactar.mjs";
 import { opcionesQuien, paraQuien } from "./vistas-tareas.mjs";
 
 const reducir = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -338,7 +339,7 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
       <p>${icono("hallazgos")}Se anota como hallazgo${ronda ? ` de ${esc(equipo(d, eqId)?.tag || "este equipo")}` : ""}</p>
       <div class="campo"><label for="hd-${k}">Qué se encontró</label>
         <textarea id="hd-${k}" data-h="descripcion" placeholder="${esc(sugerenciaHallazgo(it, r))}">${esc(h.descripcion)}</textarea>
-        ${hayDictado ? `<div><button type="button" class="boton chico" data-dictar="hd-${k}">${icono("microfono")}Dictar</button></div>` : ""}</div>
+        <div class="herramientas-item">${hayDictado ? `<button type="button" class="boton chico" data-dictar="hd-${k}">${icono("microfono")}Dictar</button>` : ""}${botonRedactar(`hd-${k}`, "hallazgo")}</div></div>
       <div class="campo"><span class="rotulo" id="hp-${k}">Prioridad</span>
         <div class="segmento" role="group" aria-labelledby="hp-${k}">${["alta", "media", "baja"].map((p) => `<button type="button" data-prioridad="${p}" data-valor="${p}" aria-pressed="${h.prioridad === p}">${p === "alta" ? "Alta" : p === "media" ? "Media" : "Baja"}</button>`).join("")}</div></div>
       ${segmentoTipoDano(h.tipo, `ht-${k}`)}
@@ -379,7 +380,7 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
         <textarea id="t-${id}" data-texto placeholder="${it.tipo === "texto" ? "Escribe o dicta…" : "Nota (opcional)"}" ${it.tipo === "texto" ? "" : 'style="min-height:58px"'}>${esc(r.texto)}</textarea></div>
       <div class="herramientas-item">
         ${botonesMedio(k)}
-        ${hayDictado ? `<button type="button" class="boton chico" data-dictar="t-${id}">${icono("microfono")}Dictar</button>` : ""}
+        ${hayDictado ? `<button type="button" class="boton chico" data-dictar="t-${id}">${icono("microfono")}Dictar</button>` : ""}${botonRedactar(`t-${id}`, "nota")}
         ${it.foto === "siempre" ? `<span class="tipico">Lleva foto</span>` : it.foto === "pedir" && !r.fotos.length ? `<span class="ayuda">Una foto ayuda</span>` : ""}
       </div>
       <div data-galeria>${galeria(r.fotos, { quitar: true })}</div>
