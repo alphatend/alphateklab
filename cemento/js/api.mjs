@@ -34,6 +34,9 @@ export { LS };
 export const sesion = {
   get token() { return LS.leer("bp-token"); },
   set token(v) { LS.poner("bp-token", v); },
+  /** el de las fotos: va en la dirección de cada foto y solo sirve para verlas (el de la sesión no sale de la cabecera) */
+  get media() { return LS.leer("bp-media"); },
+  set media(v) { LS.poner("bp-media", v); },
   get persona() { return LS.leer("bp-persona"); },
   set persona(v) { LS.poner("bp-persona", v); },
   /** el último usuario que entró en este aparato (para no tener que escribirlo otra vez) */
@@ -75,6 +78,7 @@ async function pedir(ruta, { metodo = "GET", datos, cuerpo, tipo, limite = 25000
   try { d = await r.json(); } catch { /* sin cuerpo */ }
   if (r.status === 401 && ruta !== "entrar" && ruta !== "clave") {
     sesion.token = null;
+    sesion.media = null;
     oyentesSesion.forEach((f) => f());
   }
   if (!r.ok) throw new ErrorApi(d?.error || `El servidor contestó ${r.status}.`, r.status);
@@ -139,7 +143,9 @@ export const marca = () => LS.leer("bp-marca") ?? {};
 
 function recibir(d) {
   if (d.token) sesion.token = d.token; // el servidor lo renueva cuando le quedan menos de 60 días
+  if (d.media_token) sesion.media = d.media_token;
   delete d.token;
+  delete d.media_token;
   sesion.persona = d.yo?.id ?? sesion.persona;
   LS.poner("bp-cargado", new Date().toISOString());
   poner(aplicarPendientes(d));
@@ -163,6 +169,7 @@ export async function cambiarClave(actual, nueva) {
 export async function salir() {
   try { await desactivarPush(); } catch { /* sin señal: el aparato pasa a quien entre después */ }
   sesion.token = null;
+  sesion.media = null;
   datos = null;
   await base("cache", "readwrite", (s) => s.delete("datos")).catch(() => {});
   LS.poner("bp-datos", null);
@@ -183,7 +190,7 @@ export async function escribir(ruta, cuerpo = {}) {
 }
 
 export const urlMedio = (id) =>
-  localUrls.has(id) ? localUrls.get(id) : `${API}/media/${encodeURIComponent(id)}?t=${encodeURIComponent(sesion.token ?? "")}`;
+  localUrls.has(id) ? localUrls.get(id) : `${API}/media/${encodeURIComponent(id)}?t=${encodeURIComponent(sesion.media ?? "")}`;
 export const urlCalendario = (token) => `${API}/calendario/${token}.ics`;
 
 // ------------------------------------------------------------------------------- la cola

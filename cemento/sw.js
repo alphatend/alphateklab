@@ -2,7 +2,7 @@
 // Solo maneja los archivos de la app (mismo origen); el servidor de datos (otro origen) lo maneja la app con su cola.
 // VERSION la pone publicar-web.sh: al cambiar, el aparato baja la versión nueva y la app ofrece «Actualizar» (no se
 // cambia sola a mitad de una inspección).
-const VERSION = "35c1f4-1031";
+const VERSION = "8e7843-1031";
 const CACHE = `bitacora-${VERSION}`;
 const ARCHIVOS = [
   "./", "./index.html", "./manifest.webmanifest", "./css/app.css",
