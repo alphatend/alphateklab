@@ -1,4 +1,4 @@
-// Hallazgos: lo que se encontró mal, quién lo resuelve, en qué va (Abierto, En proceso, Para el paro, Cerrado), su
+// Hallazgos: lo que se encontró mal, quién lo resuelve, en qué va (Abierto, En proceso, Cerrado), su
 // número, la orden de trabajo y la fecha compromiso. Todo lo de aquí funciona sin señal (entra a la cola).
 import { esc, icono, fechaHora, fechaCorta, haceCuanto, plural, diasEntre, diaDe, normal, numeroHallazgo } from "./util.mjs";
 import * as api from "./api.mjs";
@@ -8,7 +8,6 @@ import {
 } from "./ui.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
 import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, camposEquipoSub } from "./componentes.mjs";
-import { proximosProgramados } from "./vistas-paros.mjs";
 import { filaTarea, montarChecks } from "./vistas-tareas.mjs";
 
 const ORDEN_PRIORIDAD = { alta: 0, media: 1, baja: 2 };
@@ -30,7 +29,6 @@ export function vistaHallazgos({ d, yo, hoy, query }) {
   let xs = d.hallazgos.filter((h) => enFiltro(fam, h.equipo_id));
   if (f === "abiertos") xs = xs.filter((h) => h.estado !== "cerrado");
   if (f === "mios") xs = xs.filter((h) => h.estado !== "cerrado" && h.responsable_id === yo.id);
-  if (f === "paro") xs = xs.filter((h) => h.estado === "paro");
   if (f === "cerrados") xs = xs.filter((h) => h.estado === "cerrado");
   if (buscar) {
     const b = normal(buscar);
@@ -50,7 +48,7 @@ export function vistaHallazgos({ d, yo, hoy, query }) {
         <div class="acciones"><a class="boton primario" href="#/nuevo-hallazgo${eqFiltro ? `?equipo=${encodeURIComponent(eqFiltro)}` : ""}">${icono("mas1")}Anotar</a></div></div>
       ${barraFiltros(d, new URLSearchParams({ ...Object.fromEntries(query), ...(eqFiltro ? { eq: eqFiltro } : {}) }), { placeholder: "Buscar por número, OT, equipo o texto" })}
       <nav class="filtros" aria-label="Filtrar">
-        ${filtro("abiertos", "Abiertos", abiertos.length)}${filtro("mios", "A mi cargo", abiertos.filter((h) => h.responsable_id === yo.id).length)}${filtro("paro", "Para el paro", d.hallazgos.filter((h) => h.estado === "paro").length)}${filtro("cerrados", "Cerrados")}${filtro("todos", "Todos")}
+        ${filtro("abiertos", "Abiertos", abiertos.length)}${filtro("mios", "A mi cargo", abiertos.filter((h) => h.responsable_id === yo.id).length)}${filtro("cerrados", "Cerrados")}${filtro("todos", "Todos")}
       </nav>
       <div data-resultados>${xs.length ? `<ul class="lista">${xs.map((h) => filaHallazgo(d, h, hoy)).join("")}</ul>` : vacio(buscar || fam ? "Nada con ese filtro." : f === "mios" ? "No tienes hallazgos a tu cargo." : "Nada por aquí.")}</div>`,
     montar(m) {
@@ -81,7 +79,6 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
   const puedeTexto = editar && (esAdmin(yo) || h.creado_por === yo.id);
   // los paros programados de este equipo (o de su padre) primero, después los demás
   const fam = familia(d, equipo(d, h.equipo_id)?.padre_id ?? h.equipo_id);
-  const paros = proximosProgramados(d).sort((a, b) => fam.has(b.equipo_id) - fam.has(a.equipo_id));
   const tareasDe = (d.tareas ?? []).filter((t) => t.hallazgo_id === h.id);
   const tarde = h.vence && h.estado !== "cerrado" && h.vence < hoy;
   const nuevas = []; // fotos del comentario que se está escribiendo
@@ -103,10 +100,7 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
         <div>
           ${editar ? `<form class="panel" id="form-h" novalidate>
             <div class="campo"><span class="rotulo" id="r-estado">En qué va</span>
-              <div class="segmento" role="group" aria-labelledby="r-estado">${ESTADOS.map((e) => `<button type="button" data-estado="${e}" data-valor="${e}" aria-pressed="${h.estado === e}">${TEXTO_ESTADO[e]}</button>`).join("")}</div></div>
-            <div class="campo" data-zona-paro ${h.estado === "paro" ? "" : "hidden"}><label for="h-paro">Para cuál paro</label>
-              <select id="h-paro"><option value="">El próximo que se programe</option>${paros.map((p) => `<option value="${esc(p.id)}" ${p.id === h.paro_id ? "selected" : ""}>${esc(nombreCompleto(d, p.equipo_id))} · ${esc(fechaHora(p.inicio))}</option>`).join("")}</select>
-              <span class="ayuda">Entra a la lista de trabajos de ese paro.</span></div>
+              <div class="segmento" role="group" aria-labelledby="r-estado">${ESTADOS.map((e) => `<button type="button" data-estado="${e}" data-valor="${e}" aria-pressed="${(h.estado === "paro" ? "en_proceso" : h.estado) === e}">${TEXTO_ESTADO[e]}</button>`).join("")}</div></div>
             ${puedeTexto ? `<div class="campo"><label for="h-desc">Qué se encontró</label><textarea id="h-desc" maxlength="2000" style="min-height:70px">${esc(h.descripcion)}</textarea></div>
               ${camposEquipoSub(d, { id: "h-equipo", valor: h.equipo_id, titulo: "Dónde está el hallazgo" })}` : ""}
             <div class="rejilla-campos dos">
@@ -143,14 +137,13 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
       m.querySelector("[data-ver-todo]")?.addEventListener("click", (e) => { m.querySelector(".hallazgo-cabeza h1").classList.remove("recortado"); e.currentTarget.remove(); });
       const f = m.querySelector("#form-h");
       if (!f) return;
-      let estado = h.estado, prioridad = h.prioridad, tipo = h.tipo ?? null, parar = null;
+      let estado = h.estado === "paro" ? "en_proceso" : h.estado, prioridad = h.prioridad, tipo = h.tipo ?? null, parar = null;
       f.addEventListener("click", (e) => {
         const b = e.target.closest("button");
         if (!b) return;
         if (b.dataset.estado) {
           estado = b.dataset.estado;
           b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-          m.querySelector("[data-zona-paro]").hidden = estado !== "paro";
         }
         if (b.dataset.prioridad) { prioridad = b.dataset.prioridad; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }
         if (b.dataset.tipoDano) { tipo = tipo === b.dataset.tipoDano ? null : b.dataset.tipoDano; b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.tipoDano === tipo))); }
@@ -177,14 +170,13 @@ export function vistaHallazgo({ d, yo, hoy, param, dibujar }) {
         e.preventDefault();
         const cambio = {
           estado, prioridad, ...((tipo ?? null) !== (h.tipo ?? null) ? { tipo } : {}), accion: f["h-accion"].value, responsable_id: f["h-resp"].value, ot: f["h-ot"].value.trim(), vence: f["h-vence"].value || null,
-          ...(estado === "paro" ? { paro_id: f["h-paro"].value || null } : {}),
           ...(puedeTexto && f["h-equipo"]?.value && f["h-equipo"].value !== h.equipo_id ? { equipo_id: f["h-equipo"].value } : {}),
           ...(puedeTexto && f["h-desc"].value.trim() && f["h-desc"].value.trim() !== h.descripcion ? { descripcion: f["h-desc"].value.trim() } : {}),
           texto: f["h-texto"].value.trim(), fotos: [...nuevas], seguimiento_id: crypto.randomUUID(), fecha: new Date().toISOString(),
         };
         const nada = estado === h.estado && prioridad === h.prioridad && (tipo ?? null) === (h.tipo ?? null) && cambio.accion === (h.accion ?? "") && cambio.responsable_id === (h.responsable_id ?? "")
           && cambio.ot === (h.ot ?? "") && (cambio.vence ?? null) === (h.vence ?? null) && !cambio.descripcion && !cambio.texto && !nuevas.length
-          && !cambio.equipo_id && (estado !== "paro" || (cambio.paro_id ?? null) === (h.paro_id ?? null));
+          && !cambio.equipo_id;
         if (nada) { aviso("No hay cambios que guardar."); return; }
         const b = f.querySelector("button[type=submit]");
         b.disabled = true;

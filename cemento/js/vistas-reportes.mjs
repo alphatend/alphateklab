@@ -285,7 +285,7 @@ function docEjecutivo(d, yo, hoy, per, al, r) {
     ${porEquipo.length ? `<h2>Hallazgos nuevos por equipo</h2>${barras(porEquipo.map((x) => ({ t: x.e.tag || x.e.nombre, v: x.nuevos })))}` : ""}
     <h2>Prioridad alta abiertos</h2>
     ${altas.length ? `<table class="tabla"><thead><tr><th>N.º</th><th>Equipo</th><th>Qué</th><th>A cargo</th><th class="n">Días abierto</th></tr></thead><tbody>
-      ${altas.slice(0, 10).map((h) => `<tr><td>${numeroHallazgo(h)}</td><td>${esc(nombreEquipo(equipo(d, h.equipo_id)))}</td><td>${esc(h.descripcion)}${h.estado === "paro" ? " <b>(para el paro)</b>" : ""}</td>
+      ${altas.slice(0, 10).map((h) => `<tr><td>${numeroHallazgo(h)}</td><td>${esc(nombreEquipo(equipo(d, h.equipo_id)))}</td><td>${esc(h.descripcion)}</td>
         <td>${esc(nombreCorto(d, h.responsable_id))}</td><td class="n ${diasEntre(diaDe(h.creado), hoy) > 3 ? "fuera" : ""}">${diasEntre(diaDe(h.creado), hoy)}</td></tr>`).join("")}</tbody></table>` : `<p class="vacio-doc">Ninguno.</p>`}
     ${firmas(yo)}${pie(d, yo)}</article>`;
 }

@@ -1,5 +1,5 @@
-// Paros. Los no programados (causa y duración) dan la disponibilidad de cada equipo; los programados juntan los
-// hallazgos «Para el paro» en su lista de trabajos (para imprimir y llevar). Un paro sin fin está en curso.
+// Paros. Los no programados (causa y duración) dan la disponibilidad de cada equipo; los programados van al calendario.
+// Un paro sin fin está en curso. (Su lista de trabajos «para el paro» se quitó el 31-oct-2026, a pedido de Eduardo.)
 import { esc, icono, fechaHora, fechaCorta, plural, numero, numeroHallazgo, sumarDias } from "./util.mjs";
 import * as api from "./api.mjs";
 import { aviso, confirmar, vacio, nombre, esAdmin, puede, marcaSinEnviar, marcaPrioridad, nombreCorto } from "./ui.mjs";
@@ -50,11 +50,10 @@ export function vistaParos({ d, yo, hoy, query }) {
   const equipos = d.equipos.filter((e) => e.activo && !e.padre_id && e.tipo !== "colector" && enFiltro(fam, e.id));
   const disp = equipos.map((e) => ({ e, ...disponibilidad(d, e.id, desde, hasta) })).sort((a, b) => a.disp - b.disp);
   const enlace = (c) => `#/paros?${new URLSearchParams({ ...Object.fromEntries(query), ...c })}`;
-  const trabajos = (p) => d.hallazgos.filter((h) => h.paro_id === p.id && h.estado !== "cerrado").length;
   return {
     titulo: "Paros",
     html: `<div class="cabeza"><div><h1>Paros</h1>
-        <p class="bajada">Los no programados dan la disponibilidad; los programados juntan los trabajos «para el paro».</p></div>
+        <p class="bajada">Los no programados dan la disponibilidad; los programados salen en el calendario.</p></div>
         <div class="acciones">${puede(yo, "editar") ? `<a class="boton primario" href="#/paro/nuevo">${icono("paros")}Anotar un paro</a>` : ""}
           ${admin ? `<a class="boton" href="#/paro/nuevo?tipo=programado">${icono("calendario")}Programar</a>` : ""}</div></div>
       ${barraFiltros(d, query, { placeholder: "Buscar", extra: `<nav class="filtros" style="margin:0">${[7, 30, 90].map((n) => `<a href="${enlace({ dias: n })}" ${dias === n ? 'aria-current="true"' : ""}>${n} días</a>`).join("")}</nav>` })}
@@ -70,7 +69,7 @@ export function vistaParos({ d, yo, hoy, query }) {
       ${prog.length ? `<section class="seccion"><h2>Programados <small>${prog.length}</small></h2><ul class="lista">${prog.map((p) => `<li><a class="fila con-icono" href="#/paro/${encodeURIComponent(p.id)}">
           <span class="icono-fila morado">${icono("calendario")}</span><span class="titulo">${esc(nombreCompleto(d, p.equipo_id))}</span>
           <span class="detalle"><span>${esc(fechaHora(p.inicio))}${p.fin ? ` → ${esc(fechaHora(p.fin))}` : ""}</span>${p.descripcion ? `<span>${esc(p.descripcion.slice(0, 80))}</span>` : ""}</span>
-          <span class="lado">${trabajos(p) ? `<span class="marca paro">${plural(trabajos(p), "trabajo", "trabajos")}</span>` : ""}${p._sinEnviar ? marcaSinEnviar() : ""}</span></a></li>`).join("")}</ul></section>` : ""}
+          <span class="lado">${p._sinEnviar ? marcaSinEnviar() : ""}</span></a></li>`).join("")}</ul></section>` : ""}
       <section class="seccion"><h2>Disponibilidad por equipo <small>últimos ${dias} días</small></h2>
         ${disp.length ? `<div class="lista">${disp.map((x) => `<a class="tendencia" href="#/equipo/${encodeURIComponent(x.e.id)}" style="color:inherit">
           <div><div style="font-weight:600">${esc(nombreCompleto(d, x.e.id))}</div><div style="font-size:14px;color:var(--tinta-3)">${x.eventos ? `${plural(x.eventos, "paro", "paros")} · ${duracion(x.paradas)} parado` : "Sin paros no programados"}</div></div>
@@ -127,14 +126,6 @@ export function vistaParo({ d, yo, hoy, param, query, ir }) {
   const puedeCambiar = puede(yo, "editar") && (nuevo || esAdmin(yo) || p.creado_por === yo.id || (p.tipo === "programado" && puede(yo, "asignar")));
   const ahora = new Date().toISOString();
   const P = p ?? { equipo_id: query.get("equipo") ?? "", inicio: tipo === "programado" ? `${sumarDias(hoy, 7)}T11:00:00.000Z` : ahora, fin: tipo === "programado" ? `${sumarDias(hoy, 7)}T23:00:00.000Z` : null, causa: "", descripcion: "" };
-  const trabajos = p ? d.hallazgos.filter((h) => h.paro_id === p.id).sort((a, b) => (a.estado === "cerrado") - (b.estado === "cerrado")) : [];
-  const sueltos = p && tipo === "programado" ? d.hallazgos.filter((h) => h.estado === "paro" && !h.paro_id && familia(d, p.equipo_id)?.has(h.equipo_id)) : [];
-  const docTrabajos = () => `<article class="documento" style="margin-top:16px"><h1>Lista de trabajos del paro</h1>
-      <p class="sub-doc">${esc(nombreCompleto(d, P.equipo_id))} · ${esc(fechaHora(P.inicio))}${P.fin ? ` → ${esc(fechaHora(P.fin))}` : ""}${P.descripcion ? ` · ${esc(P.descripcion)}` : ""}</p>
-      ${trabajos.length ? `<table class="tabla"><thead><tr><th>N.º</th><th>Equipo</th><th>Qué</th><th>Qué hay que hacer</th><th>A cargo</th><th>Hecho</th></tr></thead><tbody>
-        ${trabajos.map((h) => `<tr><td class="n">${numeroHallazgo(h)}</td><td>${esc(nombreCompleto(d, h.equipo_id))}</td><td>${esc(h.descripcion)}</td><td>${esc(h.accion ?? "")}${h.ot ? `<br><b>${esc(h.ot)}</b>` : ""}</td>
-          <td>${esc(nombreCorto(d, h.responsable_id))}</td><td>${h.estado === "cerrado" ? "✓" : "☐"}</td></tr>`).join("")}</tbody></table>` : `<p class="vacio-doc">Todavía no hay trabajos para este paro.</p>`}
-    </article>`;
   return {
     titulo: nuevo ? (tipo === "programado" ? "Programar un paro" : "Anotar un paro") : `Paro: ${nombreCompleto(d, P.equipo_id)}`,
     tituloCorto: "Paro",
@@ -165,14 +156,7 @@ export function vistaParo({ d, yo, hoy, param, query, ir }) {
             ${!nuevo && !P.fin ? `<button type="button" class="boton" data-ahora>${icono("play")}Terminó ahora</button>` : ""}
             ${!nuevo ? `<button type="button" class="boton plano peligro" data-borrar>${icono("basura")}Borrar</button>` : ""}</div>` : ""}
         </form>`}
-        ${tipo === "programado" && !nuevo ? `<aside class="panel"><h2>Trabajos para este paro</h2>
-          ${trabajos.length ? `<ul class="lista" style="box-shadow:none;background:var(--hundido)">${trabajos.map((h) => `<li><a class="fila" href="#/hallazgo/${encodeURIComponent(h.id)}"><span class="titulo">${esc(h.descripcion)}</span>
-            <span class="detalle"><span class="mono">${numeroHallazgo(h)}</span><span>${esc(nombreCompleto(d, h.equipo_id))}</span></span><span class="lado">${h.estado === "cerrado" ? `<span class="marca ok">Hecho</span>` : marcaPrioridad(h.prioridad)}</span></a></li>`).join("")}</ul>`
-            : `<p class="ayuda">Cuando un hallazgo pase a «Para el paro», se elige este paro y entra aquí.</p>`}
-          ${sueltos.length ? `<button type="button" class="boton chico" data-juntar>${icono("mas1")}Juntar ${plural(sueltos.length, "hallazgo «para el paro» de este equipo", "hallazgos «para el paro» de este equipo")}</button>` : ""}
-          <button type="button" class="boton chico" data-imprimir>${icono("imprimir")}Imprimir la lista</button></aside>` : ""}
-      </div>
-      ${tipo === "programado" && !nuevo ? `<div class="hojas solo-imprimir">${docTrabajos()}</div>` : ""}`,
+      </div>`,
     montar(m) {
       const f = m.querySelector("#form-paro");
       if (!f) return montarEnCurso(m);
@@ -201,18 +185,10 @@ export function vistaParo({ d, yo, hoy, param, query, ir }) {
         const b = e.target.closest("button");
         if (!b) return;
         if (b.hasAttribute("data-ahora")) { f["p-fin"].value = local(new Date().toISOString()); f.requestSubmit(); }
-        if (b.hasAttribute("data-imprimir")) print();
         if (b.hasAttribute("data-borrar")) {
-          if (!(await confirmar("¿Borrar el paro?", tipo === "programado" ? "Sus trabajos vuelven a quedar sin paro." : "Deja de contar para la disponibilidad.", "Borrar", "peligro"))) return;
+          if (!(await confirmar("¿Borrar el paro?", tipo === "programado" ? "Se quita del calendario." : "Deja de contar para la disponibilidad.", "Borrar", "peligro"))) return;
           try { await api.escribir(`paros/${encodeURIComponent(p.id)}/borrar`, {}); aviso("Paro borrado."); ir("#/paros"); }
           catch (x) { aviso(x.sinRed ? "Para borrar hace falta señal." : x.message, { error: true }); }
-        }
-        if (b.hasAttribute("data-juntar")) {
-          b.disabled = true;
-          try {
-            for (const h of sueltos) await api.encolar(`hallazgos/${encodeURIComponent(h.id)}`, { estado: "paro", paro_id: p.id, seguimiento_id: crypto.randomUUID(), fecha: new Date().toISOString() });
-            aviso(`${plural(sueltos.length, "trabajo agregado", "trabajos agregados")} al paro.`);
-          } catch (x) { aviso(x.message, { error: true }); b.disabled = false; }
         }
       });
     },

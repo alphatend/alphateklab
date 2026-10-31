@@ -45,7 +45,7 @@ export function vistaMantenimiento({ d, yo, hoy, query }) {
       h.responsable_id ? `<span>${esc(nombreCorto(d, h.responsable_id))}</span>` : "",
       `<span>Anotado el ${esc(fechaCorta(diaDe(h.creado)))}</span>`,
       cerrado ? `<span>Validó ${esc(s ? nombreCorto(d, s.persona_id) : "—")} el ${esc(fechaCorta(diaDe(h.cerrado)))}</span>` : "",
-      h.estado === "en_proceso" ? `<span style="color:var(--tinte);font-weight:600">En proceso</span>` : h.estado === "paro" ? `<span style="color:var(--morado);font-weight:600">Para el paro</span>` : ""].join("");
+      h.estado === "en_proceso" || h.estado === "paro" ? `<span style="color:var(--tinte);font-weight:600">En proceso</span>` : ""].join("");
     return `<li class="${cerrado ? "hecha" : ""}" data-h="${esc(h.id)}"><span class="icono-lista ${cerrado ? "verde" : "rojo"}" aria-hidden="true">${icono(cerrado ? "bien" : "herramienta")}</span>
       <a class="que" href="#/hallazgo/${encodeURIComponent(h.id)}"><b>${esc(h.descripcion)}</b><small>${det}</small></a>
       <span class="lado">${h._sinEnviar ? marcaSinEnviar() : ""}<span class="marca ${cerrado ? "baja" : claseDias(n)}" title="${cerrado ? "Lo que tardó en resolverse" : "Lo que lleva sin resolverse"}">${cerrado ? `Tardó ${textoDias(n).toLowerCase()}` : textoDias(n)}</span></span>

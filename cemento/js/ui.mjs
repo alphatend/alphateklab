@@ -108,8 +108,9 @@ export function elegir(titulo, opciones, { actual } = {}) {
 // ------------------------------------------------------------------------------- etiquetas
 
 export const TEXTO_PRIORIDAD = { alta: "Alta", media: "Media", baja: "Baja" };
-export const TEXTO_ESTADO = { abierto: "Abierto", en_proceso: "En proceso", paro: "Para el paro", cerrado: "Cerrado" };
-export const ESTADOS = ["abierto", "en_proceso", "paro", "cerrado"];
+// «Para el paro» se quitó (Eduardo, 31-oct-2026: «eso elimínalo»): lo que todavía tenga ese estado se ve «En proceso»
+export const TEXTO_ESTADO = { abierto: "Abierto", en_proceso: "En proceso", paro: "En proceso", cerrado: "Cerrado" };
+export const ESTADOS = ["abierto", "en_proceso", "cerrado"];
 export const ICONO_ESTADO = { abierto: "hallazgos", en_proceso: "repetir", paro: "paro", cerrado: "bien" };
 export const PUNTO_ESTADO = { abierto: "rojo", en_proceso: "azul", paro: "morado", cerrado: "verde" };
 
@@ -120,7 +121,7 @@ export const DE_MANTENIMIENTO = new Set(["mecanico", "electrico", "logica"]);
 export const segmentoTipoDano = (actual, id = "tipo") => `<div class="campo"><span class="rotulo" id="r-${id}">Tipo de daño <small>(mecánico, eléctrico o de lógica van al reporte de mantenimiento)</small></span>
   <div class="segmento" role="group" aria-labelledby="r-${id}">${Object.entries(TIPOS_DANO).map(([k, t]) => `<button type="button" data-tipo-dano="${k}" aria-pressed="${(actual ?? "") === k}">${t}</button>`).join("")}</div></div>`;
 export const marcaPrioridad = (p) => `<span class="marca ${p}">${icono(p === "baja" ? "na" : "hallazgos")}${TEXTO_PRIORIDAD[p] ?? p}</span>`;
-export const marcaEstado = (e) => `<span class="marca ${e}">${icono(ICONO_ESTADO[e] ?? "na")}${TEXTO_ESTADO[e] ?? e}</span>`;
+export const marcaEstado = (e0) => { const e = e0 === "paro" ? "en_proceso" : e0; return `<span class="marca ${e}">${icono(ICONO_ESTADO[e] ?? "na")}${TEXTO_ESTADO[e] ?? e}</span>`; };
 export const marcaSinEnviar = () => `<span class="marca sinenviar">${icono("nube")}Sin enviar</span>`;
 export const marcaTag = (tag) => (tag ? `<span class="marca tag">${esc(tag)}</span>` : "");
 

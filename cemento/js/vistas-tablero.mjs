@@ -285,7 +285,7 @@ function filaHallazgoLista(d, h, hoy) {
   const det = [`<span>Hallazgo <span class="mono">${numeroHallazgo(h)}</span></span>`, `<span>${esc(nombreCompleto(d, h.equipo_id))}</span>`,
     h.responsable_id ? `<span>${esc(nombreCorto(d, h.responsable_id))}</span>` : "",
     h.vence && h.estado !== "cerrado" ? `<span class="${tarde ? "tarde" : ""}">${icono("reloj", "ico chico")} ${h.vence === hoy ? "Hoy" : esc(fechaCorta(h.vence))}</span>` : "",
-    h.estado === "en_proceso" ? `<span style="color:var(--tinte);font-weight:600">En proceso</span>` : h.estado === "paro" ? `<span style="color:var(--morado);font-weight:600">Para el paro</span>` : ""].join("");
+    h.estado === "en_proceso" || h.estado === "paro" ? `<span style="color:var(--tinte);font-weight:600">En proceso</span>` : ""].join("");
   return `<li class="${h.estado === "cerrado" ? "hecha" : ""}"><span class="icono-lista rojo" aria-hidden="true">${icono("hallazgos")}</span>
     <a class="que" href="#/hallazgo/${encodeURIComponent(h.id)}"><b>${esc(h.descripcion)}</b><small>${det}</small></a>
     <span class="lado">${h._sinEnviar ? marcaSinEnviar() : ""}${h.prioridad === "alta" && h.estado !== "cerrado" ? `<span class="marca alta">Alta</span>` : ""}</span></li>`;
@@ -311,7 +311,7 @@ function tarjetaHallazgo(d, h, hoy) {
   const foto = h.fotos?.[0];
   const tarde = h.vence && h.estado !== "cerrado" && h.vence < hoy;
   return `<article class="tarjeta${foto ? " con-foto" : ""}" data-h="${esc(h.id)}" tabindex="0" aria-label="${esc(`Hallazgo ${numeroHallazgo(h)}: ${h.descripcion}`)}">
-    <div class="arriba">${tipo("hallazgos", `Hallazgo <span class="num">${numeroHallazgo(h)}</span>`)}${h.estado === "cerrado" ? "" : marcaPrioridad(h.prioridad)}${h.estado === "paro" ? `<span class="marca paro">${icono("paro")}Para el paro</span>` : ""}${h._sinEnviar ? marcaSinEnviar() : ""}</div>
+    <div class="arriba">${tipo("hallazgos", `Hallazgo <span class="num">${numeroHallazgo(h)}</span>`)}${h.estado === "cerrado" ? "" : marcaPrioridad(h.prioridad)}${h._sinEnviar ? marcaSinEnviar() : ""}</div>
     <div class="que">${esc(h.descripcion)}</div>
     <div class="donde"><span>${esc(nombreCompleto(d, h.equipo_id))}</span>${h.ot ? `<span class="mono">${esc(h.ot)}</span>` : ""}</div>
     <div class="abajo">${resp ? `${avatar(resp, true)}<span>${esc(nombreCorto(d, resp.id))}</span>` : "<span>Sin responsable</span>"}
