@@ -32,7 +32,12 @@ export async function prepararArchivo(archivo) {
 const Reconocimiento = globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition;
 export const hayDictado = !!Reconocimiento;
 
-/** Dicta en un campo de texto: agrega lo que se dice al final. Devuelve una función para parar. */
+/**
+ * Dicta en un campo de texto: agrega lo que se dice al final. Devuelve una función para parar.
+ * Safari (iPhone, iPad) a veces nunca da un resultado «final»: si solo se esperaban finales, terminaba sin escribir nada
+ * (Eduardo, 31-oct-2026: «cuando pongo dictar a veces no lo escribe»). Ahora se escribe lo que se va oyendo, y si se
+ * termina sin haber oído nada, se dice.
+ */
 export function dictar(campo, { alEmpezar, alTerminar, alError } = {}) {
   if (!Reconocimiento) {
     alError?.("Este aparato no dicta aquí: usa el micrófono del teclado.");
@@ -43,29 +48,37 @@ export function dictar(campo, { alEmpezar, alTerminar, alError } = {}) {
     return () => {};
   }
   const r = new Reconocimiento();
-  r.lang = "es-PA";
-  r.interimResults = false;
+  // Safari no tiene español de Panamá: con uno que no conoce, a veces no reconoce nada
+  r.lang = /Apple/.test(navigator.vendor) ? "es-MX" : "es-PA";
+  r.interimResults = true;
   r.continuous = false;
   r.maxAlternatives = 1;
+  const base = campo.value.trimEnd();
+  let oido = "", fallo = false;
   r.onstart = () => alEmpezar?.();
   r.onresult = (e) => {
-    const texto = Array.from(e.results).map((x) => x[0].transcript).join(" ").trim();
+    const texto = Array.from(e.results).map((x) => x[0]?.transcript ?? "").join(" ").replace(/\s+/g, " ").trim();
     if (!texto) return;
-    const antes = campo.value.trimEnd();
-    campo.value = antes ? `${antes} ${texto}` : texto.charAt(0).toUpperCase() + texto.slice(1);
+    oido = texto;
+    campo.value = base ? `${base} ${texto}` : texto.charAt(0).toUpperCase() + texto.slice(1);
     campo.dispatchEvent(new Event("input", { bubbles: true }));
   };
   r.onerror = (e) => {
+    fallo = true;
     const m = {
       "not-allowed": "No hay permiso para usar el micrófono. Dalo en los ajustes del navegador.",
-      "service-not-allowed": "No hay permiso para usar el micrófono. Dalo en los ajustes del navegador.",
+      "service-not-allowed": "No hay permiso para dictar aquí. Usa el micrófono del teclado.",
       network: "Para dictar hace falta señal. Usa el micrófono del teclado.",
       "no-speech": "No se oyó nada. Prueba otra vez, más cerca.",
       "audio-capture": "No se encontró el micrófono.",
+      "language-not-supported": "Este aparato no dicta en español aquí. Usa el micrófono del teclado.",
     }[e.error];
     if (e.error !== "aborted") alError?.(m ?? "No se pudo dictar. Usa el micrófono del teclado.");
   };
-  r.onend = () => alTerminar?.();
+  r.onend = () => {
+    if (!oido && !fallo) alError?.("No se entendió nada. Prueba otra vez, o usa el micrófono del teclado.");
+    alTerminar?.();
+  };
   try { r.start(); } catch { alError?.("No se pudo empezar a dictar."); }
   return () => { try { r.stop(); } catch { /* ya paró */ } };
 }
