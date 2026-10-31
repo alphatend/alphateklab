@@ -22,8 +22,11 @@
 const LOCAL = location.hostname === "127.0.0.1" && location.port !== "";
 const API = (LOCAL && new URLSearchParams(location.search).get("api")) || (LOCAL ? "http://127.0.0.1:5195/api" : "https://cemento.alphateklab.com/api");
 export const URL_API = API;
-// «Mejorar redacción»: el Worker de Cloudflare (redactar/). Vacío, no se ofrece. En local, el de `wrangler dev`.
-const REDACTAR = (LOCAL && new URLSearchParams(location.search).get("redactar")) || (LOCAL ? "http://127.0.0.1:8787/redactar" : "https://bitacora-redactar.jjmc2098.workers.dev/redactar");
+// «Mejorar redacción»: el Worker de Cloudflare (redactar/). Vacío, no se ofrece. Apagado el 31-oct-2026 a pedido de
+// Eduardo («algunas palabras no las entiende bien; lo puedes quitar»): el Worker sigue publicado. Para volver a
+// ofrecerlo (por ejemplo, con un modelo de pago), poner aquí "https://bitacora-redactar.jjmc2098.workers.dev/redactar".
+// En las pruebas locales se prende con ?redactar=<url>.
+const REDACTAR = (LOCAL && new URLSearchParams(location.search).get("redactar")) || "";
 export const hayRedaccion = !!REDACTAR;
 
 const LS = {
@@ -422,6 +425,22 @@ setInterval(() => cola.pendientes.length && navigator.onLine !== false && enviar
 /** iPhone/iPad: solo con la app agregada a la pantalla de inicio (iOS 16.4+). */
 export const esIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 export const instalada = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+// La app de Android (android/: Chrome abre el sitio a pantalla completa) entra con ?apk=<versión del APK>. Se recuerda,
+// para avisar cuando haya un APK más nuevo (descargas/apk.json). 0: no es la app de Android.
+const apkEnUrl = Number(new URLSearchParams(location.search).get("apk")) || 0;
+if (apkEnUrl) LS.poner("bp-apk", apkEnUrl);
+export const versionApk = Number(LS.leer("bp-apk")) || 0;
+export const esAndroid = /Android/i.test(navigator.userAgent);
+export const URL_APK = "descargas/bitacora.apk";
+/** El APK más nuevo, si es más nuevo que el que se tiene instalado; si no (o sin señal), null. */
+export async function apkNueva() {
+  try {
+    const r = await fetch("descargas/apk.json", { cache: "no-store" });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return Number(j.version) > versionApk ? j : null;
+  } catch { return null; }
+}
 
 export async function estadoPush() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {

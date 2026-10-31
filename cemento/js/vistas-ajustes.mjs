@@ -81,8 +81,11 @@ export function vistaAjustes({ d, yo }) {
           <span class="detalle">${api.cola.pendientes.length ? plural(api.cola.pendientes.length, "cosa en cola", "cosas en cola") : "Todo enviado"}</span><span class="lado horizontal">${icono("derecha", "ico chevron")}</span></a>`)}
 
       ${seccion("Aplicación", `<div class="ajuste"><span class="icono-fila gris">${icono("inicio")}</span><span class="texto"><b>${esc(a.app_nombre || "Bitácora de proceso")}</b><small>Versión ${esc(version)}</small></span>
-        <button type="button" class="boton chico" data-accion="actualizar">Buscar actualización</button></div>`,
-        api.instalada ? "" : api.esIOS ? "Para usarla como app (y recibir notificaciones): en Safari, Compartir → «Agregar a pantalla de inicio»." : "Para usarla como app: en Chrome, menú → «Instalar app».")}
+        <button type="button" class="boton chico" data-accion="actualizar">Buscar actualización</button></div>
+        ${api.esAndroid || api.versionApk ? `<div class="ajuste"><span class="icono-fila verde">${icono("descargar")}</span><span class="texto"><b>App para Android</b>
+          <small>${api.versionApk ? `Instalada: versión ${api.versionApk}. Lo de adentro se actualiza solo.` : "Se instala desde aquí, sin Play Store, y se actualiza sola."}</small></span>
+          <a class="boton chico" href="${api.URL_APK}" download>${api.versionApk ? "Descargar la última" : "Descargar"}</a></div>` : ""}`,
+        api.instalada ? "" : api.esIOS ? "Para usarla como app (y recibir notificaciones): en Safari, Compartir → «Agregar a pantalla de inicio»." : api.esAndroid ? "Para usarla como app: descarga la app para Android (arriba), o en Chrome, menú → «Instalar app»." : "Para usarla como app: en Chrome, menú → «Instalar app».")}
       </div>`,
     montar(m) {
       pintarPush(m);

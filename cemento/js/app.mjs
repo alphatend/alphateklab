@@ -531,6 +531,8 @@ if (("serviceWorker" in navigator && location.protocol === "https:") || location
   await api.iniciar();
   if (await api.sinAlmacen) aviso("Este navegador no deja guardar en el aparato (¿ventana privada?): sin señal no se va a poder trabajar.", { error: true });
   dibujar({ forzar: true });
+  // en la app de Android: si hay un APK más nuevo, se dice (lo de adentro se actualiza solo; esto es la cáscara)
+  if (api.versionApk) api.apkNueva().then((j) => j && aviso(`Hay una versión nueva de la app para Android (${j.version}).`, { ms: 20000, accion: { texto: "Descargar", alTocar: () => { location.href = j.url || api.URL_APK; } } }));
   if (api.sesion.token) {
     api.refrescar().catch((e) => {
       if (e.status === 403 && /contraseña/.test(e.message)) return dibujar({ forzar: true });

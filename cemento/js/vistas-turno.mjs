@@ -1,11 +1,10 @@
 // Entrega de turno: el que sale deja las novedades, lo pendiente y el estado de cada equipo (en marcha, parado o con
 // restricción); el que entra la lee y marca «Recibido». Funciona sin señal (entra a la cola).
-import { esc, icono, fechaHora, haceCuanto, plural, diasEntre, diaDe, fechaCorta } from "./util.mjs";
+import { esc, icono, fechaHora, haceCuanto, plural, diasEntre, diaDe } from "./util.mjs";
 import * as api from "./api.mjs";
-import { puede, aviso, dialogo, vacio, nombre, persona, avatar, galeria, botonesMedio, marcaSinEnviar, queInspeccion, plantilla, textoTurno } from "./ui.mjs";
+import { puede, aviso, dialogo, vacio, nombre, persona, avatar, galeria, botonesMedio, marcaSinEnviar, textoTurno } from "./ui.mjs";
 import { nombreCompleto } from "./componentes.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
-import { esMia } from "./vistas-tareas.mjs";
 import { botonRedactar } from "./redactar.mjs";
 
 export const TEXTO_ESTADO_EQUIPO = { marcha: "En marcha", parado: "Parado", restriccion: "Con restricción" };
@@ -99,20 +98,7 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
   const B = (() => { const b = api.borrador.leer("entrega"); return b && (b.novedades || b.pendientes || b.fotos?.length) ? b : null; })();
   if (B) for (const [id, s] of Object.entries(B.estados ?? {})) if (estados[id]) estados[id] = s;
   const fotos = [...(B?.fotos ?? [])];
-  const sugerencia = () => {
-    const turno = yo.turno ? `turno:${yo.turno}` : "-";
-    const xs = [];
-    for (const i of d.inspecciones.filter((i) => i.estado === "pendiente" && (i.asignada_a === yo.id || (i.asignada_a === turno || i.asignada_a === "todos")) && i.vence <= hoy)) xs.push(`- Inspección sin hacer: ${queInspeccion(d, i)} · ${plantilla(d, i.plantilla_id)?.nombre ?? ""}`);
-    // las tareas abiertas de este turno, de todos o sin asignar, venzan cuando venzan (Eduardo, 31-oct-2026: «ya hay unos
-    // pendientes escritos en las tareas»)
-    for (const t of (d.tareas ?? []).filter((t) => t.estado !== "hecha" && (!t.asignada_a || esMia(t, yo))).sort((a, b) => (a.vence ?? "9").localeCompare(b.vence ?? "9"))) {
-      const extra = [t.equipo_id ? nombreCompleto(d, t.equipo_id) : "", t.vence ? (t.vence < hoy ? `atrasada desde ${fechaCorta(t.vence)}` : t.vence === hoy ? "vence hoy" : `para el ${fechaCorta(t.vence)}`) : ""].filter(Boolean);
-      xs.push(`- Tarea: ${t.titulo}${extra.length ? ` (${extra.join(", ")})` : ""}`);
-    }
-    for (const h of d.hallazgos.filter((h) => h.estado !== "cerrado" && h.prioridad === "alta")) xs.push(`- Hallazgo alto abierto: ${nombreCompleto(d, h.equipo_id)}: ${h.descripcion}`);
-    for (const p of enCurso.values()) xs.push(`- Sigue parado: ${nombreCompleto(d, p.equipo_id)}${p.causa ? ` (${p.causa})` : ""}`);
-    return xs.join("\n");
-  };
+  // «Sugerir desde lo abierto» se quitó (Eduardo, 31-oct-2026: «lo de sugerir por ahora también, eso podemos mejorarlo»)
   const fila = (e) => {
     const s = estados[e.id];
     return `<div class="estado-equipo-fila" data-eq="${esc(e.id)}"><span><b style="font-weight:600">${esc(e.tag ? `${e.tag} · ${e.nombre}` : e.nombre)}</b><br><small style="color:var(--tinta-3)">${esc(e.area ?? "")}</small></span>
@@ -131,8 +117,7 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
           <div class="panel"><div class="campo"><label for="e-novedades">Novedades del turno</label>
             <textarea id="e-novedades" style="min-height:130px" placeholder="Qué pasó: cambios, ajustes, problemas, cómo quedó la producción…">${esc(B?.novedades ?? "")}</textarea>
             <div class="herramientas-item">${hayDictado ? `<button type="button" class="boton chico" data-dictar="e-novedades">${icono("microfono")}Dictar</button>` : ""}${botonRedactar("e-novedades", "novedades")}</div></div></div>
-          <div class="panel"><div class="campo"><label for="e-pendientes" style="display:flex;justify-content:space-between;align-items:center">Lo que queda pendiente
-              <button type="button" class="boton mini" data-sugerir>${icono("lista")}Sugerir desde lo abierto</button></label>
+          <div class="panel"><div class="campo"><label for="e-pendientes">Lo que queda pendiente</label>
             <textarea id="e-pendientes" style="min-height:110px" placeholder="Lo que el que entra tiene que seguir">${esc(B?.pendientes ?? "")}</textarea>
             <div class="herramientas-item">${hayDictado ? `<button type="button" class="boton chico" data-dictar="e-pendientes">${icono("microfono")}Dictar</button>` : ""}${botonRedactar("e-pendientes", "pendientes")}</div></div>
             <div class="campo"><span class="rotulo">Fotos <small>(opcional)</small></span><div class="herramientas-item">${botonesMedio("entrega")}</div><div data-galeria-nueva>${fotos.length ? galeria(fotos, { quitar: true }) : ""}</div></div></div>
@@ -162,13 +147,6 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
           if (!nota.hidden) nota.focus({ preventScroll: true });
           resumen();
         }
-        if (b.hasAttribute("data-sugerir")) {
-          const ta = f["e-pendientes"];
-          const ya = new Set(ta.value.split("\n").map((x) => x.trim()));
-          const s = sugerencia().split("\n").filter((x) => x && !ya.has(x.trim())).join("\n");
-          ta.value = ta.value && s ? `${ta.value.replace(/\s+$/, "")}\n${s}` : ta.value || s;
-          if (!s) aviso(ta.value.trim() && sugerencia() ? "Ya está todo lo abierto." : "No hay nada abierto que sugerir.");
-        }
         if (b.dataset.quitar) { fotos.splice(fotos.indexOf(b.dataset.quitar), 1); m.querySelector("[data-galeria-nueva]").innerHTML = galeria(fotos, { quitar: true }); }
         if (b.dataset.dictar) {
           if (parar) { parar(); parar = null; return; }
@@ -181,7 +159,7 @@ export function vistaNuevaEntrega({ d, yo, hoy, ir }) {
       });
       const guardarBorrador = () => api.borrador.guardar("entrega", { novedades: f["e-novedades"].value, pendientes: f["e-pendientes"].value, estados, fotos });
       f.addEventListener("input", (e) => { const fila = e.target.closest("[data-eq]"); if (fila && e.target.dataset.nota !== undefined) estados[fila.dataset.eq].nota = e.target.value; guardarBorrador(); });
-      f.addEventListener("click", (e) => { if (e.target.closest("[data-valor], [data-quitar], [data-sugerir]")) setTimeout(guardarBorrador, 0); });
+      f.addEventListener("click", (e) => { if (e.target.closest("[data-valor], [data-quitar]")) setTimeout(guardarBorrador, 0); });
       f.querySelector("[data-descartar]")?.addEventListener("click", () => { api.borrador.borrar("entrega"); ir("#/nueva-entrega"); });
       f.addEventListener("change", async (e) => {
         const el = e.target;
