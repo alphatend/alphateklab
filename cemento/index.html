@@ -19,6 +19,42 @@
 <link rel="icon" type="image/png" href="iconos/favicon-64.png">
 <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
 <link rel="stylesheet" href="css/app.css">
+<script>
+/* Si la app no arranca (31-oct-2026: en un Android se quedó en «Abriendo la bitácora…»): a los 12 s, con señal, borra la
+   copia guardada del service worker y vuelve a cargar, una sola vez; si aun así no abre, dice por qué (el error y el
+   navegador) y ofrece abrirla en Chrome. ES5 a propósito: tiene que correr en navegadores viejos. */
+(function () {
+  var errores = [];
+  window.addEventListener("error", function (e) { errores.push(String((e && (e.message || (e.error && e.error.message))) || e)); }, true);
+  window.addEventListener("unhandledrejection", function (e) { errores.push(String((e && e.reason && (e.reason.message || e.reason)) || "promesa rechazada")); });
+  function limpiar() {
+    var p = [];
+    try { if (window.caches) p.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches["delete"](k); })); })); } catch (x) {}
+    try { if (navigator.serviceWorker) p.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })); } catch (x) {}
+    return Promise.all(p);
+  }
+  setTimeout(function () {
+    var c = document.querySelector("#app .cargando");
+    if (!c) return;
+    var reparado = false;
+    try { reparado = sessionStorage.getItem("bp-reparado") === "1"; } catch (x) {}
+    if (!reparado && navigator.onLine !== false) {
+      try { sessionStorage.setItem("bp-reparado", "1"); } catch (x) {}
+      c.textContent = "Reparando la copia guardada…";
+      limpiar().then(function () { location.reload(); }, function () { location.reload(); });
+      return;
+    }
+    var esc = function (t) { return String(t).replace(/[&<>"]/g, function (x) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[x]; }); };
+    var android = /Android/i.test(navigator.userAgent);
+    c.style.opacity = "1";
+    c.innerHTML = "<b>No terminó de abrir.</b><br>" + (navigator.onLine === false ? "No hay señal y no está guardada en este aparato." : "Este navegador no la pudo abrir.") +
+      "<br><br><button type=button id=bp-reintentar style=\"font:inherit;padding:10px 16px;border-radius:10px\">Volver a intentar</button>" +
+      (android ? " <a style=\"display:inline-block;padding:10px 16px\" href=\"intent://alphateklab.com/cemento/#Intent;scheme=https;package=com.android.chrome;end\">Abrir en Chrome</a>" : "") +
+      "<br><br><small style=\"opacity:.7;word-break:break-word\">Para soporte: " + esc(errores.slice(0, 3).join(" · ") || "sin error") + " — " + esc(navigator.userAgent) + "</small>";
+    document.getElementById("bp-reintentar").onclick = function () { try { sessionStorage.removeItem("bp-reparado"); } catch (x) {} limpiar().then(function () { location.reload(); }, function () { location.reload(); }); };
+  }, 12000);
+})();
+</script>
 <script type="module" src="js/app.mjs"></script>
 </head>
 <body>

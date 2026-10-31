@@ -16,8 +16,14 @@ const ARCHIVOS = [
 ];
 
 self.addEventListener("install", (e) => {
-  // cache: "reload" para no guardar una copia vieja del caché HTTP
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ARCHIVOS.map((u) => new Request(u, { cache: "reload" })))));
+  // Cada archivo se pide con la versión en la dirección (?v=…) y se guarda con su dirección de siempre. Así ni el caché
+  // del navegador ni el de GitHub (que guarda las copias unos minutos) pueden colar un archivo de la versión anterior:
+  // con piezas de dos versiones la app no arranca (31-oct-2026, un Android se quedó en «Abriendo la bitácora…»).
+  e.waitUntil(caches.open(CACHE).then((c) => Promise.all(ARCHIVOS.map(async (u) => {
+    const r = await fetch(new Request(`${u}${u.includes("?") ? "&" : "?"}v=${encodeURIComponent(VERSION)}`, { cache: "reload" }));
+    if (!r.ok) throw new Error(`${u}: ${r.status}`);
+    await c.put(u, r);
+  }))));
 });
 
 self.addEventListener("activate", (e) => {
