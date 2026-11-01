@@ -2,7 +2,7 @@
 // Un paro sin fin está en curso. (Su lista de trabajos «para el paro» se quitó el 31-oct-2026, a pedido de Eduardo.)
 import { esc, icono, fechaHora, fechaCorta, plural, numero, numeroHallazgo, sumarDias } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, confirmar, vacio, nombre, esAdmin, puede, marcaSinEnviar, marcaPrioridad, nombreCorto } from "./ui.mjs";
+import { aviso, confirmar, vacio, nombre, esAdmin, puede, marcaSinEnviar, marcaPrioridad, nombreCorto, marcaCausa, claveCausa, colorCausa, iconoEspecialidad } from "./ui.mjs";
 import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, campoEquipo } from "./componentes.mjs";
 
 const H = 3600e3;
@@ -34,7 +34,7 @@ const pct = (v) => `${numero(v * 100, 1)} %`;
 function tarjetaEnCurso(d, p) {
   return `<div class="paro-en-curso" data-paro="${esc(p.id)}"><span class="pulso" aria-hidden="true"></span>
     <span style="flex:1;min-width:0"><b>${esc(nombreCompleto(d, p.equipo_id))}</b> parado desde ${esc(fechaHora(p.inicio))}<br>
-      <small style="color:var(--tinta-2)">${esc([p.causa, p.descripcion].filter(Boolean).join(": "))}</small></span>
+      <small style="color:var(--tinta-2)">${p.causa ? `${marcaCausa(p.causa)} ` : ""}${esc(p.descripcion ?? "")}</small></span>
     <span class="reloj-vivo" data-desde="${esc(p.inicio)}">${duracion((Date.now() - Date.parse(p.inicio)) / H)}</span>
     ${d.yo && !puede(d.yo, "editar") ? "" : `<button type="button" class="boton chico primario" data-termino="${esc(p.id)}">Terminó</button>`}</div>`;
 }
@@ -78,9 +78,9 @@ export function vistaParos({ d, yo, hoy, query }) {
       </section>
       <section class="seccion"><h2>No programados <small>${nop.length || ""}</small></h2>
         ${nop.length ? `<ul class="lista">${nop.map((p) => `<li><a class="fila" href="#/paro/${encodeURIComponent(p.id)}">
-          <span class="titulo">${esc(nombreCompleto(d, p.equipo_id))} <small>· ${esc(p.causa || "sin causa")}</small></span>
+          <span class="titulo">${esc(nombreCompleto(d, p.equipo_id))}${p.causa ? "" : " <small>· sin causa</small>"}</span>
           <span class="detalle"><span>${esc(fechaHora(p.inicio))}</span><span>${duracion(horasDentro(p, 0, Date.now()))}</span>${p.descripcion ? `<span>${esc(p.descripcion.slice(0, 90))}</span>` : ""}</span>
-          <span class="lado">${p._sinEnviar ? marcaSinEnviar() : `<span class="marca">${esc(nombreCorto(d, p.creado_por))}</span>`}</span></a></li>`).join("")}</ul>` : vacio(`Ningún paro no programado en los últimos ${dias} días.`)}
+          <span class="lado">${marcaCausa(p.causa)}${p._sinEnviar ? marcaSinEnviar() : `<span class="marca">${esc(nombreCorto(d, p.creado_por))}</span>`}</span></a></li>`).join("")}</ul>` : vacio(`Ningún paro no programado en los últimos ${dias} días.`)}
       </section>
       </div>`,
     montar(m) {
@@ -137,15 +137,15 @@ export function vistaParo({ d, yo, hoy, param, query, ir }) {
         ${p?._sinEnviar ? marcaSinEnviar() : ""}</div>
       <div class="hoja-insp no-imprimir">
         ${!nuevo && !puedeCambiar ? `<div class="panel"><dl class="datos-insp">
-            <dt>Causa</dt><dd>${esc(P.causa || "—")}</dd>
+            <dt>Causa</dt><dd>${P.causa ? marcaCausa(P.causa) : "—"}</dd>
             <dt>${tipo === "programado" ? "Empieza" : "Paró"}</dt><dd>${esc(fechaHora(P.inicio))}</dd>
             <dt>${tipo === "programado" ? "Termina" : "Arrancó"}</dt><dd>${P.fin ? esc(fechaHora(P.fin)) : "Sigue parado"}</dd></dl>
             ${P.descripcion ? `<p class="texto-largo" style="margin:0">${esc(P.descripcion)}</p>` : ""}
             ${tipo === "no_programado" && !P.fin && puede(yo, "editar") ? `<div><button type="button" class="boton primario" data-termino="${esc(P.id)}">${icono("play")}Terminó</button></div>` : ""}
             <p class="ayuda">${icono("candado", "ico chico")} Lo cambia quien lo anotó o el administrador${tipo === "no_programado" && !P.fin && puede(yo, "editar") ? "; decir que terminó, cualquiera" : ""}.</p></div>` : `<form class="panel" id="form-paro" novalidate>
           <div class="rejilla-campos dos">
-            <div class="campo"><span class="rotulo">Equipo</span>${campoEquipo(d, { id: "p-equipo", valor: P.equipo_id, titulo: "Qué equipo paró", placeholder: "Elegir el equipo" })}</div>
-            <div class="campo"><label for="p-causa">Causa</label><select id="p-causa"><option value="">Elegir…</option>${(d.causas_paro ?? []).map((c) => `<option ${c === P.causa ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></div>
+            <div class="campo" style="grid-column:1/-1"><span class="rotulo">Equipo</span>${campoEquipo(d, { id: "p-equipo", valor: P.equipo_id, titulo: "Qué equipo paró", placeholder: "Elegir el equipo" })}</div>
+            <fieldset class="campo opciones-causa"><legend class="rotulo">Causa</legend><div class="chips-opcion">${[...new Set([...(d.causas_paro ?? []), ...(P.causa ? [P.causa] : [])])].map((c) => `<label class="disc-${colorCausa(c)}"><input type="radio" name="p-causa" value="${esc(c)}" ${c === P.causa ? "checked" : ""}>${iconoEspecialidad(claveCausa(c))}<span>${esc(c)}</span></label>`).join("")}</div></fieldset>
             <div class="campo"><label for="p-inicio">${tipo === "programado" ? "Empieza" : "Paró"}</label><input id="p-inicio" type="datetime-local" value="${esc(local(P.inicio))}"></div>
             <div class="campo"><label for="p-fin">${tipo === "programado" ? "Termina" : "Arrancó"} ${tipo === "programado" ? "" : "<small>(vacío si sigue parado)</small>"}</label>
               <input id="p-fin" type="datetime-local" value="${esc(local(P.fin))}"></div>
@@ -165,7 +165,7 @@ export function vistaParo({ d, yo, hoy, param, query, ir }) {
         e.preventDefault();
         const err = f.querySelector(".error-form");
         const fallo = (t) => { err.hidden = false; err.textContent = t; };
-        const datos = { id: p?.id ?? crypto.randomUUID(), tipo, equipo_id: f["p-equipo"].value, causa: f["p-causa"].value, inicio: instante(f["p-inicio"].value), fin: instante(f["p-fin"].value), descripcion: f["p-desc"].value };
+        const datos = { id: p?.id ?? crypto.randomUUID(), tipo, equipo_id: f["p-equipo"].value, causa: f.querySelector('[name="p-causa"]:checked')?.value ?? "", inicio: instante(f["p-inicio"].value), fin: instante(f["p-fin"].value), descripcion: f["p-desc"].value };
         if (!datos.equipo_id) return fallo("Elige el equipo.");
         if (!datos.inicio) return fallo(`Pon cuándo ${tipo === "programado" ? "empieza" : "paró"}.`);
         if (datos.fin && datos.fin < datos.inicio) return fallo("Termina antes de empezar: revisa las horas.");

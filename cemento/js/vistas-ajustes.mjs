@@ -2,7 +2,8 @@
 // para el administrador, la empresa (nombre y logo de los reportes), los usuarios, mandar avisos y los datos.
 import { esc, icono, plural, hoyPanama, normal, leerNumero } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, dialogo, confirmar, vacio, avatar, esAdmin, etiquetaPersona, PERFILES, PERMISOS, perfilDe, nombrePerfil, textoTurno, TURNOS } from "./ui.mjs";
+import { aviso, dialogo, confirmar, vacio, avatar, esAdmin, etiquetaPersona, PERFILES, PERMISOS, perfilDe, nombrePerfil, TURNOS, turnoConIcono,
+  selectorAvatar, montarSelectorAvatar, valorAvatar } from "./ui.mjs";
 import { preferencia, elegir as elegirTema } from "./tema.mjs";
 import { cerrarSesion } from "./app.mjs";
 import { excelDe, alcanceDe, periodo, entregarArchivo } from "./vistas-reportes.mjs";
@@ -24,8 +25,9 @@ export function vistaAjustes({ d, yo }) {
     atras: matchMedia("(max-width: 899px)").matches ? "#/tablero" : null,
     html: `<div class="cabeza"><div><h1>Ajustes</h1></div></div>
       <div class="ajustes">
-      <div class="lista"><div class="ajuste">${avatar(yo)}<span class="texto"><b>${esc(yo.nombre)}</b><small>${esc([yo.puesto, yo.turno ? textoTurno(yo.turno) : "", `usuario ${yo.usuario}`].filter(Boolean).join(" · "))}</small></span>
+      <div class="lista"><div class="ajuste">${avatar(yo)}<span class="texto"><b>${esc(yo.nombre)}</b><small>${[esc(yo.puesto ?? ""), yo.turno ? turnoConIcono(yo.turno) : "", esc(`usuario ${yo.usuario}`)].filter(Boolean).join(" · ")}</small></span>
         <span class="marca ${admin ? "en_proceso" : ""}">${esc(nombrePerfil(yo))}</span></div>
+        <div class="ajuste"><span class="icono-fila indigo">${icono("persona")}</span><span class="texto"><b>Tu ícono</b><small>Tus iniciales o un símbolo, en el color que elijas.</small></span><button type="button" class="boton chico" data-accion="avatar">Cambiar</button></div>
         <div class="ajuste"><span class="icono-fila gris">${icono("llave")}</span><span class="texto"><b>Contraseña</b></span><button type="button" class="boton chico" data-accion="clave">Cambiar</button></div>
         <div class="ajuste"><span class="icono-fila rojo">${icono("salir")}</span><span class="texto"><b>Cerrar sesión</b><small>Lo que no se haya enviado se queda guardado en este aparato.</small></span><button type="button" class="boton chico peligro" data-accion="salir">Cerrar sesión</button></div></div>
 
@@ -104,6 +106,7 @@ export function vistaAjustes({ d, yo }) {
         const ac = b.dataset.accion;
         if (ac === "salir") return cerrarSesion();
         if (ac === "clave") return cambiarClave();
+        if (ac === "avatar") return cambiarAvatar(yo);
         if (ac === "calendario") return suscribir(d);
         if (ac === "avisar") return mandarAviso(d, yo);
         if (ac === "sin-hora") return guardarHora(m, "");
@@ -238,6 +241,21 @@ async function manejarPush(m, ac, b) {
   pintarPush(m);
 }
 
+/** Su ícono: lo elige cada uno (necesita señal, como la contraseña). */
+async function cambiarAvatar(yo) {
+  await dialogo({
+    titulo: "Tu ícono",
+    html: selectorAvatar(yo),
+    alMontar: (v) => montarSelectorAvatar(v),
+    botones: [{ texto: "Cancelar", valor: null }, { texto: "Guardar", valor: true, clase: "primario", alElegir: async (v) => {
+      try {
+        await api.escribir("yo", { avatar: valorAvatar(v) });
+        aviso("Listo: así te ven los demás.");
+      } catch (x) { aviso(x.sinRed ? "Hace falta señal para cambiarlo." : x.message, { error: true }); return false; }
+    } }],
+  });
+}
+
 async function cambiarClave() {
   await dialogo({
     titulo: "Cambiar la contraseña",
@@ -298,7 +316,7 @@ export function vistaUsuarios({ d, yo }) {
   if (!esAdmin(yo)) return { titulo: "Usuarios", atras: "#/ajustes", html: vacio("Los usuarios los maneja el administrador.") };
   const fila = (p) => `<li><button type="button" class="fila con-icono" data-persona="${esc(p.id)}" style="${p.activo ? "" : "opacity:.55"}">${avatar(p)}
       <span class="titulo">${esc(p.nombre)}${p.id === yo.id ? " <small>(tú)</small>" : ""}</span>
-      <span class="detalle"><span class="mono">${esc(p.usuario)}</span>${p.puesto ? `<span>${esc(p.puesto)}</span>` : ""}${p.turno ? `<span>${esc(textoTurno(p.turno))}</span>` : ""}
+      <span class="detalle"><span class="mono">${esc(p.usuario)}</span>${p.puesto ? `<span>${esc(p.puesto)}</span>` : ""}${p.turno ? `<span>${turnoConIcono(p.turno)}</span>` : ""}
         ${p.aviso_hora ? `<span>${icono("reloj", "ico chico")} ${esc(p.aviso_hora)}</span>` : ""}</span>
       <span class="lado"><span class="marca ${p.rol === "admin" ? "en_proceso" : ""}">${esc(nombrePerfil(p))}</span>
         ${!p.activo ? `<span class="marca">Desactivado</span>` : !p.tiene_clave ? `<span class="marca media">Sin contraseña</span>` : p.debe_cambiar ? `<span class="marca">Contraseña temporal</span>` : ""}</span>
@@ -337,6 +355,7 @@ async function editarPersona(d, yo, p) {
         <div class="campo"><label for="u-hora">Aviso diario <small>(hora)</small></label><input id="u-hora" type="time" value="${esc(p?.aviso_hora ?? "06:00")}"></div>
       </div>
       ${elegirPerfil(p, yo)}
+      <details class="mas-detalles icono-persona"><summary>${icono("derecha", "ico")}<span>Ícono</span>${avatar(p ?? { id: "", nombre: "" }, true)}</summary>${selectorAvatar(p ?? { id: "", nombre: "" })}</details>
       <div class="campo"><label for="u-clave">${nueva ? "Contraseña temporal" : "Poner una contraseña temporal nueva"} ${nueva ? "" : "<small>(si se le olvidó)</small>"}</label>
         <div style="display:flex;gap:8px"><input id="u-clave" type="text" value="${esc(temporal)}" autocomplete="off" spellcheck="false" style="font-family:var(--mono)">
           <button type="button" class="boton chico" data-generar>Otra</button></div>
@@ -354,7 +373,7 @@ async function editarPersona(d, yo, p) {
       try {
         const r = await api.escribir("personas", {
           id: p?.id, nombre: val("#u-nombre").trim(), usuario: val("#u-usuario").trim() || usuarioDe(val("#u-nombre")), puesto: val("#u-puesto"), turno: val("#u-turno"),
-          ...permisosElegidos(v, p, yo), aviso_hora: val("#u-hora"), activo: v.querySelector("#u-activo") ? v.querySelector("#u-activo").checked : true,
+          ...permisosElegidos(v, p, yo), aviso_hora: val("#u-hora"), avatar: valorAvatar(v, true), activo: v.querySelector("#u-activo") ? v.querySelector("#u-activo").checked : true,
           ...(clave ? { clave } : {}),
         });
         if (clave) creada = { ...r, clave };
@@ -368,6 +387,7 @@ async function editarPersona(d, yo, p) {
       nombre.addEventListener("input", () => { if (!tocado) usuario.value = usuarioDe(nombre.value); });
       v.querySelector("[data-generar]").addEventListener("click", () => { v.querySelector("#u-clave").value = claveTemporal(); });
       montarPerfil(v);
+      montarSelectorAvatar(v, nombre);
     },
   });
   if (creada) entregarCredenciales(creada);

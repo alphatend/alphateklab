@@ -16,7 +16,7 @@ import { calendarioInicio } from "./vistas-calendario.mjs";
 import * as api from "./api.mjs";
 import {
   puede, aviso, dialogo, elegir, vacio, equipo, equiposDe, plantilla, persona, nombreCorto, queInspeccion, avatar,
-  marcaPrioridad, marcaVence, marcaSinEnviar, TEXTO_ESTADO, ICONO_ESTADO, textoTurno,
+  marcaPrioridad, marcaVence, marcaSinEnviar, TEXTO_ESTADO, ICONO_ESTADO, turnoConIcono,
 } from "./ui.mjs";
 
 const ORDEN_PRIORIDAD = { alta: 0, media: 1, baja: 2 };
@@ -59,7 +59,7 @@ export function vistaTablero(ctx) {
     titulo: "Tablero",
     tituloCorto: d.ajustes?.app_nombre || "Tablero",
     html: `<div class="cabeza cabeza-inicio"><div>
-        <div class="fecha-hoy">${esc(fechaDia(hoy))}${yo.turno ? ` · ${esc(textoTurno(yo.turno))}` : ""}</div>
+        <div class="fecha-hoy">${esc(fechaDia(hoy))}${yo.turno ? ` · ${turnoConIcono(yo.turno)}` : ""}</div>
         <h1>Hola, ${esc(yo.nombre.split(" ")[0])}</h1>
         <p class="pendientes-hoy"><a href="#/tareas?q=mios">${pendientes ? `Tienes <b>${pendientes}</b> ${pendientes === 1 ? "tarea pendiente" : "tareas pendientes"}` : "No tienes tareas pendientes"}</a></p></div>
         <div class="iconos-inicio"><a class="boton-icono vidrio" href="#/avisos" aria-label="${nuevos ? `Avisos: ${nuevos} nuevos` : "Avisos"}">${icono("campana")}${nuevos ? `<span class="globo">${nuevos > 99 ? "99+" : nuevos}</span>` : ""}</a>
@@ -99,7 +99,7 @@ function tiras(d, yo, conHoy = false) {
   const xs = [];
   const ent = entregaPorRecibir(d, yo);
   if (ent) xs.push(`<a class="tira azul" href="#/entrega/${encodeURIComponent(ent.id)}"><span class="icono-tira">${icono("turno", "ico", { lleno: true })}</span>
-    <span><b>${esc(ent.turno ? textoTurno(ent.turno) : nombreCorto(d, ent.de))} te entregó</b><small>${esc((ent.novedades || ent.pendientes || "").slice(0, 90))}</small></span>${icono("derecha", "ico chevron")}</a>`);
+    <span><b>${ent.turno ? turnoConIcono(ent.turno) : esc(nombreCorto(d, ent.de))} te entregó</b><small>${esc((ent.novedades || ent.pendientes || "").slice(0, 90))}</small></span>${icono("derecha", "ico chevron")}</a>`);
   for (const p of conHoy ? [] : enCurso(d).slice(0, 2)) {
     xs.push(`<a class="tira roja" href="#/paro/${encodeURIComponent(p.id)}"><span class="icono-tira">${icono("paros", "ico", { lleno: true })}</span>
       <span><b>${esc(nombreCompleto(d, p.equipo_id))} parado</b><small>desde ${esc(fechaHora(p.inicio))}${p.causa ? ` · ${esc(p.causa)}` : ""}</small></span>${icono("derecha", "ico chevron")}</a>`);

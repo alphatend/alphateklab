@@ -152,9 +152,33 @@ export const PUNTO_ESTADO = { abierto: "rojo", en_proceso: "azul", paro: "morado
 /** El tipo de daño de un hallazgo (Eduardo, 30-oct-2026): los de mantenimiento van a su reporte. */
 export const TIPOS_DANO = { mecanico: "Mecánico", electrico: "Eléctrico", logica: "Lógica", otro: "Otro" };
 export const DE_MANTENIMIENTO = new Set(["mecanico", "electrico", "logica"]);
+/**
+ * El ícono y el color de cada especialidad (31-oct-2026), los mismos en el tipo de daño y en la causa de un paro:
+ * mecánico la llave en gris acero, eléctrico el rayo en amarillo, lógica e instrumentación en cian (control),
+ * proceso en índigo, falta de material la caja en marrón, y lo externo y «otro» en gris. Ninguno usa el rojo, el
+ * naranja, el verde ni el azul: esos son de la prioridad y del estado. Siempre van con la palabra al lado.
+ */
+const ESPECIALIDAD = {
+  mecanico: { icono: "herramienta", color: "acero" }, electrico: { icono: "rayo", color: "amarillo" }, logica: { icono: "cpu", color: "cian" },
+  instrumentacion: { icono: "medidor", color: "cian" }, proceso: { icono: "proceso", color: "indigo" }, material: { icono: "paquete", color: "marron" },
+  externa: { icono: "externa", color: "gris" }, otro: { icono: "otro", color: "gris" },
+};
+const especialidad = (k) => (Object.hasOwn(ESPECIALIDAD, k) ? ESPECIALIDAD[k] : ESPECIALIDAD.otro);
+/** La causa de un paro (texto libre de la lista del servidor) a su especialidad; lo que no se reconoce, «otro». */
+export const claveCausa = (c) => {
+  const t = String(c ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return /mecan/.test(t) ? "mecanico" : /electr/.test(t) ? "electrico" : /instrument/.test(t) ? "instrumentacion" : /logic|plc|control/.test(t) ? "logica"
+    : /proceso/.test(t) ? "proceso" : /material/.test(t) ? "material" : /extern/.test(t) ? "externa" : "otro";
+};
+export const colorEspecialidad = (k) => especialidad(k).color;
+export const colorCausa = (c) => colorEspecialidad(claveCausa(c));
+export const iconoEspecialidad = (k, clase) => icono(especialidad(k).icono, clase);
+const marcaEspecialidad = (k, texto) => `<span class="marca disc-${especialidad(k).color}">${iconoEspecialidad(k)}${esc(texto)}</span>`;
+export const marcaTipoDano = (t) => (t ? marcaEspecialidad(t, TIPOS_DANO[t] ?? t) : "");
+export const marcaCausa = (c) => (c ? marcaEspecialidad(claveCausa(c), c) : "");
 /** Los botones para elegir el tipo de daño (data-tipo-dano). */
 export const segmentoTipoDano = (actual, id = "tipo") => `<div class="campo"><span class="rotulo" id="r-${id}">Tipo de daño <small>(mecánico, eléctrico o de lógica van al reporte de mantenimiento)</small></span>
-  <div class="segmento" role="group" aria-labelledby="r-${id}">${Object.entries(TIPOS_DANO).map(([k, t]) => `<button type="button" data-tipo-dano="${k}" aria-pressed="${(actual ?? "") === k}">${t}</button>`).join("")}</div></div>`;
+  <div class="segmento con-iconos" role="group" aria-labelledby="r-${id}">${Object.entries(TIPOS_DANO).map(([k, t]) => `<button type="button" class="disc-${ESPECIALIDAD[k].color}" data-tipo-dano="${k}" aria-pressed="${(actual ?? "") === k}">${iconoEspecialidad(k)}${t}</button>`).join("")}</div></div>`;
 export const marcaPrioridad = (p) => `<span class="marca ${p}">${icono(p === "baja" ? "na" : "hallazgos")}${TEXTO_PRIORIDAD[p] ?? p}</span>`;
 export const marcaEstado = (e0) => { const e = e0 === "paro" ? "en_proceso" : e0; return `<span class="marca ${e}">${icono(ICONO_ESTADO[e] ?? "na")}${TEXTO_ESTADO[e] ?? e}</span>`; };
 export const marcaSinEnviar = () => `<span class="marca sinenviar">${icono("nube")}Sin enviar</span>`;
@@ -188,9 +212,60 @@ export const etiquetaPersona = (p, yo) => `${p.turno ? `${textoTurno(p.turno)} �
 export const equipo = (d, id) => d.equipos.find((e) => e.id === id);
 export const plantilla = (d, id) => d.plantillas.find((p) => p.id === id);
 export const inicial = (n) => (n || "?").trim().charAt(0).toUpperCase();
-const tono = (id) => [...String(id)].reduce((a, c) => a + c.charCodeAt(0), 0) % 6;
-export const avatar = (p, chica = false) =>
-  `<span class="letra-inicial${chica ? " chica" : ""}" data-tono="${tono(p?.id ?? "")}" aria-hidden="true">${esc(inicial(p?.turno || p?.nombre))}</span>`;
+/** «Eduardo González» → «EG»; «Jefe de turno A» → «JA»; un solo nombre, su letra. Sin «de», «del», «la»… */
+export const iniciales = (n) => {
+  const p = String(n ?? "").trim().split(/\s+/).filter((x) => x && !/^(de|del|la|las|los|y)$/i.test(x));
+  return p.length ? (p.length > 1 ? p[0].charAt(0) + p.at(-1).charAt(0) : p[0].charAt(0)).toUpperCase() : "?";
+};
+/**
+ * El ícono de cada persona (Jonathan, 31-oct-2026: sin fotos, «solo algo para la app para identificar»): sus
+ * iniciales o un símbolo, en uno de 8 colores. Lo elige cada uno en Ajustes o el administrador en Usuarios; se guarda
+ * como «3» (color 3, iniciales) o «3:pajaro». Sin elegir: las iniciales en un color según quién es. Los símbolos no
+ * repiten los que ya dicen algo en la app (rayo, llave, gota, sol, luna…). La lista es la misma que en el servidor.
+ */
+export const TONOS_AVATAR = ["Grafito", "Azul", "Ámbar", "Verde", "Morado", "Coral", "Cian", "Índigo"];
+export const SIMBOLOS_AVATAR = { pajaro: "Pájaro", pez: "Pez", gato: "Gato", perro: "Perro", caballo: "Caballo", mariposa: "Mariposa", arbol: "Árbol", flor: "Flor",
+  montana: "Montaña", ancla: "Ancla", balon: "Balón", cafe: "Café" };
+const tonoPorId = (id) => [...String(id)].reduce((a, c) => a + c.charCodeAt(0), 0) % 6;
+/** { tono, simbolo } del ícono guardado (o el de siempre si no eligió). */
+export const leerAvatar = (p) => {
+  const m = /^([0-7])(?::([a-z]+))?$/.exec(p?.avatar ?? "");
+  return { tono: m ? Number(m[1]) : tonoPorId(p?.id ?? ""), simbolo: m?.[2] && Object.hasOwn(SIMBOLOS_AVATAR, m[2]) ? m[2] : "" };
+};
+const circulo = (tono, simbolo, nombreP, chica) => `<span class="letra-inicial${chica ? " chica" : ""}${simbolo ? " simbolo" : ""}" data-tono="${tono}" aria-hidden="true">${simbolo ? icono(`av-${simbolo}`) : esc(iniciales(nombreP))}</span>`;
+export const avatar = (p, chica = false) => { const a = leerAvatar(p); return circulo(a.tono, a.simbolo, p?.nombre, chica); };
+/** Para elegir el ícono: los 8 colores y las iniciales o un símbolo, ya en el color elegido. Se lee con valorAvatar. */
+export function selectorAvatar(p) {
+  const a = leerAvatar(p);
+  return `<div class="elegir-avatar" data-elegir-avatar>
+    <span class="rotulo" id="r-av-tono">Color</span>
+    <div class="tonos" role="group" aria-labelledby="r-av-tono">${TONOS_AVATAR.map((t, k) => `<button type="button" data-av-tono="${k}" aria-pressed="${a.tono === k}" aria-label="${t}"><span class="letra-inicial chica" data-tono="${k}"></span></button>`).join("")}</div>
+    <span class="rotulo" id="r-av-simbolo">Iniciales o un símbolo</span>
+    <div class="simbolos" role="group" aria-labelledby="r-av-simbolo">${[["", "Iniciales"], ...Object.entries(SIMBOLOS_AVATAR)].map(([k, t]) => `<button type="button" data-av-simbolo="${k}" aria-pressed="${a.simbolo === k}" aria-label="${t}">${circulo(a.tono, k, p?.nombre, false)}</button>`).join("")}</div>
+  </div>`;
+}
+/** Conecta el selector: elegir un color pinta los símbolos con ese color; las iniciales siguen al nombre escrito. */
+export function montarSelectorAvatar(raiz, campoNombre) {
+  const sel = raiz.querySelector("[data-elegir-avatar]");
+  if (!sel) return;
+  sel.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-av-tono], [data-av-simbolo]");
+    if (!b) return;
+    sel.dataset.tocado = "1";
+    const grupo = b.hasAttribute("data-av-tono") ? "[data-av-tono]" : "[data-av-simbolo]";
+    for (const x of sel.querySelectorAll(grupo)) x.setAttribute("aria-pressed", String(x === b));
+    if (b.dataset.avTono) for (const c of sel.querySelectorAll("[data-av-simbolo] .letra-inicial")) c.dataset.tono = b.dataset.avTono;
+  });
+  campoNombre?.addEventListener("input", () => { const c = sel.querySelector('[data-av-simbolo=""] .letra-inicial'); if (c) c.textContent = iniciales(campoNombre.value); });
+}
+/** «3» o «3:pajaro»; con soloSiCambio, undefined si no tocó nada (así no se guarda un color que nadie eligió). */
+export const valorAvatar = (raiz, soloSiCambio = false) => {
+  const sel = raiz.querySelector("[data-elegir-avatar]");
+  if (!sel || (soloSiCambio && !sel.dataset.tocado)) return undefined;
+  const t = sel.querySelector('[data-av-tono][aria-pressed="true"]')?.dataset.avTono ?? "0";
+  const s = sel.querySelector('[data-av-simbolo][aria-pressed="true"]')?.dataset.avSimbolo ?? "";
+  return s ? `${t}:${s}` : t;
+};
 /** «COL-03 · Filtro principal del Loesche» o el nombre solo. */
 export const nombreEquipo = (e) => (e ? (e.tag ? `${e.tag} · ${e.nombre}` : e.nombre) : "Equipo");
 export const equiposDe = (i) => (i.equipos?.length ? i.equipos : [i.equipo_id]);
@@ -209,11 +284,18 @@ export const esAdmin = (yo) => yo?.rol === "admin";
  * muestran por número y su horario. Un turno D de antes se ve como «Turno D».
  */
 export const TURNOS = [
-  { id: "A", nombre: "Turno 1", horas: "12 a. m. – 7 a. m.", desde: 0, hasta: 7 },
-  { id: "B", nombre: "Turno 2", horas: "7 a. m. – 5 p. m.", desde: 7, hasta: 17 },
-  { id: "C", nombre: "Turno 3", horas: "5 p. m. – 12 a. m.", desde: 17, hasta: 24 },
+  { id: "A", nombre: "Turno 1", horas: "12 a. m. – 7 a. m.", desde: 0, hasta: 7, icono: "luna" },
+  { id: "B", nombre: "Turno 2", horas: "7 a. m. – 5 p. m.", desde: 7, hasta: 17, icono: "sol" },
+  { id: "C", nombre: "Turno 3", horas: "5 p. m. – 12 a. m.", desde: 17, hasta: 24, icono: "atardecer" },
 ];
 export const textoTurno = (t) => TURNOS.find((x) => x.id === String(t ?? "").toUpperCase())?.nombre ?? `Turno ${t}`;
+/**
+ * La luna, el sol o el atardecer de cada turno (31-oct-2026), en el color del texto: la forma ya lo dice, y un color
+ * más se confundiría con los de la prioridad o el tipo de daño. Un turno D de antes no lleva ícono.
+ */
+export const iconoTurno = (t, clase) => { const x = TURNOS.find((y) => y.id === String(t ?? "").toUpperCase()); return x ? icono(x.icono, clase) : ""; };
+/** «☾ Turno 1», ya escapado, para poner en HTML. */
+export const turnoConIcono = (t) => `<span class="con-turno">${iconoTurno(t, "ico chico")}${esc(textoTurno(t))}</span>`;
 /** En qué turno cae una hora (en Panamá). */
 export const turnoDeHora = (iso) => { const h = new Date(Date.parse(iso) - 5 * 3600e3).getUTCHours(); return TURNOS.find((x) => h >= x.desde && h < x.hasta)?.id ?? null; };
 /**

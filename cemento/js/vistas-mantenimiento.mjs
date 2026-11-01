@@ -4,7 +4,7 @@
 // pendiente. Lo que se anotó sin tipo se clasifica aquí mismo, para que entre.
 import { esc, icono, fechaCorta, diaDe, diasEntre, plural, numeroHallazgo, numero, normal } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, vacio, equipo, nombreCorto, esDeProceso, puede, marcaSinEnviar, TIPOS_DANO, DE_MANTENIMIENTO } from "./ui.mjs";
+import { aviso, vacio, equipo, nombreCorto, esDeProceso, puede, marcaSinEnviar, TIPOS_DANO, DE_MANTENIMIENTO, marcaTipoDano, iconoEspecialidad, colorEspecialidad } from "./ui.mjs";
 import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto } from "./componentes.mjs";
 
 /** Días que lleva abierto un hallazgo, o los que tardó en cerrarse. */
@@ -35,13 +35,13 @@ export function vistaMantenimiento({ d, yo, hoy, query }) {
   const comp = filtrar(completados).sort((a, b) => (b.cerrado ?? "").localeCompare(a.cerrado ?? ""));
   const q = (cambios) => `#/mantenimiento?${new URLSearchParams(Object.entries({ ...Object.fromEntries(query), ...cambios }).filter(([, v]) => v))}`;
   const pestana = (id, texto, n) => `<a href="${q({ ver: id === "pendiente" ? "" : id })}" ${ver === id ? 'aria-current="true"' : ""}>${texto}${n ? ` <b>${n}</b>` : ""}</a>`;
-  const deTipo = (id, texto) => `<a href="${q({ tipo: id })}" ${tipo === id ? 'aria-current="true"' : ""}>${texto}</a>`;
+  const deTipo = (id, texto) => `<a href="${q({ tipo: id })}" ${id ? `class="disc-${colorEspecialidad(id)}"` : ""} ${tipo === id ? 'aria-current="true"' : ""}>${id ? iconoEspecialidad(id) : ""}${texto}</a>`;
 
   const fila = (h) => {
     const n = diasAbierto(h, hoy);
     const cerrado = h.estado === "cerrado";
     const s = cerrado && validoPor(d, h);
-    const det = [`<span class="mono">${numeroHallazgo(h)}</span>`, `<span>${esc(TIPOS_DANO[h.tipo] ?? "Sin tipo")}</span>`,
+    const det = [`<span class="mono">${numeroHallazgo(h)}</span>`, (h.tipo ? marcaTipoDano(h.tipo) : "<span>Sin tipo</span>"),
       h.responsable_id ? `<span>${esc(nombreCorto(d, h.responsable_id))}</span>` : "",
       `<span>Anotado el ${esc(fechaCorta(diaDe(h.creado)))}</span>`,
       cerrado ? `<span>Validó ${esc(s ? nombreCorto(d, s.persona_id) : "—")} el ${esc(fechaCorta(diaDe(h.cerrado)))}</span>` : "",
@@ -54,7 +54,7 @@ export function vistaMantenimiento({ d, yo, hoy, query }) {
   const filaSinTipo = (h) => `<li data-h="${esc(h.id)}"><span class="icono-lista rojo" aria-hidden="true">${icono("hallazgos")}</span>
       <a class="que" href="#/hallazgo/${encodeURIComponent(h.id)}"><b>${esc(h.descripcion)}</b><small><span class="mono">${numeroHallazgo(h)}</span><span>${esc(nombreCompleto(d, h.equipo_id))}</span><span>Anotado el ${esc(fechaCorta(diaDe(h.creado)))}</span></small></a>
       <span class="lado"></span>
-      ${puede(yo, "editar") ? `<div class="segmento chico clasificar" role="group" aria-label="Tipo de daño">${Object.entries(TIPOS_DANO).map(([k, t]) => `<button type="button" data-clasificar="${k}">${t}</button>`).join("")}</div>` : ""}</li>`;
+      ${puede(yo, "editar") ? `<div class="segmento chico clasificar con-iconos" role="group" aria-label="Tipo de daño">${Object.entries(TIPOS_DANO).map(([k, t]) => `<button type="button" class="disc-${colorEspecialidad(k)}" data-clasificar="${k}">${iconoEspecialidad(k)}${t}</button>`).join("")}</div>` : ""}</li>`;
 
   // lo pendiente, por equipo: el equipo con lo más viejo arriba
   const porEquipo = Object.values(pend.reduce((a, h) => ((a[raiz(d, h.equipo_id)] ??= { id: raiz(d, h.equipo_id), xs: [] }).xs.push(h), a), {}));
@@ -83,7 +83,7 @@ export function vistaMantenimiento({ d, yo, hoy, query }) {
       </dl>
       <nav class="filtros" aria-label="Qué ver">${pestana("pendiente", "Pendiente", pendientes.length)}${pestana("completado", "Completado", completados.length)}${sinTipo.length ? pestana("sintipo", "Sin tipo", sinTipo.length) : ""}</nav>
       ${ver === "sintipo" ? "" : `${barraFiltros(d, query, { placeholder: "Buscar por número, OT o texto" })}
-      <div class="segmento chico" role="group" aria-label="Tipo de daño" style="margin:0 0 16px">${deTipo("", "Todos")}${[...DE_MANTENIMIENTO].map((k) => deTipo(k, TIPOS_DANO[k])).join("")}</div>`}
+      <div class="segmento chico con-iconos" role="group" aria-label="Tipo de daño" style="margin:0 0 16px">${deTipo("", "Todos")}${[...DE_MANTENIMIENTO].map((k) => deTipo(k, TIPOS_DANO[k])).join("")}</div>`}
       ${ver === "pendiente" ? listaPend : ver === "completado" ? listaComp : listaSin}
       </div>`,
     montar(m) {

@@ -4,7 +4,7 @@ import { esc, icono, fechaHora, fechaCorta, haceCuanto, plural, diasEntre, diaDe
 import * as api from "./api.mjs";
 import {
   aviso, filaHallazgo, vacio, equipo, plantilla, nombre, nombreEquipo, marcaPrioridad, marcaEstado, marcaSinEnviar, esAdmin, puede,
-  etiquetaPersona, galeria, botonesMedio, TEXTO_ESTADO, ESTADOS, ICONO_ESTADO, segmentoTipoDano, TIPOS_DANO,
+  etiquetaPersona, galeria, botonesMedio, TEXTO_ESTADO, ESTADOS, ICONO_ESTADO, segmentoTipoDano, marcaTipoDano,
 } from "./ui.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
 import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, camposEquipoSub } from "./componentes.mjs";
@@ -201,7 +201,7 @@ function soloVer(d, h) {
       <dt>En qué va</dt><dd>${esc(TEXTO_ESTADO[h.estado])}</dd>
       <dt>A cargo de</dt><dd>${h.responsable_id ? esc(nombre(d, h.responsable_id)) : "Nadie todavía"}</dd>
       <dt>Prioridad</dt><dd>${esc(h.prioridad[0].toUpperCase() + h.prioridad.slice(1))}</dd>
-      ${h.tipo ? `<dt>Tipo de daño</dt><dd>${esc(TIPOS_DANO[h.tipo] ?? h.tipo)}</dd>` : ""}
+      ${h.tipo ? `<dt>Tipo de daño</dt><dd>${marcaTipoDano(h.tipo)}</dd>` : ""}
       ${h.ot ? `<dt>OT o aviso</dt><dd class="mono">${esc(h.ot)}</dd>` : ""}
       ${h.vence ? `<dt>Compromiso</dt><dd>${esc(fechaCorta(h.vence))}</dd>` : ""}</dl>
     ${h.accion ? `<div><span class="rotulo">Qué hay que hacer</span><p style="margin:6px 0 0">${esc(h.accion)}</p></div>` : ""}
