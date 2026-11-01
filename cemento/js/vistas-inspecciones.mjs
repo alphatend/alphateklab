@@ -3,8 +3,7 @@ import { esc, icono, fechaCorta, fechaHora, sumarDias, plural, numero, diasEntre
 import * as api from "./api.mjs";
 import {
   aviso, dialogo, confirmar, filaInspeccion, vacio, equipo, plantilla, persona, nombre, nombreCorto, nombreEquipo, queInspeccion,
-  equiposDe, esAdmin, puede, etiquetaPersona, marcaVence, marcaPrioridad, galeria, botonesMedio, marcaSinEnviar, segmentoTipoDano, textoTurno,
-} from "./ui.mjs";
+  equiposDe, esAdmin, puede, etiquetaPersona, marcaVence, marcaPrioridad, galeria, botonesMedio, marcaSinEnviar, segmentoTipoDano, textoTurno, usaQr } from "./ui.mjs";
 import { prepararArchivo, dictar, hayDictado } from "./medios.mjs";
 import { barraFiltros, montarFiltros, familia, enFiltro, nombreCompleto, camposEquipoSub, escanear, equipoDelQr, pedirFirma, equipoDe } from "./componentes.mjs";
 import { botonRedactar } from "./redactar.mjs";
@@ -477,8 +476,8 @@ function llenar({ d, yo, hoy, dibujar, ir }, insp) {
           </div>
         </div>
         <aside class="panel">${datosInspeccion(d, insp)}
-          <div data-en-sitio>${enSitio()}</div>
-          <button type="button" class="boton chico" data-qr>${icono("escanear")}Escanear el QR del equipo</button>
+          ${usaQr(d) ? `<div data-en-sitio>${enSitio()}</div>
+          <button type="button" class="boton chico" data-qr>${icono("escanear")}Escanear el QR del equipo</button>` : ""}
           ${puede(yo, "asignar") ? `<div class="herramientas-item">
             <button type="button" class="boton chico" data-accion="recordar">${icono("campana")}Recordar</button>
             <button type="button" class="boton chico" data-accion="fecha">${icono("calendario")}Cambiar fecha</button>
@@ -790,7 +789,7 @@ function verHecha({ d, yo, hoy }, insp) {
           ${insp.revisada_en ? `<div class="visto-bueno" style="margin-bottom:14px">${icono("visto")}<div><b>Visto bueno de ${esc(nombre(d, insp.revisada_por))}</b>
             <span>${esc(fechaHora(insp.revisada_en))}${insp.revision_nota ? ` · ${esc(insp.revision_nota)}` : ""}</span></div></div>` : ""}
           <p style="margin:0 4px 12px;color:var(--tinta-3)">${resumen}.</p>
-          ${(insp.verificaciones ?? []).length ? `<div style="margin:0 0 12px">${insp.verificaciones.map((v) => `<span class="en-sitio" style="margin:0 6px 6px 0">${icono("sitio", "ico", { lleno: true })}En sitio: ${esc(equipo(d, v.equipo_id)?.tag || equipo(d, v.equipo_id)?.nombre || "")} · ${esc(fechaHora(v.en))}</span>`).join("")}</div>` : ""}
+          ${usaQr(d) && (insp.verificaciones ?? []).length ? `<div style="margin:0 0 12px">${insp.verificaciones.map((v) => `<span class="en-sitio" style="margin:0 6px 6px 0">${icono("sitio", "ico", { lleno: true })}En sitio: ${esc(equipo(d, v.equipo_id)?.tag || equipo(d, v.equipo_id)?.nombre || "")} · ${esc(fechaHora(v.en))}</span>`).join("")}</div>` : ""}
           ${tareasDe.length ? `<section class="seccion" style="margin-top:0"><h2>Tareas <small>${tareasDe.filter((t) => t.estado === "hecha").length} de ${tareasDe.length} hechas</small></h2>
             <ul class="lista-tareas">${tareasDe.map((t) => `<li class="${t.estado === "hecha" ? "hecha" : ""}"><span class="check-tarea" role="img" aria-label="${t.estado === "hecha" ? "Hecha" : "Sin hacer"}" aria-checked="${t.estado === "hecha"}">${CHECK}</span>
               <a class="que" href="#/tarea/${encodeURIComponent(t.id)}"><b>${esc(t.titulo)}</b>${t.nota_cierre ? `<small><span>${esc(t.nota_cierre)}</span></small>` : t.estado !== "hecha" ? `<small><span>Pasó a la siguiente inspección</span></small>` : ""}</a><span></span></li>`).join("")}</ul></section>` : ""}

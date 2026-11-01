@@ -10,8 +10,7 @@ import { esc, icono, fechaCorta, fechaLarga, fechaHora, sumarDias, diaDe, numero
 import * as api from "./api.mjs";
 import {
   aviso, vacio, equipo, plantilla, nombre, nombreCorto, nombreEquipo, queInspeccion, equiposDe, persona, TEXTO_PRIORIDAD, TEXTO_ESTADO,
-  TURNOS, textoTurno, turnoDeHora, TIPOS_DANO, DE_MANTENIMIENTO,
-} from "./ui.mjs";
+  TURNOS, textoTurno, turnoDeHora, TIPOS_DANO, DE_MANTENIMIENTO, usaQr } from "./ui.mjs";
 import { diasAbierto } from "./vistas-mantenimiento.mjs";
 import { fueraDeRango, textoRango } from "./vistas-inspecciones.mjs";
 import { libroXlsx } from "./xlsx.mjs";
@@ -238,9 +237,9 @@ function hojaEquipo(d, e, hechas, per, r, o) {
   return `<h2>${e.tag ? `<span class="tag-doc">${esc(e.tag)}</span>` : ""}${esc(e.nombre)}</h2>
     <p class="sub-doc">${esc([e.area, e.sirve_a ? `sirve a ${e.sirve_a}` : "", plural(mias.length, "inspección en el período", "inspecciones en el período"),
       disp ? `disponibilidad ${numero(disp.disp * 100, 1)} %` : ""].filter(Boolean).join(" · "))}</p>
-    ${mias.length ? `<table class="tabla"><thead><tr><th>Fecha</th><th>Inspección</th><th>Hizo</th><th>En sitio (QR)</th><th>Firma</th></tr></thead><tbody>
+    ${mias.length ? `<table class="tabla"><thead><tr><th>Fecha</th><th>Inspección</th><th>Hizo</th>${usaQr(d) ? "<th>En sitio (QR)</th>" : ""}<th>Firma</th></tr></thead><tbody>
       ${mias.map((i) => { const v = (i.verificaciones ?? []).find((x) => fam.has(x.equipo_id)); return `<tr><td>${esc(fechaCorta(diaDe(i.hecha_en)))}</td><td>${esc(plantilla(d, i.plantilla_id)?.nombre ?? "")}</td>
-        <td>${esc(nombreCorto(d, i.hecha_por))}</td><td>${v ? `✓ ${esc(fechaHora(v.en).split(", ")[1])}` : "—"}</td>
+        <td>${esc(nombreCorto(d, i.hecha_por))}</td>${usaQr(d) ? `<td>${v ? `✓ ${esc(fechaHora(v.en).split(", ")[1])}` : "—"}</td>` : ""}
         <td>${i.firma ? `<img src="${esc(api.urlMedio(i.firma))}" alt="Firma" style="height:26px">` : "—"}</td></tr>`; }).join("")}</tbody></table>` : ""}
     ${medidas.length ? `<table class="tabla"><thead><tr><th>Fecha</th><th>Medida</th><th class="n">Valor</th><th>Rango</th></tr></thead><tbody>
       ${medidas.map((x) => `<tr><td>${esc(fechaCorta(diaDe(x.i.hecha_en)))}</td><td>${esc(x.it.texto)}</td><td class="n ${x.fuera ? "fuera" : ""}">${numero(x.r.valor, 2)} ${esc(x.it.unidad ?? "")}</td>
@@ -490,11 +489,11 @@ export function excelDe(d, per, al, hoy) {
     { nombre: "Inspecciones", columnas: [
       { titulo: "Vence", tipo: "fecha" }, { titulo: "Estado" }, { titulo: "Equipo(s)", ancho: 30 }, { titulo: "Tags", ancho: 22 }, { titulo: "Área", ancho: 22 }, { titulo: "Inspección", ancho: 28 },
       { titulo: "Asignada a", ancho: 22 }, { titulo: "Hecha el", tipo: "fechahora" }, { titulo: "Hecha por", ancho: 22 }, { titulo: "A tiempo" }, { titulo: "Hallazgos", tipo: "entero" },
-      { titulo: "Visto bueno", ancho: 18 }, { titulo: "Firmada" }, { titulo: "En sitio (QR)" }, { titulo: "Nota", ancho: 40 }, { titulo: "Id", ancho: 12 }],
+      { titulo: "Visto bueno", ancho: 18 }, { titulo: "Firmada" }, ...(usaQr(d) ? [{ titulo: "En sitio (QR)" }] : []), { titulo: "Nota", ancho: 40 }, { titulo: "Id", ancho: 12 }],
       filas: ins.map((i) => [i.vence, i.estado === "hecha" ? "Hecha" : i.vence < hoy ? "Atrasada" : "Pendiente", queInspeccion(d, i), equiposDe(i).map(eqTag).filter(Boolean).join(", "),
         eqArea(equiposDe(i)[0]), plantilla(d, i.plantilla_id)?.nombre ?? "", nombre(d, i.asignada_a), i.hecha_en ?? null, i.hecha_por ? nombre(d, i.hecha_por) : "",
         i.estado === "hecha" ? (diaDe(i.hecha_en) <= i.vence ? "Sí" : "No") : "", i.estado === "hecha" ? d.hallazgos.filter((h) => h.inspeccion_id === i.id).length : null,
-        i.revisada_en ? nombre(d, i.revisada_por) : "", i.estado === "hecha" ? (i.firma ? "Sí" : "No") : "", i.estado === "hecha" ? ((i.verificaciones ?? []).length ? "Sí" : "No") : "", i.nota ?? "", i.id]) },
+        i.revisada_en ? nombre(d, i.revisada_por) : "", i.estado === "hecha" ? (i.firma ? "Sí" : "No") : "", ...(usaQr(d) ? [i.estado === "hecha" ? ((i.verificaciones ?? []).length ? "Sí" : "No") : ""] : []), i.nota ?? "", i.id]) },
     { nombre: "Mediciones", columnas: [
       { titulo: "Fecha", tipo: "fechahora" }, { titulo: "Tag", ancho: 14 }, { titulo: "Equipo", ancho: 28 }, { titulo: "Área", ancho: 22 }, { titulo: "Medida", ancho: 36 },
       { titulo: "Valor", tipo: "numero", decimales: 2 }, { titulo: "Unidad", ancho: 9 }, { titulo: "Mínimo", tipo: "numero", decimales: 2 }, { titulo: "Máximo", tipo: "numero", decimales: 2 },
@@ -668,7 +667,7 @@ export function vistaReporteInspeccion({ d, yo, hoy, param }) {
         <h2>Hallazgos</h2>${hallazgos.length ? tablaHallazgos(d, hallazgos, true) : `<p>Sin hallazgos: todo bien.</p>`}
         ${tareasDe.length ? `<h2>Tareas</h2><table class="tabla"><thead><tr><th>Tarea</th><th>Hecha</th><th>Cómo quedó</th></tr></thead><tbody>${tareasDe.map((t) => `<tr><td>${esc(t.titulo)}</td>
           <td>${t.estado === "hecha" ? "Sí" : "No (pasó a la siguiente)"}</td><td>${esc(t.nota_cierre ?? "")}</td></tr>`).join("")}</tbody></table>` : ""}
-        ${(insp.verificaciones ?? []).length ? `<p style="margin-top:12px"><b>Verificado en sitio con el QR:</b> ${insp.verificaciones.map((v) => `${esc(nombreCompleto(d, v.equipo_id))} a las ${esc(fechaHora(v.en).split(", ")[1])}`).join("; ")}.</p>` : ""}
+        ${usaQr(d) && (insp.verificaciones ?? []).length ? `<p style="margin-top:12px"><b>Verificado en sitio con el QR:</b> ${insp.verificaciones.map((v) => `${esc(nombreCompleto(d, v.equipo_id))} a las ${esc(fechaHora(v.en).split(", ")[1])}`).join("; ")}.</p>` : ""}
         ${insp.revisada_en ? `<p style="margin-top:14px"><b>Visto bueno:</b> ${esc(nombre(d, insp.revisada_por))}, ${esc(fechaHora(insp.revisada_en))}${insp.revision_nota ? `. ${esc(insp.revision_nota)}` : ""}</p>` : ""}
         <div class="firmas"><div>${insp.firma ? `<img src="${esc(api.urlMedio(insp.firma))}" alt="Firma" style="height:46px;margin:-50px 0 4px">` : ""}Hizo: ${esc(hizo?.nombre ?? "")}${hizo?.puesto ? `<br>${esc(hizo.puesto)}` : ""}</div><div>Revisó${insp.revisada_en ? `: ${esc(nombre(d, insp.revisada_por))}` : ""}</div></div>
         ${pie(d, yo)}</article></div>`,

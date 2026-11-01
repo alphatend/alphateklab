@@ -4,8 +4,7 @@ import { esc, icono, plural, numero, fechaCorta, fechaHora, diaDe, normal, haceC
 import * as api from "./api.mjs";
 import {
   puede, aviso, dialogo, confirmar, vacio, equipo, plantilla, filaInspeccion, filaHallazgo, nombreEquipo, marcaTag, equiposDe, esAdmin, chispa,
-  nombreCorto, queInspeccion, TEXTO_PRIORIDAD,
-} from "./ui.mjs";
+  nombreCorto, queInspeccion, TEXTO_PRIORIDAD, usaQr } from "./ui.mjs";
 import { fueraDeRango, textoRango } from "./vistas-inspecciones.mjs";
 import { familia, nombreCompleto, leerLista, campoEquipo, barraFiltros, montarFiltros, enFiltro } from "./componentes.mjs";
 import { enCurso, tarjetaEnCurso, montarEnCurso, disponibilidad, duracion } from "./vistas-paros.mjs";
@@ -67,9 +66,9 @@ export function vistaEquipos({ d, yo, hoy, query }) {
   return {
     titulo: "Equipos",
     html: `<div class="cabeza"><div><h1>Equipos</h1>
-        <p class="bajada">Toca un equipo para ver qué se revisa, cómo vienen las medidas, su historia y su QR. Los colectores de polvo están en <a href="#/colectores">Colectores</a>.</p></div>
+        <p class="bajada">Toca un equipo para ver qué se revisa, cómo vienen las medidas, su historia${usaQr(d) ? " y su QR" : ""}. Los colectores de polvo están en <a href="#/colectores">Colectores</a>.</p></div>
         <div class="acciones">${admin ? `<button type="button" class="boton primario" data-accion="nuevo">${icono("mas1")}Agregar equipo</button>` : ""}
-          <a class="boton" href="#/etiquetas?de=todos">${icono("escanear")}Etiquetas QR</a></div></div>
+          ${usaQr(d) ? `<a class="boton" href="#/etiquetas?de=todos">${icono("escanear")}Etiquetas QR</a>` : ""}</div></div>
       <div class="tablero-barra">
         <div class="buscador" style="flex:1 1 260px;max-width:420px">${icono("buscar")}<input type="search" placeholder="Buscar por nombre, tag o área" value="${esc(buscar)}" data-buscar aria-label="Buscar"></div>
         <nav class="filtros" style="margin:0"><a href="#/equipos" ${archivados ? "" : 'aria-current="true"'}>En uso</a><a href="#/equipos?archivados=1" ${archivados ? 'aria-current="true"' : ""}>Archivados</a></nav>
@@ -299,7 +298,7 @@ export function vistaEquipo({ d, yo, hoy, param }) {
           ${puede(yo, "editar") ? `<a class="boton" href="#/nuevo-hallazgo?equipo=${encodeURIComponent(eq.id)}">${icono("hallazgos")}Hallazgo</a>
           <a class="boton" href="#/tarea/nueva?equipo=${encodeURIComponent(eq.id)}">${icono("tareas")}Tarea</a>` : ""}
           <a class="boton" href="#/reportes?alcance=${encodeURIComponent(`equipo:${eq.id}`)}&plantilla=equipo">${icono("reportes")}Reporte</a>
-          <a class="boton plano" href="#/etiquetas?de=${encodeURIComponent(`equipo:${eq.id}`)}">${icono("escanear")}QR</a>
+          ${usaQr(d) ? `<a class="boton plano" href="#/etiquetas?de=${encodeURIComponent(`equipo:${eq.id}`)}">${icono("escanear")}QR</a>` : ""}
           ${admin ? `<button class="boton plano" data-accion="editar">${icono("lapiz")}Editar</button>` : ""}</div></div>
       ${curso.map((p) => tarjetaEnCurso(d, p)).join("")}
       <dl class="ficha-cifras">

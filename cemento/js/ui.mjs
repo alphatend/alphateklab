@@ -108,6 +108,9 @@ export function elegir(titulo, opciones, { actual } = {}) {
 // ------------------------------------------------------------------------------- etiquetas
 
 export const TEXTO_PRIORIDAD = { alta: "Alta", media: "Media", baja: "Baja" };
+/** ¿Se usan los códigos QR? El administrador los prende en Ajustes cuando ya están pegados en los equipos (Eduardo,
+ *  31-oct-2026); apagados, no sale nada de QR en la app. */
+export const usaQr = (d) => d?.ajustes?.usar_qr === true;
 // «Para el paro» se quitó (Eduardo, 31-oct-2026: «eso elimínalo»): lo que todavía tenga ese estado se ve «En proceso»
 export const TEXTO_ESTADO = { abierto: "Abierto", en_proceso: "En proceso", paro: "En proceso", cerrado: "Cerrado" };
 export const ESTADOS = ["abierto", "en_proceso", "cerrado"];

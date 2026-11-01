@@ -3,7 +3,7 @@
 // línea por colector, copiada de Excel o escrita: tag, nombre, área, a qué sirve).
 import { esc, icono, plural, numero, normal, haceCuanto, diasEntre, diaDe } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, dialogo, vacio, esAdmin, puede, chispa, equiposDe } from "./ui.mjs";
+import { aviso, dialogo, vacio, esAdmin, puede, chispa, equiposDe, usaQr } from "./ui.mjs";
 import { series, editarEquipo, areasDe } from "./vistas-equipos.mjs";
 import { fueraDeRango } from "./vistas-inspecciones.mjs";
 
@@ -58,7 +58,7 @@ export function vistaColectores({ d, yo, hoy, query }) {
           ${d.equipos.some((e) => e.tipo === "colector" && String(e.id).startsWith("demo-")) ? " Los de ejemplo (COL-0…) se quitan en Ajustes." : ""}</p></div>
         ${admin ? `<div class="acciones">
           <button type="button" class="boton" data-accion="agregar">${icono("mas1")}Agregar colectores</button>
-          <a class="boton" href="#/etiquetas?de=colectores">${icono("escanear")}Etiquetas QR</a>
+          ${usaQr(d) ? `<a class="boton" href="#/etiquetas?de=colectores">${icono("escanear")}Etiquetas QR</a>` : ""}
           ${todos.length && plRonda && puede(yo, "asignar") ? `<a class="boton primario" href="#/asignar?equipo=colectores&plantilla=${encodeURIComponent(plRonda.id)}">${icono("inspecciones")}Asignar ronda</a>` : ""}</div>` : ""}</div>
       <dl class="ficha-cifras" style="margin-bottom:18px">
         <div><dt>Colectores</dt><dd>${todos.length}</dd></div>

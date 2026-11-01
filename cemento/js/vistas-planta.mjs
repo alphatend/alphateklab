@@ -4,7 +4,7 @@
 // También las etiquetas QR para imprimir y pegar.
 import { esc, icono, fechaHora, plural, haceCuanto } from "./util.mjs";
 import * as api from "./api.mjs";
-import { aviso, vacio, filaInspeccion, filaHallazgo, equiposDe, esAdmin, puede, esDeProceso, DE_MANTENIMIENTO } from "./ui.mjs";
+import { aviso, vacio, filaInspeccion, filaHallazgo, equiposDe, esAdmin, puede, esDeProceso, DE_MANTENIMIENTO, usaQr } from "./ui.mjs";
 import { escanear, equipoDelQr, nombreCompleto, familia, elegirEquipo } from "./componentes.mjs";
 import { enCurso, tarjetaEnCurso, montarEnCurso } from "./vistas-paros.mjs";
 import { esMia, filaTarea, montarChecks } from "./vistas-tareas.mjs";
@@ -22,7 +22,7 @@ export function vistaPlanta({ d, yo, hoy }) {
   return {
     titulo: "Planta",
     html: `<div class="cabeza"><div><h1>Planta</h1><p class="bajada">${esc(d.ajustes?.planta || "")}</p></div>
-        <div class="acciones"><a class="boton primario" href="#/escanear">${icono("escanear")}Escanear un QR</a></div></div>
+        ${usaQr(d) ? `<div class="acciones"><a class="boton primario" href="#/escanear">${icono("escanear")}Escanear un QR</a></div>` : ""}</div>
       ${curso.map((p) => tarjetaEnCurso(d, p)).join("")}
       <div class="mosaico">
         <a href="#/equipos"><span class="icono-fila">${icono("equipos")}</span><b>Equipos</b><small>${plural(procesos.length, "equipo", "equipos")}</small></a>

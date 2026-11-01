@@ -32,6 +32,10 @@ export function vistaAjustes({ d, yo }) {
       ${admin ? seccion("Firmas", `<label class="ajuste"><span class="icono-fila indigo">${icono("firma")}</span><span class="texto"><b>Pedir firma al terminar una inspección</b>
           <small>${a.pedir_firma === false ? "Apagado: nadie firma, en ninguna plantilla." : "Con el dedo; sale en el reporte. En cada plantilla se puede quitar."}</small></span>
           <span class="interruptor"><input type="checkbox" data-firma aria-label="Pedir firma al terminar una inspección" ${a.pedir_firma === false ? "" : "checked"}><span></span></span></label>`) : ""}
+      ${admin ? seccion("Códigos QR", `<label class="ajuste"><span class="icono-fila gris">${icono("escanear")}</span><span class="texto"><b>Usar los códigos QR</b>
+          <small data-nota-qr>${a.usar_qr === true ? "Prendido: se escanean al llenar una inspección y en Planta." : "Apagado: no sale nada de QR en la app. Imprime las etiquetas, pégalas en cada equipo y después préndelo."}</small></span>
+          <span class="interruptor"><input type="checkbox" data-usar-qr aria-label="Usar los códigos QR" ${a.usar_qr === true ? "checked" : ""}><span></span></span></label>
+        <a class="fila con-icono" href="#/etiquetas?de=todos"><span class="icono-fila gris">${icono("imprimir")}</span><span class="titulo">Imprimir las etiquetas QR</span><span class="lado">${icono("derecha", "ico chevron")}</span></a>`) : ""}
 
       ${seccion("Apariencia", `<div class="ajuste"><div class="segmento" role="group" aria-label="Tema" style="flex:1">
           <button type="button" data-tema="auto" aria-pressed="${tema === "auto"}">${icono("auto")}Automático</button>
@@ -133,6 +137,14 @@ export function vistaAjustes({ d, yo }) {
       m.querySelector("[data-hora]").addEventListener("change", (e) => guardarHora(m, e.target.value));
       m.querySelector("[data-escalar]")?.addEventListener("change", async (e) => {
         try { await api.escribir("ajustes", { escalar_dias: Number(e.target.value) }); aviso(`Se escala a los ${e.target.value} días.`); } catch (x) { aviso(x.sinRed ? "Hace falta señal." : x.message, { error: true }); }
+      });
+      m.querySelector("[data-usar-qr]")?.addEventListener("change", async (e) => {
+        const nota = m.querySelector("[data-nota-qr]");
+        try {
+          await api.escribir("ajustes", { usar_qr: e.target.checked });
+          aviso(e.target.checked ? "Códigos QR prendidos." : "Códigos QR apagados: ya no salen en la app.");
+          if (nota) nota.textContent = e.target.checked ? "Prendido: se escanean al llenar una inspección y en Planta." : "Apagado: no sale nada de QR en la app. Imprime las etiquetas, pégalas en cada equipo y después préndelo.";
+        } catch (x) { e.target.checked = !e.target.checked; aviso(x.sinRed ? "Hace falta señal." : x.message, { error: true }); }
       });
       m.querySelector("[data-firma]")?.addEventListener("change", async (e) => {
         try { await api.escribir("ajustes", { pedir_firma: e.target.checked }); aviso(e.target.checked ? "Se pide firma al terminar (salvo en las plantillas que la quitan)." : "Firmas apagadas: nadie firma, en ninguna plantilla.");
