@@ -1401,3 +1401,11 @@ html.arrastrando, html.arrastrando * { cursor: grabbing !important; -webkit-user
 .opcion-plantilla small { color: var(--tinta-3); font-size: 13.5px; }
 .opcion-plantilla[aria-pressed="true"] { border-color: var(--tinte); background: color-mix(in srgb, var(--tinte) 10%, var(--hundido)); }
 .opcion-plantilla:focus-visible { outline: 2px solid var(--foco, var(--tinte)); outline-offset: 2px; }
+
+/* El ícono de un equipo (31-oct-2026): en «Editar», solo para el administrador */
+.iconos-equipo { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; max-height: 280px; overflow-y: auto; padding: 2px; }
+.iconos-equipo button { display: grid; justify-items: center; gap: 4px; padding: 10px 4px 8px; border-radius: 12px; border: 1.5px solid transparent; background: var(--hundido); color: var(--tinta); font: inherit; font-size: 12px; line-height: 1.2; cursor: pointer; min-width: 0; }
+.iconos-equipo button .ico { width: 26px; height: 26px; }
+.iconos-equipo button span { text-align: center; overflow-wrap: anywhere; }
+.iconos-equipo button[aria-pressed="true"] { border-color: var(--tinte); background: color-mix(in srgb, var(--tinte) 10%, var(--hundido)); color: var(--tinte); }
+.iconos-equipo button:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }

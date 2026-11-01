@@ -4,7 +4,8 @@ import { esc, icono, plural, numero, fechaCorta, fechaHora, diaDe, normal, haceC
 import * as api from "./api.mjs";
 import {
   puede, aviso, dialogo, confirmar, vacio, equipo, plantilla, filaInspeccion, filaHallazgo, nombreEquipo, marcaTag, equiposDe, esAdmin, chispa,
-  nombreCorto, queInspeccion, TEXTO_PRIORIDAD, usaQr } from "./ui.mjs";
+  nombreCorto, queInspeccion, TEXTO_PRIORIDAD, usaQr, iconoEquipo, iconoDeClave, claveIconoEquipo, ICONOS_EQUIPO
+} from "./ui.mjs";
 import { fueraDeRango, textoRango } from "./vistas-inspecciones.mjs";
 import { familia, nombreCompleto, leerLista, campoEquipo, barraFiltros, montarFiltros, enFiltro } from "./componentes.mjs";
 import { enCurso, tarjetaEnCurso, montarEnCurso, disponibilidad, duracion } from "./vistas-paros.mjs";
@@ -60,7 +61,7 @@ export function vistaEquipos({ d, yo, hoy, query }) {
     const abiertos = d.hallazgos.filter((h) => fam.has(h.equipo_id) && h.estado !== "cerrado").length;
     const parado = enCurso(d).some((p) => fam.has(p.equipo_id));
     const resumen = abiertos ? plural(abiertos, "hallazgo abierto", "hallazgos abiertos") : pend ? plural(pend, "inspección pendiente", "inspecciones pendientes") : "Al día";
-    return `<a href="#/equipo/${encodeURIComponent(e.id)}"><span class="icono-fila ${parado ? "rojo" : ""}">${icono(parado ? "paros" : "equipos")}</span>
+    return `<a href="#/equipo/${encodeURIComponent(e.id)}"><span class="icono-fila ${parado ? "rojo" : ""}">${parado ? icono("paros") : iconoEquipo(e)}</span>
       <b>${esc(e.nombre)}</b><small>${e.tag ? `<span class="mono">${esc(e.tag)}</span> · ` : ""}${parado ? "Parado · " : ""}${esc(resumen)}</small></a>`;
   };
   return {
@@ -106,6 +107,9 @@ export async function editarEquipo(d, eq) {
   const elegirQue = !eq.id && !colector && !eq.padre_id;
   let esSub = elegirQue && !!eq.sugerirPadre;
   let guardado = null;
+  // el ícono lo cambia solo el administrador (Eduardo, 31-oct-2026); sin elegir, el que dice el nombre
+  const esAdminAqui = d.yo?.rol === "admin";
+  let iconoElegido = eq.icono ?? null;
   const r = await dialogo({
     titulo: eq.id ? `Editar ${eq.padre_id ? "subequipo" : colector ? "colector" : "equipo"}` : eq.padre_id ? `Agregar subequipo de ${equipo(d, eq.padre_id)?.nombre ?? ""}` : colector ? "Agregar colector" : "Agregar equipo o subequipo",
     html: `<datalist id="areas-lista">${areasDe(d).map((a) => `<option value="${esc(a)}">`).join("")}</datalist>
@@ -119,6 +123,11 @@ export async function editarEquipo(d, eq) {
         ${eq.padre_id ? "" : `<div class="campo" data-solo-equipo ${esSub ? "hidden" : ""}><label for="e-area">Área</label><input id="e-area" type="text" list="areas-lista" value="${esc(eq.area ?? "")}" placeholder="Molienda de cemento"></div>`}
         ${colector ? `<div class="campo"><label for="e-sirve">A qué le sirve <small>(opcional)</small></label><input id="e-sirve" type="text" value="${esc(eq.sirve_a ?? "")}" placeholder="Separador del Horomill"></div>` : ""}
       </div>
+      ${esAdminAqui ? `<div class="campo"><span class="rotulo" id="e-r-icono">Ícono</span>
+        <div class="iconos-equipo" role="group" aria-labelledby="e-r-icono" data-iconos>
+          <button type="button" data-icono="" aria-pressed="${!iconoElegido}" title="Según el nombre">${iconoDeClave(claveIconoEquipo({ ...eq, icono: null }))}<span>Automático</span></button>
+          ${ICONOS_EQUIPO.map(([k, n]) => `<button type="button" data-icono="${k}" aria-pressed="${iconoElegido === k}">${iconoDeClave(k)}<span>${esc(n)}</span></button>`).join("")}
+        </div></div>` : ""}
       <div class="campo"><label for="e-nota">Nota <small>(opcional)</small></label><input id="e-nota" type="text" value="${esc(eq.nota ?? "")}" placeholder="${colector ? "Número de mangas, fabricante…" : "Fabricante, modelo…"}"></div>
       <p class="error-form" role="alert" hidden style="color:var(--rojo);font-weight:600"></p>`,
     botones: [
@@ -131,7 +140,7 @@ export async function editarEquipo(d, eq) {
         if (esSub && !padre) { err.hidden = false; err.textContent = "Elige de qué equipo es parte."; return false; }
         if (!v("#e-nombre").trim() && !v("#e-tag").trim()) { err.hidden = false; err.textContent = "Ponle un nombre o un tag."; return false; }
         try {
-          guardado = await api.escribir("equipos", { id: eq.id, tipo: eq.tipo ?? "proceso", padre_id: padre, tag: v("#e-tag"), nombre: v("#e-nombre"), area: padre ? "" : v("#e-area"), sirve_a: v("#e-sirve"), nota: v("#e-nota"), activo: eq.activo !== false, orden: eq.orden });
+          guardado = await api.escribir("equipos", { ...(esAdminAqui ? { icono: iconoElegido } : {}), id: eq.id, tipo: eq.tipo ?? "proceso", padre_id: padre, tag: v("#e-tag"), nombre: v("#e-nombre"), area: padre ? "" : v("#e-area"), sirve_a: v("#e-sirve"), nota: v("#e-nota"), activo: eq.activo !== false, orden: eq.orden });
           aviso(eq.id ? "Guardado." : padre ? `Subequipo agregado a ${equipo(d, padre)?.nombre ?? "su equipo"}.` : `${colector ? "Colector" : "Equipo"} agregado.`);
         } catch (x) {
           err.hidden = false;
@@ -141,6 +150,12 @@ export async function editarEquipo(d, eq) {
       } },
     ],
     alMontar(velo) {
+      velo.querySelector("[data-iconos]")?.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-icono]");
+        if (!b) return;
+        iconoElegido = b.dataset.icono || null;
+        velo.querySelectorAll("[data-icono]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      });
       velo.querySelector('[aria-labelledby="e-r-que"]')?.addEventListener("click", (e) => {
         const b = e.target.closest("[data-que]");
         if (!b) return;
@@ -310,7 +325,7 @@ export function vistaEquipo({ d, yo, hoy, param }) {
       ${!padre && !colector ? `<section class="seccion"><h2>Subequipos <small>${hijos.length || ""}</small></h2>
         ${hijos.length ? `<ul class="lista">${hijos.map((h) => {
           const n = d.hallazgos.filter((x) => x.equipo_id === h.id && x.estado !== "cerrado").length;
-          return `<li><a class="fila con-icono" href="#/equipo/${encodeURIComponent(h.id)}"><span class="icono-fila gris">${icono("subequipo")}</span>
+          return `<li><a class="fila con-icono" href="#/equipo/${encodeURIComponent(h.id)}"><span class="icono-fila gris">${claveIconoEquipo(h) === "equipo" ? icono("subequipo") : iconoEquipo(h)}</span>
             <span class="titulo">${h.tag ? `<span class="mono">${esc(h.tag)}</span> · ` : ""}${esc(h.nombre)}</span>
             <span class="detalle">${n ? `<span style="color:var(--rojo)">${plural(n, "hallazgo abierto", "hallazgos abiertos")}</span>` : "<span>Sin hallazgos abiertos</span>"}</span>
             <span class="lado horizontal">${icono("derecha", "ico chevron")}</span></a></li>`;

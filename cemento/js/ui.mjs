@@ -108,6 +108,38 @@ export function elegir(titulo, opciones, { actual } = {}) {
 // ------------------------------------------------------------------------------- etiquetas
 
 export const TEXTO_PRIORIDAD = { alta: "Alta", media: "Media", baja: "Baja" };
+// ------------------------------------------------------------------------------- íconos de los equipos
+
+/** Los que se pueden elegir (el administrador, en «Editar»). «equipo» es el engranaje de siempre. */
+export const ICONOS_EQUIPO = [
+  ["equipo", "Equipo"], ["molino-bolas", "Molino de bolas"], ["molino-vertical", "Molino vertical"], ["horno", "Horno"],
+  ["enfriador", "Enfriador"], ["quemador", "Quemador"], ["ventilador", "Ventilador"], ["motor", "Motor"], ["bomba", "Bomba"],
+  ["compresor", "Compresor"], ["elevador", "Elevador"], ["banda", "Banda"], ["silo", "Silo"], ["tolva", "Tolva"],
+  ["ciclon", "Ciclón"], ["colector", "Colector"], ["ensacadora", "Ensacadora"], ["trituradora", "Trituradora"],
+  ["tanque", "Tanque"], ["tuberia", "Tubería"], ["electrico", "Eléctrico"], ["despacho", "Despacho"], ["auxiliares", "Auxiliares"],
+];
+// Sin elegir, uno según el nombre (Eduardo: «que ya existan íconos predeterminados»)
+const ICONO_POR_NOMBRE = [
+  // primero las piezas (el «Ventilador del enfriador» es un ventilador), después los equipos grandes
+  [/quemador|burner/i, "quemador"], [/ventilador|\bfan\b|\btiro\b/i, "ventilador"], [/motor/i, "motor"], [/bomba/i, "bomba"],
+  [/compresor/i, "compresor"], [/elevador/i, "elevador"], [/banda|transportador|\bcinta\b/i, "banda"],
+  [/separador|cicl[oó]n/i, "ciclon"], [/colector|filtro|manga/i, "colector"], [/tolva/i, "tolva"], [/\bsilo/i, "silo"],
+  [/tuber[ií]a|ducto|v[aá]lvula/i, "tuberia"], [/tanque|\btank/i, "tanque"], [/subestaci|el[eé]ctric|transformador/i, "electrico"],
+  [/trituradora|chancadora|crusher/i, "trituradora"],
+  [/loesche|vertical|\bvrm\b/i, "molino-vertical"], [/molino|horomill|\bmill\b/i, "molino-bolas"], [/horno|kiln/i, "horno"],
+  [/enfriador|cooler/i, "enfriador"], [/ensacadora|envase|\bsacos?\b/i, "ensacadora"],
+  [/despacho|cami[oó]n|b[aá]scula/i, "despacho"], [/auxiliar|servicios/i, "auxiliares"],
+];
+/** El que le toca: el elegido o, si no, el que dice su nombre (los colectores, el de colector). */
+export function claveIconoEquipo(e) {
+  if (e?.icono && ICONOS_EQUIPO.some(([k]) => k === e.icono)) return e.icono;
+  if (e?.tipo === "colector") return "colector";
+  const texto = `${e?.nombre ?? ""} ${e?.tag ?? ""}`;
+  return ICONO_POR_NOMBRE.find(([r]) => r.test(texto))?.[1] ?? "equipo";
+}
+export const iconoDeClave = (clave, clase) => icono(clave === "equipo" ? "equipos" : `eq-${clave}`, clase);
+export const iconoEquipo = (e, clase) => iconoDeClave(claveIconoEquipo(e), clase);
+
 /** ¿Se usan los códigos QR? El administrador los prende en Ajustes cuando ya están pegados en los equipos (Eduardo,
  *  31-oct-2026); apagados, no sale nada de QR en la app. */
 export const usaQr = (d) => d?.ajustes?.usar_qr === true;
