@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { gunzipSync } from 'node:zlib';
+import { createDecipheriv } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -37,10 +38,25 @@ test('inv3574: la página no se indexa ni dice de qué trata', () => {
   }
 });
 
-test('inv3574: acceso.json trae sal, vueltas y prueba, y nada más', () => {
+// 11-nov-2026: Jonathan la abrió, sin contraseña, para pasársela a una conocida de la ANATI, sabiendo que el repo es
+// público. La llave de AES va en acceso.json (la contraseña no: la llave sale de ella y no deja sacarla). Los .dat siguen
+// cifrados, así que volver a cerrarla es quitar «abierta» y «llave» (ABIERTA=0 node armar.mjs en ~/proyectos/cuire/inv3574).
+test('inv3574: abierta: acceso.json trae la llave, y la llave abre la prueba', () => {
   const a = JSON.parse(readFileSync(join(DIR, 'acceso.json'), 'utf8'));
-  assert.deepEqual(Object.keys(a).sort(), ['prueba', 'sal', 'vueltas']);
+  assert.deepEqual(Object.keys(a).sort(), ['abierta', 'llave', 'prueba', 'sal', 'vueltas']);
+  assert.equal(a.abierta, true);
   assert.ok(a.vueltas >= 600000);
+  const llave = Buffer.from(a.llave, 'base64'), p = Buffer.from(a.prueba, 'base64');
+  assert.equal(llave.length, 32);
+  const d = createDecipheriv('aes-256-gcm', llave, p.subarray(0, 12));
+  d.setAuthTag(p.subarray(p.length - 16));
+  assert.equal(Buffer.concat([d.update(p.subarray(12, p.length - 16)), d.final()]).toString(), 'inv3574');
+});
+
+test('inv3574: abierta: el lector usa la llave de acceso.json antes de pedir contraseña', () => {
+  const h = readFileSync(join(DIR, 'index.html'), 'utf8');
+  assert.match(h, /a\.llave/);
+  assert.ok(h.indexOf('a.llave') < h.indexOf('await pedir()'), 'la llave pública se prueba antes de pedir la contraseña');
 });
 
 test('inv3574: no está en el sitemap ni en llms.txt', () => {

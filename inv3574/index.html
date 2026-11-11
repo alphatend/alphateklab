@@ -12,6 +12,7 @@
   comprimidos y cifrados (AES-256-GCM; la llave sale de la contraseña con PBKDF2-SHA256, 600.000 vueltas, sal pública
   en acceso.json). Aquí solo está la puerta y el lector. La contraseña no está en el código ni en el repositorio.
   Lo arma ~/proyectos/cuire/inv3574/armar.mjs, fuera del repo.
+  Desde el 11-nov-2026 está ABIERTA a pedido de Jonathan: acceso.json trae la llave y el lector no pide contraseña.
 -->
 <style>
 /* Diseño (25-oct-2026, rehecho de cero): se lee como un artículo largo. Una columna de texto de 680 px y nada de
@@ -256,9 +257,11 @@ function pedir() {
 }
 
 async function abrir() {
-  let llave = null;
+  let llave = null, publica = false;
   const g = guardada();
   if (g) { const k = await importar(g); if (await probar(k)) llave = k; }
+  // 11-nov-2026: abierta a pedido de Jonathan: si acceso.json trae la llave, no se pide contraseña.
+  if (!llave) { const a = await leerAcceso(); if (a.llave) { const k = await importar(deB64(a.llave)); if (await probar(k)) { llave = k; publica = true; } } }
   if (!llave) llave = await pedir();
   app.innerHTML = '<p class="cargando">Abriendo…</p>';
   const cifrado = await (await fetch('datos/c.dat', { cache: 'no-cache' })).arrayBuffer();
@@ -315,7 +318,7 @@ async function abrir() {
   const salir = document.createElement('button');
   salir.type = 'button'; salir.textContent = 'Cerrar sesión en este equipo';
   salir.addEventListener('click', () => { try { localStorage.removeItem(LLAVE); } catch { /* nada */ } location.reload(); });
-  (app.querySelector('.pie-acciones') || app).append(salir);
+  if (!publica) (app.querySelector('.pie-acciones') || app).append(salir);
   mejorar(url);
   if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
 }
