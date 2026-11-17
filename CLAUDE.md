@@ -1,5 +1,17 @@
 # alphateklab · portada de productos y sitio de Citas Médicas
 
+**Desde el 17-nov-2026** (Edwin) la raíz, `index.html`, es la **portada nueva de alphateklab**: la propuesta de rediseño
+que se hizo para dev.alphateklab.com (en la Mac de Edwin, `propuesta-dev-v2`), con sus páginas en la raíz
+(`servicio-*.html`, `negocio-*.html`, `tipo-*.html`, `servicios.html`, `soluciones.html`, `paquetes.html`, `demos.html`,
+`equipos.html`, `telefono.html`, `como-trabajamos.html`) y sus recursos en `assets/v2.css`, `assets/v2.js`,
+`assets/sistema.js`, `assets/equipo/`, `assets/qr-mesa.svg` y `assets/v2/` (allí van el logo, los íconos y dos tarjetas
+de demos que tienen el mismo nombre que los del sitio pero otro contenido). Es HTML estático: se edita a mano.
+`generar-portada.mjs --raiz` ya solo escribe `food/`; la portada anterior (Med, Food y alphatend) se ve en la vista
+previa (`portada-nueva/`) y en el historial. Med, Food, el expediente, las guías y las demos privadas siguen igual.
+Se quitaron de la propuesta lo que estaba por confirmar (RUC, aviso de operación, preguntas sin respuesta, la foto del
+equipo, los casos de Resultados y las horas de respuesta). Los enlaces a privacidad, guías, créditos y el laboratorio
+siguen yendo a dev.alphateklab.com. Las páginas nuevas todavía no están en el sitemap.
+
 **Desde el 8-oct-2026** (Edwin) la raíz de alphateklab.com es la **portada de alphateklab**, con sus productos: **Med**
 (en `med/`; se llamó Citas Médicas hasta el 10-oct, `PRODUCTO` en `datos/producto.mjs`), **Food** (cafeterías, bares y restaurantes: pedidos por QR y software a la medida, en `food/`; la tarjeta de lealtad, Vuelve, está oculta desde el 11-oct)
 y **alphatend** (su propio dominio). La genera `herramientas/generar-portada.mjs` desde `datos/portada.mjs` y

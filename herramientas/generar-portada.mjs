@@ -4,7 +4,12 @@
 // así está Vuelve desde el 11-oct (Edwin: de momento no se ofrece).
 //
 //   node herramientas/generar-portada.mjs          → vista previa en portada-nueva/ (no se indexa ni se publica)
-//   node herramientas/generar-portada.mjs --raiz   → index.html (la portada del sitio) y food/, en la raíz
+//   node herramientas/generar-portada.mjs --raiz   → food/, en la raíz
+//
+// Desde el 17-nov-2026 (Edwin) la raíz, index.html, es la portada nueva de alphateklab (la propuesta de rediseño de
+// dev.alphateklab.com, con sus páginas servicio-*, negocio-*, tipo-*… en la raíz y sus recursos en assets/v2.css,
+// assets/v2.js, assets/v2/…). Esa portada es HTML estático y ya no sale de aquí: --raiz no escribe index.html. La
+// portada anterior (Med, Food y alphatend) se sigue viendo en la vista previa, sin --raiz.
 //
 // Después de --raiz, node herramientas/generar-citas.mjs: el sitemap y llms.txt nombran la portada y food/.
 // «Contactar» lleva al formulario de Food (nombre, correo y lo que necesitan; sin WhatsApp). Los mensajes los recibe
@@ -490,7 +495,8 @@ ${pie(R)}`;
   return [ruta, html];
 }
 
-for (const [ruta, html] of [paginaPortada(), paginaFood()]) {
+// Con --raiz solo food/: index.html es la portada nueva, estática (ver arriba).
+for (const [ruta, html] of raiz ? [paginaFood()] : [paginaPortada(), paginaFood()]) {
   const salida = join(SALIDA, ruta);
   mkdirSync(dirname(salida), { recursive: true });
   writeFileSync(salida, html);

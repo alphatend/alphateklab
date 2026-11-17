@@ -874,7 +874,7 @@ function llms() {
 
 ## Páginas
 
-- [alphateklab](${URL_BASE}): la portada, con todos los productos de alphateklab: ${P.PRODUCTO}, Food y alphatend.
+- [alphateklab](${URL_BASE}): la portada de alphateklab: software a medida, páginas, apps e inteligencia artificial para negocios en Panamá, con sus servicios, paquetes y demos. ${P.PRODUCTO}, Food y alphatend tienen su propia página.
 - [${P.PRODUCTO}](${URL_BASE}${MED}): el producto completo, con pantallas reales, precios, calculadora y preguntas frecuentes.
 ${FUNCIONES.map((f) => `- [${f.titulo.replace(/ · .*$/, '')}](${URL_BASE}${f.ruta}): ${f.descripcion}`).join('\n')}
 ${GUIAS.map((g) => `- [${g.h1}](${URL_BASE}${g.ruta}): guía con la norma y el artículo de cada punto. ${g.descripcion}`).join('\n')}

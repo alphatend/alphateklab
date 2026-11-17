@@ -1,10 +1,10 @@
-// La portada de alphateklab (la raíz del sitio) y la página de Food: lo publicado está al día con datos/portada.mjs y
-// datos/food.mjs, la portada lleva a cada producto y Food se contacta por su formulario, que llega a FormSubmit (sin
-// WhatsApp). Corre con: node --test pruebas/portada.test.mjs
+// La portada de alphateklab (la raíz del sitio) y la página de Food. Desde el 17-nov-2026 la raíz es la portada nueva,
+// estática (la propuesta de rediseño; ver herramientas/generar-portada.mjs): food/ sigue al día con datos/food.mjs y se
+// contacta por su formulario, que llega a FormSubmit (sin WhatsApp). Corre con: node --test pruebas/portada.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,7 +12,8 @@ import { FOOD } from '../datos/food.mjs';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const leer = (r) => readFileSync(join(RAIZ, r), 'utf8');
-const PAGINAS = ['index.html', 'food/index.html'];
+const GENERADAS = ['food/index.html']; // las escribe generar-portada.mjs --raiz
+const PAGINAS = ['index.html', ...GENERADAS];
 
 test('lo publicado está al día: generar otra vez da lo mismo', () => {
   const dir = mkdtempSync(join(tmpdir(), 'portada-'));
@@ -20,20 +21,19 @@ test('lo publicado está al día: generar otra vez da lo mismo', () => {
     const env = { ...process.env, SALIDA: dir };
     delete env.FORM_DESTINO;
     execFileSync(process.execPath, [join(RAIZ, 'herramientas/generar-portada.mjs'), '--raiz'], { env, stdio: 'pipe' });
-    for (const r of PAGINAS) assert.equal(readFileSync(join(dir, r), 'utf8'), leer(r), `${r}: corre node herramientas/generar-portada.mjs --raiz`);
+    for (const r of GENERADAS) assert.equal(readFileSync(join(dir, r), 'utf8'), leer(r), `${r}: corre node herramientas/generar-portada.mjs --raiz`);
+    assert.ok(!existsSync(join(dir, 'index.html')), '--raiz ya no escribe index.html: la portada nueva es estática');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test('la portada lleva a Med (med/), a Food (food/), a «Iniciar sesión» (entrar/), a alphatend y a «Probar gratis» de cada uno', () => {
+test('la portada nueva (17-nov) es la de verdad: canónica en la raíz, sin vista previa, sin noindex y sin marcas de propuesta', () => {
   const html = leer('index.html');
-  for (const href of ['med/', 'food/', 'food/#contacto', 'https://alphatend.com/']) assert.ok(html.includes(`href="${href}"`), href);
-  // Arriba, nada de «Entrar a Med»: la portada es de todos los productos y cada uno entra desde su página (Edwin, 10-oct).
-  assert.ok(!html.includes('Entrar a Med') && !/<header[\s\S]*?href="entrar\/"[\s\S]*?<\/header>/.test(html), 'sin «Entrar a Med» en la barra');
-  // «Probar gratis»: Med al registro, Food a su formulario y alphatend a su alta (Edwin, 10-oct)
-  for (const href of ['registro/', 'food/#contacto', 'https://alphatend.com/entrar?gratis=1']) assert.match(html, new RegExp(`href="${href.replace(/[?.]/g, '\\$&')}"[^>]*><span>Probar gratis</span>`), `Probar gratis → ${href}`);
-  assert.doesNotMatch(html, /med\.alphateklab\.com|portada-nueva|noindex/, 'ni el subdominio, ni la vista previa, ni fuera de los buscadores');
+  assert.match(html, /<link rel="canonical" href="https:\/\/alphateklab\.com\/" \/>/, 'canónica en la raíz');
+  assert.doesNotMatch(html, /portada-nueva|noindex/, 'ni la vista previa, ni fuera de los buscadores');
+  assert.doesNotMatch(html, /propuesta interna|datos de ejemplo|por confirmar/i, 'sin la franja ni las rayas de la propuesta');
+  for (const r of ['servicios.html', 'paquetes.html', 'demos.html']) assert.ok(html.includes(`href="${r}"`), `lleva a ${r}`);
 });
 
 test('Food se contacta por su formulario, que llega a FormSubmit; sin WhatsApp', () => {
@@ -45,7 +45,9 @@ test('Food se contacta por su formulario, que llega a FormSubmit; sin WhatsApp',
   assert.ok(form.includes(`action="https://formsubmit.co/${d}"`) && form.includes(`data-ajax="https://formsubmit.co/ajax/${d}"`), form);
   for (const campo of ['nombre', 'email', 'mensaje', '_honey', '_subject', '_next']) assert.match(html, new RegExp(`name="${campo}"`), campo);
   assert.ok(html.includes('value="https://alphateklab.com/food/#enviado"') && html.includes('id="enviado"'), 'sin JavaScript, FormSubmit vuelve a #enviado');
-  for (const r of PAGINAS) assert.doesNotMatch(leer(r), /wa\.me|whatsapp-logo/i, `${r}: sin WhatsApp`);
+  // Sin WhatsApp para contactar a Food. La portada nueva sí nombra el chatbot de WhatsApp como servicio.
+  for (const r of GENERADAS) assert.doesNotMatch(leer(r), /wa\.me|whatsapp-logo/i, `${r}: sin WhatsApp`);
+  assert.doesNotMatch(leer('index.html'), /wa\.me/i, 'index.html: sin enlaces a WhatsApp');
   assert.match(leer('privacidad/index.html'), /formsubmit\.co/, 'la privacidad dice a dónde va el formulario');
 });
 
