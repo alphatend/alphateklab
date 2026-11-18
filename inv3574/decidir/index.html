@@ -176,7 +176,7 @@ function pintar(D) {
     const elegidas = D.copias.filter((c) => est.copias.includes(c.n));
     const ya = elegidas.filter((c) => c.tenemos), pedir = elegidas.filter((c) => !c.tenemos);
     const suma = pedir.reduce((s, c) => s + (c.costo || 0), 0), sinPrecio = pedir.filter((c) => c.costo == null).length;
-    const costoTxt = pedir.length ? `aprox. ${balboas(suma)}${sinPrecio ? ` más ${sinPrecio} sin precio confirmado` : ''}` : '';
+    const costoTxt = !pedir.length ? '' : suma ? `aprox. ${balboas(suma)}${sinPrecio ? ` más ${sinPrecio} sin precio confirmado` : ''}` : (sinPrecio === 1 ? 'precio por confirmar' : 'precios por confirmar');
     $('#total').innerHTML = elegidas.length
       ? `<b>${elegidas.length} ${elegidas.length === 1 ? 'copia' : 'copias'}</b>: ${ya.length} ya las tenemos, ${pedir.length} para pedir${pedir.length ? `<small>Costo de lo que hay que pedir: ${esc(costoTxt)}.</small>` : ''}`
       : '';
