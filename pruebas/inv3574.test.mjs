@@ -64,3 +64,26 @@ test('inv3574: no está en el sitemap ni en llms.txt', () => {
   assert.doesNotMatch(readFileSync(join(raiz, 'sitemap.xml'), 'utf8'), /inv3574/);
   assert.doesNotMatch(readFileSync(join(raiz, 'llms.txt'), 'utf8'), /inv3574/);
 });
+
+// 18-nov-2026: la página corta para decidir y pedir copias (inv3574/decidir/). Mismo cifrado y misma llave que la
+// bitácora (abierta desde el 11-nov); el lector no nombra el asunto. Si se cierra la bitácora, d.dat se abre con la
+// contraseña como c.dat y la segunda prueba hay que pasarla a verificar.mjs.
+const DECIDIR = join(DIR, 'decidir');
+test('inv3574/decidir: no se indexa ni dice de qué trata', () => {
+  const h = readFileSync(join(DECIDIR, 'index.html'), 'utf8');
+  assert.match(h, /<meta name="robots" content="noindex">/);
+  for (const palabra of [/3574/, /Lefevre/i, /Guill/i, /Panam[aá] Viejo/i, /San Crist[oó]bal/i, /Sun ?Fish/i, /Taira/i]) {
+    assert.doesNotMatch(h.replace(/inv3574/g, ''), palabra, `decidir/index.html no debe nombrar ${palabra}`);
+  }
+});
+
+test('inv3574/decidir: d.dat va cifrado y la llave de acceso.json lo abre', () => {
+  const b = readFileSync(join(DECIDIR, 'd.dat'));
+  assert.throws(() => gunzipSync(b), 'd.dat es gzip sin cifrar');
+  assert.throws(() => JSON.parse(b.toString('utf8')), 'd.dat es JSON sin cifrar');
+  const a = JSON.parse(readFileSync(join(DIR, 'acceso.json'), 'utf8'));
+  const d = createDecipheriv('aes-256-gcm', Buffer.from(a.llave, 'base64'), b.subarray(0, 12));
+  d.setAuthTag(b.subarray(b.length - 16));
+  const o = JSON.parse(gunzipSync(Buffer.concat([d.update(b.subarray(12, b.length - 16)), d.final()])).toString());
+  assert.ok(o.vias.length > 0 && o.copias.length > 0);
+});

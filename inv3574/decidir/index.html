@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>Para decidir</title>
+<!--
+  Página corta de decisión (18-nov-2026). El texto viene cifrado en d.dat con la misma llave de la bitácora (../acceso.json,
+  abierta desde el 11-nov). Aquí solo está el lector: no nombra el asunto (lo vigila la prueba del repo). Mismo diseño que
+  la bitácora: una columna, letra del sistema, un solo acento azul para lo que se toca, sin tarjetas ni pastillas.
+-->
+<style>
+@font-face { font-family: "Inter"; src: url("../../assets/fuentes/inter-latin.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
+:root {
+  color-scheme: light;
+  --fondo: #fbfbfd; --superficie: #f5f5f7; --linea: #d2d2d7; --texto: #1d1d1f; --texto-2: #6e6e73;
+  --acento: #1a66c2; --acento-fondo: #e6eefa; --error: #c4291c; --sobre-acento: #fff;
+  --letra: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --col: 680px; --margen: 20px;
+}
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: dark; --fondo: #161617; --superficie: #242426; --linea: #3a3a3c; --texto: #f5f5f7; --texto-2: #a1a1a6; --acento: #5ea1f2; --acento-fondo: #1b2a3e; --error: #ff7a6e; --sobre-acento: #0b1626; }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition-duration: .01ms !important; } }
+body { margin: 0; background: var(--fondo); color: var(--texto); font: 400 1.0625rem/1.6 var(--letra); -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
+h1, h2, h3 { margin: 0; font-weight: 700; text-wrap: balance; }
+p, li { text-wrap: pretty; }
+a { color: var(--acento); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; border-radius: 4px; }
+b { font-weight: 600; }
+button { font: inherit; color: inherit; }
+main { max-width: calc(var(--col) + 2 * var(--margen)); margin-inline: auto; padding: 0 var(--margen) 140px; }
+.cargando { color: var(--texto-2); padding: 64px 0; text-align: center; }
+.cab { padding: 56px 0 8px; }
+.cab h1 { font-size: 2rem; line-height: 1.15; letter-spacing: -0.02em; }
+.cab p { margin: 14px 0 0; color: var(--texto-2); }
+.cab .fecha { font-size: .875rem; }
+section { padding-top: 44px; }
+h2 { font-size: 1.375rem; letter-spacing: -0.01em; }
+h2 small { display: block; margin-top: 4px; font-size: .9375rem; font-weight: 400; color: var(--texto-2); letter-spacing: 0; }
+h3 { margin-top: 26px; font-size: 1rem; color: var(--texto-2); font-weight: 600; }
+.filas { list-style: none; margin: 14px 0 0; padding: 0; }
+.filas > li { border-top: 1px solid var(--linea); }
+.filas > li:last-child { border-bottom: 1px solid var(--linea); }
+.fila { display: grid; grid-template-columns: 26px 1fr auto; gap: 4px 12px; align-items: start; padding: 14px 0; cursor: pointer; }
+.fila input { width: 20px; height: 20px; margin: 3px 0 0; accent-color: var(--acento); cursor: pointer; }
+.fila .t { min-width: 0; }
+.fila .t b { display: block; line-height: 1.4; }
+.fila .t span { display: block; margin-top: 3px; font-size: .9375rem; line-height: 1.45; color: var(--texto-2); }
+.fila .n { font-weight: 600; color: var(--texto-2); font-variant-numeric: tabular-nums; margin-right: 6px; }
+.fila .precio { font-size: .9375rem; color: var(--texto-2); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; padding-top: 1px; }
+.fila .sirve { color: var(--acento); font-size: .8125rem; font-weight: 600; }
+li.marcada .fila .t b, li.sirve-sel .n { color: var(--acento); }
+@media (hover: hover) { .fila:hover .t b { color: var(--acento); } }
+@media (max-width: 480px) { .fila { grid-template-columns: 26px 1fr; } .fila .precio { grid-column: 2; text-align: left; padding-top: 0; } }
+details.mas { margin: -6px 0 12px 38px; }
+details.mas summary { display: inline-block; padding: 4px 0; color: var(--acento); font-size: .9375rem; cursor: pointer; list-style: none; }
+details.mas summary::-webkit-details-marker { display: none; }
+details.mas summary::after { content: " +"; }
+details.mas[open] summary::after { content: " −"; }
+dl { margin: 6px 0 4px; font-size: .9375rem; line-height: 1.5; }
+dt { font-weight: 600; margin-top: 8px; }
+dd { margin: 2px 0 0; color: var(--texto-2); }
+.filtro { display: flex; gap: 10px; align-items: center; margin-top: 14px; font-size: .9375rem; color: var(--texto-2); cursor: pointer; }
+.filtro input { width: 18px; height: 18px; accent-color: var(--acento); }
+.filtro.apagado { opacity: .5; cursor: default; }
+li.oculta { display: none; }
+.vacio { margin: 12px 0 0; font-size: .9375rem; color: var(--texto-2); }
+.total { margin-top: 16px; font-variant-numeric: tabular-nums; }
+.total small { display: block; color: var(--texto-2); font-size: .875rem; }
+label.campo { display: block; margin-top: 18px; font-weight: 600; font-size: .9375rem; }
+textarea { display: block; width: 100%; min-height: 84px; margin-top: 8px; font: inherit; font-size: 1rem; color: var(--texto); background: var(--superficie); border: 1px solid var(--linea); border-radius: 10px; padding: 12px 14px; resize: vertical; transition: border-color .2s, box-shadow .2s; }
+textarea:focus { outline: none; border-color: var(--acento); box-shadow: 0 0 0 3px var(--acento-fondo); }
+pre.mensaje { margin: 14px 0 0; padding: 14px; background: var(--superficie); border-radius: 10px; font: inherit; font-size: .9375rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+.acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.boton { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 20px; border: 0; border-radius: 10px; background: var(--acento); color: var(--sobre-acento); font-weight: 600; cursor: pointer; transition: opacity .2s; }
+.boton:hover { opacity: .9; text-decoration: none; }
+.boton.claro { background: var(--superficie); color: var(--acento); border: 1px solid var(--linea); }
+.boton[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+.aviso { min-height: 1.4em; margin-top: 10px; font-size: .9375rem; color: var(--texto-2); }
+.barra { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px var(--margen) calc(10px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--fondo) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--linea); transform: translateY(110%); transition: transform .25s ease; }
+.barra.visible { transform: none; }
+.barra__c { max-width: var(--col); margin: 0 auto; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.barra__t { font-size: .9375rem; line-height: 1.35; font-variant-numeric: tabular-nums; }
+.barra__t small { display: block; color: var(--texto-2); font-size: .8125rem; }
+.barra .boton { min-height: 42px; padding: 0 16px; white-space: nowrap; }
+.pie { margin-top: 48px; font-size: .9375rem; color: var(--texto-2); }
+.error { color: var(--error); }
+</style>
+</head>
+<body>
+<main id="app"><p class="cargando" role="status">Abriendo…</p></main>
+<div class="barra" id="barra" aria-hidden="true"><div class="barra__c"><p class="barra__t" id="barra-t"></p><a class="boton" href="#enviar" tabindex="-1">Revisar y enviar</a></div></div>
+<script type="module">
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const deB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const GUARDA = 'inv3574-decidir';
+const leer = () => { try { return JSON.parse(localStorage.getItem(GUARDA)) || {}; } catch { return {}; } };
+const guardar = (o) => { try { localStorage.setItem(GUARDA, JSON.stringify(o)); } catch {} };
+const balboas = (n) => 'B/. ' + n.toLocaleString('es-PA', { maximumFractionDigits: 2 });
+
+async function abrir() {
+  const a = await (await fetch('../acceso.json', { cache: 'no-cache' })).json();
+  if (!a.llave) throw new Error('cerrada');
+  const llave = await crypto.subtle.importKey('raw', deB64(a.llave), 'AES-GCM', false, ['decrypt']);
+  const u8 = new Uint8Array(await (await fetch('d.dat', { cache: 'no-cache' })).arrayBuffer());
+  const plano = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8.slice(0, 12) }, llave, u8.slice(12));
+  const texto = await new Response(new Blob([plano]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  return JSON.parse(texto);
+}
+
+function pintar(D) {
+  document.title = D.titulo;
+  const est = Object.assign({ vias: [], copias: [], nota: '', filtro: false }, leer());
+  const nombreVia = Object.fromEntries(D.vias.map((v) => [v.id, v.nombre]));
+  const fila = (tipo, id, cuerpo, precio = '') =>
+    `<label class="fila"><input type="checkbox" data-${tipo}="${esc(id)}"><span class="t">${cuerpo}</span>${precio ? `<span class="precio">${esc(precio)}</span>` : ''}</label>`;
+  const via = (v) => `<li data-li-via="${esc(v.id)}">${fila('via', v.id, `<b>${esc(v.nombre)}</b><span>${esc(v.linea)}</span>`)}
+    <details class="mas"><summary>Qué consigue, qué necesita y qué arriesga</summary><dl>
+      <dt>Consigue</dt><dd>${esc(v.consigue)}</dd><dt>Necesita</dt><dd>${esc(v.necesita)}</dd>
+      <dt>Tiempo y costo</dt><dd>${esc(v.tiempo)}</dd><dt>Riesgo</dt><dd>${esc(v.riesgo)}</dd><dt>Dato</dt><dd>${esc(v.dato)}</dd>
+    </dl></details></li>`;
+  const copia = (c) => `<li data-li-copia="${c.n}">${fila('copia', c.n,
+    `<b><span class="n">${c.n}</span>${esc(c.titulo)}</b><span>${esc(c.detalle)}</span><span class="sirve" hidden></span>`,
+    c.tenemos ? 'Sin costo' : c.costo_t)}</li>`;
+  $('#app').innerHTML = `
+    <header class="cab"><h1>${esc(D.titulo)}</h1><p>${esc(D.intro)}</p><p class="fecha">Al ${esc(D.fecha)}. <a href="../">${esc(D.bitacora)}</a></p></header>
+    <section aria-labelledby="h-vias"><h2 id="h-vias">Las vías<small>Puede marcar varias. Toque «Qué consigue…» para el detalle.</small></h2>
+      <ul class="filas">${D.vias.map(via).join('')}</ul></section>
+    <section aria-labelledby="h-copias"><h2 id="h-copias">Las copias<small>Marque las que quiere, por número.</small></h2>
+      <label class="filtro apagado" id="filtro-l"><input type="checkbox" id="filtro" disabled> Solo las que sirven para las vías marcadas</label>
+      <h3>Ya las tenemos: se las mandamos</h3><ul class="filas" id="tenemos">${D.copias.filter((c) => c.tenemos).map(copia).join('')}</ul>
+      <p class="vacio" id="vacio-1" hidden>Ninguna de estas sirve para las vías marcadas.</p>
+      <h3>Se pueden pedir</h3><ul class="filas" id="pedir">${D.copias.filter((c) => !c.tenemos).map(copia).join('')}</ul>
+      <p class="vacio" id="vacio-2" hidden>Ninguna de estas sirve para las vías marcadas.</p>
+      <p class="total" id="total" aria-live="polite"></p></section>
+    <section id="enviar" aria-labelledby="h-enviar"><h2 id="h-enviar">Enviar</h2>
+      <label class="campo" for="nota">Nota (opcional)</label><textarea id="nota" placeholder="Algo que quiera agregar"></textarea>
+      <pre class="mensaje" id="mensaje" aria-live="polite"></pre>
+      <div class="acciones"><a class="boton" id="wa" target="_blank" rel="noopener">Enviar por WhatsApp</a><button type="button" class="boton claro" id="copiar">Copiar el texto</button></div>
+      <p class="aviso" id="aviso" role="status"></p></section>
+    <p class="pie"><a href="../">${esc(D.bitacora)}</a></p>`;
+
+  const cajas = (t) => [...document.querySelectorAll(`input[data-${t}]`)];
+  for (const i of cajas('via')) i.checked = est.vias.includes(i.dataset.via);
+  for (const i of cajas('copia')) i.checked = est.copias.includes(Number(i.dataset.copia));
+  $('#nota').value = est.nota || '';
+  $('#filtro').checked = !!est.filtro;
+
+  function calcular() {
+    est.vias = cajas('via').filter((i) => i.checked).map((i) => i.dataset.via);
+    est.copias = cajas('copia').filter((i) => i.checked).map((i) => Number(i.dataset.copia));
+    est.nota = $('#nota').value;
+    const hay = est.vias.length > 0;
+    $('#filtro').disabled = !hay; $('#filtro-l').classList.toggle('apagado', !hay);
+    est.filtro = $('#filtro').checked;
+    const filtra = hay && est.filtro;
+    for (const v of D.vias) document.querySelector(`[data-li-via="${v.id}"]`).classList.toggle('marcada', est.vias.includes(v.id));
+    for (const c of D.copias) {
+      const li = document.querySelector(`[data-li-copia="${c.n}"]`);
+      const comunes = c.vias.filter((v) => est.vias.includes(v));
+      const s = li.querySelector('.sirve');
+      s.hidden = !comunes.length;
+      s.textContent = comunes.length ? 'Sirve para: ' + comunes.map((v) => nombreVia[v]).join('; ') : '';
+      li.classList.toggle('sirve-sel', comunes.length > 0);
+      li.classList.toggle('oculta', filtra && !comunes.length && !est.copias.includes(c.n));
+    }
+    $('#vacio-1').hidden = !filtra || !!$('#tenemos li:not(.oculta)');
+    $('#vacio-2').hidden = !filtra || !!$('#pedir li:not(.oculta)');
+    const elegidas = D.copias.filter((c) => est.copias.includes(c.n));
+    const ya = elegidas.filter((c) => c.tenemos), pedir = elegidas.filter((c) => !c.tenemos);
+    const suma = pedir.reduce((s, c) => s + (c.costo || 0), 0), sinPrecio = pedir.filter((c) => c.costo == null).length;
+    const costoTxt = pedir.length ? `aprox. ${balboas(suma)}${sinPrecio ? ` más ${sinPrecio} sin precio confirmado` : ''}` : '';
+    $('#total').innerHTML = elegidas.length
+      ? `<b>${elegidas.length} ${elegidas.length === 1 ? 'copia' : 'copias'}</b>: ${ya.length} ya las tenemos, ${pedir.length} para pedir${pedir.length ? `<small>Costo de lo que hay que pedir: ${esc(costoTxt)}.</small>` : ''}`
+      : '';
+    const lineas = [D.titulo.replace(/:.*/, '') + ': lo que elegí'];
+    if (est.vias.length) lineas.push('Vías: ' + est.vias.map((v) => nombreVia[v]).join('; ').replace(/\.$/, '') + '.');
+    if (ya.length) lineas.push('Copias que ya tienen: ' + ya.map((c) => c.n).join(', ') + '.');
+    if (pedir.length) lineas.push('Copias para pedir: ' + pedir.map((c) => c.n).join(', ') + ` (${costoTxt}).`);
+    if (est.nota.trim()) lineas.push('Nota: ' + est.nota.trim());
+    const vacio = lineas.length === 1 || (lineas.length === 2 && est.nota.trim() && !est.vias.length && !elegidas.length);
+    const msg = lineas.join('\n');
+    $('#mensaje').textContent = vacio ? 'Marque una vía o una copia y aquí aparece el mensaje.' : msg;
+    const wa = $('#wa');
+    wa.href = 'https://wa.me/?text=' + encodeURIComponent(msg);
+    wa.setAttribute('aria-disabled', vacio ? 'true' : 'false');
+    $('#copiar').disabled = vacio;
+    const n = est.vias.length + elegidas.length;
+    $('#barra-t').innerHTML = `${est.vias.length} ${est.vias.length === 1 ? 'vía' : 'vías'} · ${elegidas.length} ${elegidas.length === 1 ? 'copia' : 'copias'}${pedir.length ? `<small>${esc(costoTxt)}</small>` : ''}`;
+    const barra = $('#barra'), visible = n > 0;
+    barra.classList.toggle('visible', visible); barra.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    barra.querySelector('a').tabIndex = visible ? 0 : -1;
+    guardar(est);
+    return msg;
+  }
+  document.addEventListener('change', (e) => { if (e.target.matches('input')) calcular(); });
+  $('#nota').addEventListener('input', calcular);
+  $('#copiar').addEventListener('click', async () => {
+    const msg = calcular();
+    try { await navigator.clipboard.writeText(msg); $('#aviso').textContent = 'Copiado. Péguelo en el chat.'; }
+    catch { const r = document.createRange(); r.selectNodeContents($('#mensaje')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); $('#aviso').textContent = 'Texto seleccionado: cópielo con el menú del teléfono.'; }
+  });
+  // La barra se esconde cuando ya se está viendo «Enviar».
+  new IntersectionObserver(([e]) => { if (e.isIntersecting) $('#barra').classList.remove('visible'); else calcular(); }, { threshold: 0.15 }).observe($('#enviar'));
+  calcular();
+}
+
+abrir().then(pintar).catch(() => {
+  $('#app').innerHTML = '<p class="cargando error" role="alert">No se pudo abrir esta página. Pruebe con <a href="../">la bitácora</a>.</p>';
+});
+</script>
+</body>
+</html>
