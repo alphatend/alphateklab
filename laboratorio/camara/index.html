@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es-PA">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Contador de personas · alphateklab</title>
+<meta name="description" content="Demo de un contador de personas con cámara e IA: cuenta entradas y salidas en una línea, lleva el aforo, avisa cuando se forma fila y arma un mapa de calor. Corre en tu navegador y el video no sale de tu teléfono o computadora." />
+<link rel="canonical" href="/laboratorio/camara/" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Contador de personas con cámara · alphateklab" />
+<meta property="og:description" content="Cuenta entradas y salidas, lleva el aforo, avisa de filas y arma un mapa de calor. Pruébalo con tu cámara o con un video de muestra; el video no sale de tu teléfono o computadora." />
+<meta property="og:url" content="https://alphateklab.com/laboratorio/camara/" />
+<meta property="og:locale" content="es_PA" />
+<meta property="og:image" content="https://alphateklab.com/laboratorio/camara/media/vista-previa-og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="La demo del contador de personas sobre una calle peatonal: personas pixeladas, una línea de conteo ámbar y la zona de fila." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="theme-color" content="#f7f5ef" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#161b1c" media="(prefers-color-scheme: dark)" />
+<link rel="icon" href="../../assets/marca/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="../../assets/marca/favicon-32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="../../assets/marca/favicon-180.png" />
+<link rel="preload" href="../../assets/fuentes/manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../../assets/fuentes/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="../../assets/atk.css" />
+<link rel="stylesheet" href="demo.css" />
+<noscript><style>.arranque, .dibujo, .mando, .resumen, .cifras, .herramientas, .minutos, .bitacora, .ajustes, .escenario__encender { display: none !important; }</style></noscript>
+</head>
+<body>
+<a class="saltar" href="#demo">Saltar a la demo</a>
+<header class="cabecera">
+  <div class="envoltura cabecera__fila">
+    <a class="marca" href="../../"><picture><source srcset="../../assets/marca/logo-oscuro.svg" media="(prefers-color-scheme: dark)" /><img src="../../assets/marca/logo-claro.svg" alt="alphateklab, inicio" width="142" height="32" /></picture></a>
+    <nav class="nav" aria-label="Principal">
+      <a href="/servicios.html">Servicios</a>
+      <a href="../">Demos</a>
+      <a href="/#pregunta">Pregúntanos</a>
+    </nav>
+  </div>
+</header>
+
+<main id="contenido" class="envoltura lab">
+  <nav class="migas" aria-label="Ruta"><a href="../../">Inicio</a> <span aria-hidden="true">/</span> <a href="../">Demos</a> <span aria-hidden="true">/</span> <span aria-current="page">Cámara que cuenta</span></nav>
+  <div class="lab__cabeza">
+    <h1 class="display lab__titulo">Contador de personas con cámara</h1>
+    <p class="lab__bajada">Cuenta a quien entra y a quien sale por una puerta, lleva el aforo, avisa cuando se forma fila en caja y marca por dónde camina la gente. Esta demo lo hace en tu navegador: el video no sale de tu teléfono o computadora.</p>
+  </div>
+
+  <div class="lab__cuerpo">
+    <section class="demo" id="demo" aria-labelledby="demo-titulo" data-estado="apagada">
+      <h2 id="demo-titulo" class="sr">La demo</h2>
+
+      <div class="visor">
+        <div class="escenario" id="escenario">
+          <img class="escenario__previa" id="previa" src="media/vista-previa.webp" width="960" height="540" alt="Captura de esta demo encendida con el video de muestra: una calle peatonal con las personas pixeladas, la línea de conteo ámbar y la zona de fila." />
+          <canvas class="escenario__lienzo" id="lienzo" role="img" aria-label="Video analizado"></canvas>
+          <div class="escenario__manijas" id="manijas"></div>
+          <video class="escenario__video" id="video" muted playsinline preload="none" aria-hidden="true" tabindex="-1"></video>
+          <span class="etiqueta escenario__rotulo">Captura de la demo encendida</span>
+          <button class="boton boton--senal escenario__encender" type="button" id="encender-previa">Encender con el video de muestra</button>
+          <div class="escenario__capa">
+            <p class="escenario__aviso" id="aviso-lienzo" role="status" hidden></p>
+            <!-- sin aria-live: el texto de los avisos cambia cada segundo; los anuncia una vez #anuncios -->
+            <div class="avisos" id="avisos"></div>
+          </div>
+        </div>
+
+        <!-- mientras se dibuja: la ayuda y los botones van pegados al video, no tres pantallas más abajo -->
+        <div class="dibujo" id="dibujo" hidden>
+          <p class="dibujo__ayuda" id="ayuda-modo"></p>
+          <p class="herramientas__acciones" id="acciones-zona" hidden>
+            <button class="boton boton--linea boton--chico" type="button" id="zona-esquina" hidden>Agregar una esquina</button>
+            <button class="boton boton--linea boton--chico" type="button" id="zona-cerrar" disabled>Cerrar la zona</button>
+            <button class="boton boton--linea boton--chico" type="button" id="zona-deshacer" disabled>Quitar el último punto</button>
+            <button class="boton boton--linea boton--chico" type="button" id="zona-nueva">Dibujar otra zona</button>
+            <button class="boton boton--linea boton--chico" type="button" id="zona-borrar">Quitar la zona</button>
+          </p>
+        </div>
+
+        <noscript><p class="aviso-demo">La demo necesita JavaScript para analizar el video: actívalo y recarga la página. Arriba ves una captura de cómo se ve encendida; el resto de la página se lee sin él.</p></noscript>
+        <div class="arranque" id="arranque">
+          <form class="arranque__formulario" id="form-arranque">
+            <fieldset class="fuentes">
+              <legend class="fuentes__titulo">Qué video quieres analizar</legend>
+              <label class="fuente">
+                <input type="radio" name="fuente" value="muestra" checked />
+                <span class="fuente__texto"><span class="fuente__nombre">Video de muestra</span> <span class="fuente__nota">Una calle peatonal, 15 segundos, libre de derechos</span></span>
+              </label>
+              <label class="fuente">
+                <input type="radio" name="fuente" value="camara" />
+                <span class="fuente__texto"><span class="fuente__nombre">La cámara de este equipo</span> <span class="fuente__nota" id="nota-fuente-camara">Tu navegador te va a pedir permiso. La imagen se analiza aquí y no se guarda. Los avisos vienen ajustados para que los pruebes tú solo.</span></span>
+              </label>
+              <label class="fuente">
+                <input type="radio" name="fuente" value="archivo" />
+                <span class="fuente__texto"><span class="fuente__nombre">Un video tuyo</span> <span class="fuente__nota">MP4 o WebM de la puerta de tu local. Se analiza aquí, no se sube.</span></span>
+              </label>
+            </fieldset>
+            <div class="arranque__archivo" id="bloque-archivo" hidden>
+              <label class="campo__etiqueta" for="archivo">Elige el video</label>
+              <input class="archivo" id="archivo" type="file" accept="video/*" />
+              <p class="campo__error" id="error-archivo" hidden></p>
+            </div>
+            <p class="arranque__acciones">
+              <button class="boton boton--senal" type="submit" id="encender">Encender la demo</button>
+            </p>
+            <p class="arranque__nota">Al encenderla se bajan unos 10 MB la primera vez: la biblioteca de detección MediaPipe (desde jsDelivr) y el modelo EfficientDet-Lite0 (desde los servidores de Google). No se sube nada.</p>
+          </form>
+
+          <div class="carga" id="carga" hidden>
+            <p class="carga__titulo" id="carga-titulo">Encendiendo la demo</p>
+            <ol class="carga__pasos" id="carga-pasos">
+              <li data-paso="fuente"><span class="carga__nombre" id="carga-fuente-nombre">Video de muestra</span> <span class="carga__dato" id="carga-fuente">en espera</span></li>
+              <li data-paso="modelo"><span class="carga__nombre">Modelo de detección (EfficientDet-Lite0)</span> <span class="carga__dato num" id="carga-modelo">7.3 MB</span>
+                <progress id="progreso-modelo" max="100" value="0" aria-label="Descarga del modelo"></progress></li>
+              <li data-paso="preparar"><span class="carga__nombre">Biblioteca MediaPipe</span> <span class="carga__dato" id="carga-preparar">en espera</span></li>
+              <li data-paso="calibrar"><span class="carga__nombre">Elegir con qué analiza tu teléfono o computadora: tarjeta gráfica o procesador</span> <span class="carga__dato" id="carga-calibrar">en espera</span></li>
+            </ol>
+            <p><button class="boton boton--linea" type="button" id="cancelar">Cancelar</button></p>
+          </div>
+
+          <div class="falla" id="falla" role="alert" hidden>
+            <p class="falla__titulo" id="falla-titulo"></p>
+            <p class="falla__texto" id="falla-texto"></p>
+            <p class="falla__acciones" id="falla-acciones"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mando" id="mando" hidden>
+        <p class="mando__fila">
+          <button class="boton boton--linea" type="button" id="pausar" aria-pressed="false">Pausar el video</button>
+          <button class="boton boton--linea" type="button" id="otra-camara" hidden>Usar otra cámara</button>
+          <button class="boton boton--linea" type="button" id="apagar">Apagar y elegir otro video</button>
+        </p>
+        <p class="mando__estado num" id="rendimiento"></p>
+        <p class="leyenda-calor" id="leyenda-calor"><span>Mapa de calor:</span> <span class="leyenda-calor__escala-grupo">menos tiempo <canvas class="leyenda-calor__escala" id="escala-calor" width="120" height="10" aria-hidden="true"></canvas> más tiempo</span> <span class="leyenda-calor__dato num" id="calor-max"></span></p>
+      </div>
+      <p class="sr" id="anuncios" role="status" aria-live="polite"></p>
+
+      <p class="resumen" id="resumen"></p>
+
+      <section class="cifras" aria-labelledby="cifras-titulo">
+        <h3 id="cifras-titulo" class="cifras__titulo">Conteo de hoy <span class="cifras__fuente" id="cifras-fuente">con el video de muestra</span></h3>
+        <dl class="cifras__lista">
+          <div class="cifra"><dt>Entradas</dt><dd class="num" id="c-entradas">0</dd></div>
+          <div class="cifra"><dt>Salidas</dt><dd class="num" id="c-salidas">0</dd></div>
+          <div class="cifra cifra--aforo" id="cifra-aforo">
+            <dt>Dentro ahora</dt>
+            <dd><span class="num" id="c-dentro">0</span> <span class="cifra__de num" id="c-aforo-de">de 4</span></dd>
+            <dd class="medidor"><span class="medidor__barra" id="medidor-barra"></span></dd>
+            <dd class="cifra__nota" id="c-cuenta">Entradas menos salidas.</dd>
+            <dd class="cifra__ajuste">
+              <button class="boton boton--linea boton--chico" type="button" id="menos" aria-label="Restar una persona de las que hay dentro">−1</button>
+              <button class="boton boton--linea boton--chico" type="button" id="mas" aria-label="Sumar una persona a las que hay dentro">+1</button>
+            </dd>
+          </div>
+          <div class="cifra"><dt>Máximo dentro hoy</dt><dd class="num" id="c-maximo">0</dd></div>
+          <div class="cifra"><dt>En la fila</dt><dd><span class="num" id="c-fila">0</span> <span class="cifra__de" id="c-fila-nota"></span></dd></div>
+        </dl>
+      </section>
+
+      <div class="herramientas" id="herramientas">
+        <fieldset class="modos" id="modos" disabled>
+          <legend class="modos__titulo">Qué hace un toque sobre el video</legend>
+          <div class="modos__opciones">
+            <label class="modo"><input type="radio" name="modo" value="ver" checked /> <span>Solo mirar</span></label>
+            <label class="modo"><input type="radio" name="modo" value="linea" /> <span>Mover la línea</span></label>
+            <label class="modo"><input type="radio" name="modo" value="zona" /> <span>Dibujar la zona de fila</span></label>
+          </div>
+        </fieldset>
+        <p class="herramientas__ayuda">Al elegir «Mover la línea» o «Dibujar la zona de fila», la ayuda y los botones aparecen justo debajo del video.</p>
+      </div>
+
+      <section class="minutos" aria-labelledby="minutos-titulo">
+        <h3 id="minutos-titulo" class="minutos__titulo">Entradas por minuto, últimos 15 minutos</h3>
+        <div class="minutos__grafico" id="grafico"></div>
+        <details class="minutos__tabla">
+          <summary>Ver como tabla</summary>
+          <div id="tabla-minutos"></div>
+        </details>
+      </section>
+
+      <section class="bitacora" aria-labelledby="bitacora-titulo">
+        <h3 id="bitacora-titulo" class="bitacora__titulo">Avisos de hoy</h3>
+        <ol class="bitacora__lista" id="bitacora"></ol>
+        <p class="bitacora__vacio" id="bitacora-vacia">Todavía no hubo avisos. En el servicio instalado le llegan al encargado por WhatsApp o a una pantalla del local.</p>
+      </section>
+
+      <form class="ajustes" id="ajustes" novalidate>
+        <h3 class="ajustes__titulo" id="ajustes-titulo">Ajustes del video de muestra</h3>
+        <p class="ajustes__nota" id="nota-camara" hidden>Con la cámara, los avisos vienen ajustados para que los pruebes tú solo: aforo de 1 persona y fila desde 1 persona por 3 segundos.</p>
+        <div class="ajustes__grupo">
+          <div class="campo">
+            <label class="campo__etiqueta" for="aforo-max">Aforo máximo</label>
+            <span class="campo__fila"><input class="campo__numero num" id="aforo-max" type="number" inputmode="numeric" min="1" max="9999" step="1" aria-describedby="error-aforo-max" /> <span>personas</span></span>
+            <p class="campo__error" id="error-aforo-max" hidden></p>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="fila-max">Avisar de fila con más de</label>
+            <span class="campo__fila"><input class="campo__numero num" id="fila-max" type="number" inputmode="numeric" min="0" max="99" step="1" aria-describedby="regla-fila error-fila-max" /> <span>personas</span></span>
+            <p class="campo__error" id="error-fila-max" hidden></p>
+          </div>
+          <div class="campo">
+            <label class="campo__etiqueta" for="fila-segundos">durante</label>
+            <span class="campo__fila"><input class="campo__numero num" id="fila-segundos" type="number" inputmode="numeric" min="1" max="600" step="1" aria-describedby="regla-fila error-fila-segundos" /> <span>segundos</span></span>
+            <p class="campo__error" id="error-fila-segundos" hidden></p>
+          </div>
+        </div>
+        <p class="ajustes__regla" id="regla-fila"></p>
+        <div class="ajustes__grupo ajustes__grupo--linea">
+          <p class="ajustes__sentido">Entrada: <span id="sentido-texto">cruzar la línea hacia la derecha</span>, como indica la flecha.</p>
+          <button class="boton boton--linea boton--chico" type="button" id="invertir">Invertir entrada y salida</button>
+        </div>
+        <fieldset class="ajustes__vista">
+          <legend class="campo__etiqueta">Privacidad en la vista</legend>
+          <label class="interruptor"><input type="radio" name="pixelado" value="personas" checked /> <span>Pixelar a las personas</span></label>
+          <label class="interruptor"><input type="radio" name="pixelado" value="todo" /> <span>Pixelar todo el video</span></label>
+          <label class="interruptor"><input type="radio" name="pixelado" value="nada" /> <span>Ver sin pixelar</span></label>
+        </fieldset>
+        <p class="ajustes__privacidad">«Pixelar a las personas» tapa solo a quien el modelo detecta en ese cuadro: alguien que no detecta se ve normal. «Pixelar todo el video» no deja ver a nadie y el conteo sigue igual.</p>
+        <fieldset class="ajustes__vista">
+          <legend class="campo__etiqueta">Encima del video</legend>
+          <label class="interruptor"><input type="checkbox" id="ver-calor" checked /> <span>Mapa de calor</span></label>
+          <label class="interruptor"><input type="checkbox" id="ver-cajas" checked /> <span>Cajas y números</span></label>
+        </fieldset>
+        <p class="ajustes__acciones">
+          <button class="boton boton--linea boton--chico" type="button" id="csv">Descargar el conteo por minuto (CSV)</button>
+          <button class="boton boton--linea boton--chico" type="button" id="reiniciar">Reiniciar el conteo de hoy</button>
+          <button class="boton boton--linea boton--chico" type="button" id="restablecer">Restablecer datos de ejemplo</button>
+        </p>
+        <p class="ajustes__deshacer" id="deshacer-bloque" role="status" hidden><span id="deshacer-texto"></span> <button class="boton boton--linea boton--chico" type="button" id="deshacer">Deshacer</button></p>
+      </form>
+    </section>
+
+    <aside class="lab__lateral">
+      <section>
+        <h2>Qué estás viendo</h2>
+        <p>Un modelo de detección de objetos (EfficientDet-Lite0, de Google) busca personas en cada cuadro, tantas veces por segundo como alcance tu teléfono o computadora; la cifra sale debajo del video. A cada persona le pone un número y la sigue mientras esté a la vista.</p>
+        <p>Cuando el punto ámbar de sus pies cruza la línea, suma una entrada o una salida según la flecha. El recuadro de la zona de fila cuenta a quien espera ahí, y el mapa de calor suma cuánto tiempo pasó la gente en cada parte del piso.</p>
+      </section>
+      <section>
+        <h2>Cómo se instala en tu local</h2>
+        <p>Para contar en una puerta, la cámara va en el techo, encima del paso y mirando hacia abajo: desde arriba no se tapan unas personas con otras y no se ven caras. Axis, que fabrica cámaras de conteo, recomienda montarla a 2.7 m como mínimo y calcula que cubre un ancho igual a la altura a la que va (<a href="https://help.axis.com/en-us/axis-people-counter">manual de AXIS People Counter</a>, un producto que Axis ya descontinuó; la recomendación de montaje sigue sirviendo de referencia).</p>
+        <p>El análisis lo hace un equipo pequeño en el local que lee el video de cámaras IP con RTSP, nuevas o las que ya tengas si sirven. Dos equipos que detectan personas en el video sin mandarlo afuera, con el precio de lista que consultamos el 3 de octubre de 2026. Ninguno de los dos trae de fábrica lo que ves en esta demo: el conteo por línea, el aforo, el aviso de fila y el mapa de calor se configuran encima.</p>
+        <ul class="lab__lista">
+          <li>Una Raspberry Pi 5 con su acelerador de IA (el <a href="https://www.raspberrypi.com/products/ai-hat/">AI HAT+</a>, desde US$70) y Frigate, un programa de código abierto para grabar y detectar en cámaras.</li>
+          <li>UniFi Protect con la <a href="https://store.ui.com/us/en/products/ai-key">AI Key de Ubiquiti</a>: US$799 de lista, US$880 con el recargo que la tienda de EE. UU. le suma hoy por la memoria; sin licencia mensual.</li>
+        </ul>
+        <p>Si no quieres cámara, hay sensores de conteo que no guardan imagen, como el <a href="https://store.mcci.com/products/ai-workplace-occupancy-sensor-vs121-1">Milesight VS121</a> (US$462.50); cuentan, pero no dan mapa de calor.</p>
+        <p>Necesita un cable de red por cámara, que también le lleva la corriente (PoE), un tomacorriente para el equipo de análisis e internet por Wi-Fi o cable solo para mandar las cifras al tablero y los avisos. El video se queda en el local.</p>
+        <p>Para el aviso de fila hace falta una cámara que vea la caja; para el mapa de calor, cámaras de techo que vean el piso. El video de personas es dato personal: la <a href="https://antai.gob.pa/wp-content/uploads/2024/01/GUIA-SECTOR-PRIVADO-1.pdf">guía de la ANTAI para el sector privado</a> (junio de 2023) cuenta las cámaras de videovigilancia entre los medios con que se toman datos bajo la Ley 81 de 2019 y pide informar siempre para qué se usan. Por eso la instalación incluye un aviso visible de que hay cámaras y para qué sirven.</p>
+      </section>
+      <section>
+        <h2>Qué es simulado y qué no</h2>
+        <ul class="lab__lista">
+          <li>La detección y el conteo son reales: corre el modelo sobre el video que elijas, en tu navegador.</li>
+          <li>Ningún cuadro sale de tu teléfono o computadora. La página baja la biblioteca y el modelo y no sube nada; puedes comprobarlo en la pestaña Red de las herramientas de desarrollo.</li>
+          <li>En un local, el análisis corre todo el día en un equipo dedicado; aquí corre mientras la página esté abierta, y el conteo se guarda solo en este navegador hasta que cambie el día.</li>
+          <li>El seguimiento es sencillo: si alguien sale de cuadro y vuelve, es otra persona, y dos que pasan pegadas pueden contar como una.</li>
+          <li>Los avisos salen en esta pantalla. En el servicio llegan por WhatsApp o a una pantalla del local.</li>
+          <li>El video de muestra es una calle peatonal de Múnich grabada en 2001 para pruebas de video y publicada sin restricciones de uso, no la puerta de un comercio (<a href="#creditos">créditos</a>).</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Servicios relacionados</h2>
+        <ul class="lab__servicios">
+          <li><a href="/servicio-contador-de-personas.html">Contador de personas en la entrada</a></li>
+          <li><a href="/servicio-mapa-de-calor.html">Mapa de calor del local</a></li>
+          <li><a href="/servicio-alerta-de-filas.html">Aviso de filas en caja</a></li>
+          <li><a href="/servicio-contador-de-produccion.html">Contador de producción en línea</a> <span class="lab__nota">cuenta sacos o cajas en vez de personas; esta demo solo detecta personas</span></li>
+        </ul>
+        <p><a class="boton boton--senal" href="/#pregunta">Preguntar por este servicio</a></p>
+      </section>
+    </aside>
+  </div>
+
+  <p class="aviso-demo"><span><strong>Demo.</strong> Corre en tu navegador con un video de muestra, tu cámara o un video tuyo. El modelo y la biblioteca se descargan de storage.googleapis.com y cdn.jsdelivr.net; el video y las cifras no salen de tu teléfono o computadora. La configuración y el conteo del día se guardan en este navegador.</span></p>
+
+  <section class="creditos" id="creditos" aria-labelledby="creditos-titulo">
+    <h2 id="creditos-titulo">Créditos</h2>
+    <ul>
+      <li>Video de muestra: «Pedestrian Area», grabado en 2001 por Taurus Media Technik, publicado entre las secuencias de prueba de la Universidad Técnica de Múnich y distribuido por <a href="https://media.xiph.org/video/derf/">Xiph.org</a>. Su ficha dice «Restrictions of use: No restrictions. Copyright: No Copyright». Lo reducimos a 960 × 540 y lo recomprimimos.</li>
+      <li>Detección: <a href="https://developers.google.com/edge/mediapipe/solutions/vision/object_detector">MediaPipe Tasks Vision</a> 1.0.1 de Google, licencia Apache 2.0, con el modelo EfficientDet-Lite0 (float16) que Google publica para MediaPipe, entrenado con el conjunto COCO.</li>
+    </ul>
+  </section>
+</main>
+
+<footer class="pie">
+  <div class="envoltura pie__fila">
+    <p><a class="marca" href="../../"><picture><source srcset="../../assets/marca/logo-oscuro.svg" media="(prefers-color-scheme: dark)" /><img src="../../assets/marca/logo-claro.svg" alt="alphateklab" width="142" height="32" /></picture></a><br />Soluciones tecnológicas para negocios en Panamá</p>
+    <p><a href="../../privacidad/">Privacidad</a></p>
+  </div>
+</footer>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

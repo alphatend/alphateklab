@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="es-PA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tablero de sensores · alphateklab</title>
+  <meta name="description" content="Demo del tablero de sensores de alphateklab con un restaurante de ejemplo: neveras, consumo eléctrico, tanque de agua y puertas, con avisos por WhatsApp. Los datos salen de un simulador.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="canonical" href="/laboratorio/sensores/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Tablero de sensores para tu negocio · alphateklab">
+  <meta property="og:description" content="Provoca una falla en un restaurante de ejemplo y mira cuándo llega el aviso. Datos simulados.">
+  <meta property="og:url" content="https://alphateklab.com/laboratorio/sensores/">
+  <meta property="og:locale" content="es_PA">
+  <meta property="og:image" content="https://alphateklab.com/laboratorio/sensores/media/vista-previa-og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Captura de esta demo: el reloj de la simulación con dos avisos activos, la puerta de la nevera abierta desde las 10:30 y la curva de la nevera que pasa de 5 °C, marcada en rojo.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#f7f5ef" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#161b1c" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="../../assets/marca/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../../assets/marca/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="../../assets/marca/favicon-180.png">
+  <link rel="preload" href="../../assets/fuentes/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../assets/fuentes/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../assets/atk.css">
+  <link rel="stylesheet" href="demo.css">
+  <script type="module" src="js/app.mjs"></script>
+  <script type="module" src="js/resumen.mjs"></script>
+  <noscript><style>.demo__rejilla { display: none; }</style></noscript>
+</head>
+<body>
+  <a class="saltar" href="#demo">Saltar a la demo</a>
+
+  <header class="cabecera">
+    <div class="envoltura cabecera__fila">
+      <a class="marca" href="../../"><picture><source srcset="../../assets/marca/logo-oscuro.svg" media="(prefers-color-scheme: dark)"><img src="../../assets/marca/logo-claro.svg" alt="alphateklab, inicio" width="142" height="32"></picture></a>
+      <nav class="nav" aria-label="Principal">
+        <a href="/servicios.html">Servicios</a>
+        <a href="../">Demos</a>
+        <a href="/#pregunta">Pregúntanos</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="principal" class="envoltura">
+    <nav class="migas" aria-label="Migas de pan">
+      <a href="../../">Inicio</a><span aria-hidden="true">/</span><a href="../">Demos</a><span aria-hidden="true">/</span><span aria-current="page">Sensores</span>
+    </nav>
+
+    <header class="intro">
+      <h1 class="display intro__titulo">Tablero de sensores <br class="intro__corte">para tu negocio</h1>
+      <p class="intro__linea">La temperatura de las neveras, el consumo eléctrico, el tanque de agua y las puertas de tu local en una pantalla, con un aviso a tu WhatsApp cuando algo se sale de lo normal.</p>
+      <p class="intro__simulado"><span class="etiqueta etiqueta--hueca">Simulación</span> Aquí no hay sensores conectados. Los datos de este restaurante de ejemplo (ficticio) salen de un simulador con semilla fija: cada visita ve lo mismo hasta que provocas una falla.</p>
+    </header>
+
+    <div class="lab">
+      <section class="demo" id="demo" aria-labelledby="demo-titulo" data-estado="cargando">
+        <h2 class="sr" id="demo-titulo">La demo</h2>
+
+        <noscript>
+          <p class="demo__sinjs">Esta demo necesita JavaScript: el simulador, las reglas y los gráficos corren en tu navegador. Cómo funciona y cómo se instala sigue en esta misma página.</p>
+        </noscript>
+        <div class="demo__error" id="demo-error" role="alert" hidden>
+          <p><strong>La demo no pudo arrancar.</strong> <span id="demo-error-texto"></span></p>
+          <button class="boton boton--linea" type="button" id="demo-error-restablecer">Restablecer datos de ejemplo y volver a cargar</button>
+        </div>
+
+        <div class="demo__rejilla">
+        <div class="consola" id="consola">
+          <p class="reloj">
+            <span class="reloj__rotulo">Reloj de la simulación</span>
+            <span class="reloj__hora num" id="reloj">—</span>
+          </p>
+          <fieldset class="segmentos velocidad" id="velocidad" disabled>
+            <legend class="sr">Velocidad del reloj</legend>
+            <label><input type="radio" name="velocidad" value="1"><span>×1<span class="sr"> (tiempo real)</span></span></label>
+            <label><input type="radio" name="velocidad" value="60" checked><span>×60<span class="sr"> (un minuto por segundo)</span></span></label>
+            <label><input type="radio" name="velocidad" value="600"><span>×600<span class="sr"> (diez minutos por segundo)</span></span></label>
+          </fieldset>
+          <button class="boton boton--linea consola__pausa" type="button" id="pausa" aria-pressed="false" disabled>Pausar</button>
+          <a class="general" id="general" href="#telefono" data-estado="pausa"><span class="punto" aria-hidden="true"></span><span id="general-texto">Cargando…</span></a>
+          <p class="consola__nota" id="velocidad-nota" role="status">Cargando la simulación…</p>
+        </div>
+
+        <section class="resumen-sensores" aria-labelledby="resumen-titulo">
+          <h3 class="demo__titulo" id="resumen-titulo">Ahora en el local</h3>
+          <ul class="resumen-sensores__lista" id="resumen-sensores"></ul>
+        </section>
+
+        <div class="demo__lado">
+        <section class="fallas" aria-labelledby="fallas-titulo">
+          <h3 class="demo__titulo" id="fallas-titulo">Provoca una falla</h3>
+          <p class="nota">Mira cómo se mueve la curva y cuándo salta el aviso. Con ×600 pasan diez minutos por segundo.</p>
+          <ul class="fallas__lista">
+            <li class="falla" data-falla="puerta">
+              <button class="boton boton--linea falla__boton" type="button" data-falla="puerta" disabled>Dejar la puerta de la nevera abierta</button>
+              <p class="falla__estado">La nevera de la cocina queda abierta hasta que la cierres.</p>
+            </li>
+            <li class="falla" data-falla="corte">
+              <button class="boton boton--linea falla__boton" type="button" data-falla="corte" disabled>Cortar la corriente 2 h</button>
+              <p class="falla__estado">Se va la luz en todo el local durante dos horas.</p>
+            </li>
+            <li class="falla" data-falla="fuga">
+              <button class="boton boton--linea falla__boton" type="button" data-falla="fuga" disabled>Provocar una fuga en el tanque</button>
+              <p class="falla__estado">Se rompe la salida del tanque: se pierden 50 litros por minuto.</p>
+            </li>
+            <li class="falla" data-falla="compresora">
+              <button class="boton boton--linea falla__boton" type="button" data-falla="compresora" disabled>Dañar la compresora de la nevera</button>
+              <p class="falla__estado">Empieza a vibrar en seguida y, en la media hora siguiente, deja de enfriar aunque trabaje sin parar.</p>
+            </li>
+          </ul>
+          <p class="nota" id="tope-acciones" role="status" hidden></p>
+          <p class="fallas__cotizar"><a href="/#pregunta">Cotizar un tablero así para tu local</a></p>
+        </section>
+
+        <section class="telefono" id="telefono" aria-labelledby="telefono-titulo">
+          <h3 class="demo__titulo" id="telefono-titulo">Así le llega al dueño</h3>
+          <div class="chat">
+            <div class="chat__cabeza">
+              <span class="chat__avatar" aria-hidden="true">RE</span>
+              <p><span class="chat__nombre">Avisos del local</span><span class="chat__sub">maqueta de WhatsApp con el texto exacto</span></p>
+            </div>
+            <div class="chat__cuerpo" id="chat" role="log" aria-label="Mensajes de aviso" tabindex="0">
+              <p class="chat__vacio" id="chat-vacio">Todavía no hay avisos. Deja la puerta de la nevera abierta: a los 3&nbsp;min llega el aviso de la puerta y, poco después de los 15&nbsp;min, el de la temperatura.</p>
+            </div>
+          </div>
+          <div class="telefono__acciones">
+            <button class="boton boton--linea" type="button" id="copiar" disabled>Copiar el último aviso</button>
+            <button class="boton boton--linea" type="button" id="mi-telefono" aria-controls="relevo" disabled>Recibir los avisos en mi teléfono</button>
+          </div>
+          <p class="nota" id="copiar-estado" role="status"></p>
+          <div class="relevo" id="relevo" hidden>
+            <p class="relevo__aviso">Modo demostración entre dispositivos: los datos pasan por un servidor público de pruebas (ntfy.sh). No escribas datos reales.</p>
+            <div class="relevo__fila">
+              <div class="relevo__qr" id="relevo-qr" aria-hidden="true"></div>
+              <div class="relevo__texto">
+                <p>Escanea el código con tu teléfono o abre este enlace en él:</p>
+                <p><a id="relevo-enlace" class="relevo__enlace" href="telefono.html" target="_blank" rel="noopener">telefono.html</a></p>
+                <p>Código de la sala: <strong class="relevo__sala num" id="relevo-sala" tabindex="-1">—</strong></p>
+                <p class="relevo__estado" id="relevo-estado" role="status">Preparando la sala…</p>
+              </div>
+            </div>
+            <div class="telefono__acciones">
+              <button class="boton boton--linea" type="button" id="relevo-prueba">Enviar un aviso de prueba</button>
+              <button class="boton boton--linea" type="button" id="relevo-apagar">Dejar de enviar a mi teléfono</button>
+            </div>
+          </div>
+        </section>
+        </div>
+
+        <section class="registro" aria-labelledby="registro-titulo">
+          <div class="registro__cabeza">
+            <h3 class="demo__titulo" id="registro-titulo">Lecturas</h3>
+            <fieldset class="segmentos ventana" id="ventana">
+              <legend class="sr">Ventana de tiempo de los gráficos</legend>
+              <label><input type="radio" name="ventana" value="2" disabled><span>2 h<span class="sr"> anteriores</span></span></label>
+              <label><input type="radio" name="ventana" value="6" checked disabled><span>6 h<span class="sr"> anteriores</span></span></label>
+              <label><input type="radio" name="ventana" value="24" disabled><span>24 h<span class="sr"> anteriores</span></span></label>
+            </fieldset>
+            <button class="boton boton--linea registro__tabla-boton" type="button" id="ver-tabla" aria-expanded="false" aria-controls="tabla">Ver los datos en tabla</button>
+          </div>
+          <div class="lectura">
+            <p class="lectura__texto" id="lectura">Lectura de ahora</p>
+            <button class="enlace-boton" type="button" id="volver-ahora" hidden>Volver a ahora</button>
+          </div>
+          <div class="registrador" id="registrador" tabindex="0" role="group" aria-roledescription="registrador" aria-label="Gráficos de los sensores en el tiempo" aria-describedby="registrador-ayuda">
+            <svg class="eje-x eje-x--arriba" aria-hidden="true" height="22"></svg>
+            <div class="tira tira--fallas" data-tira="fallas">
+              <div class="tira__cabeza"><span class="tira__nombre">Fallas provocadas</span><span class="tira__valor" data-valor>Ninguna</span></div>
+              <svg class="tira__grafico" aria-hidden="true" height="24"></svg>
+            </div>
+            <div class="tira" data-tira="nevera">
+              <div class="tira__cabeza"><span class="etiqueta etiqueta--hueca">T1</span><span class="tira__nombre">Nevera de la cocina <span class="tira__unidad">(°C)</span></span><span class="tira__valor num" data-valor>—</span><span class="tira__estado" data-estado></span></div>
+              <svg class="tira__grafico" role="img" height="92"></svg>
+            </div>
+            <div class="tira" data-tira="cuarto">
+              <div class="tira__cabeza"><span class="etiqueta etiqueta--hueca">T2</span><span class="tira__nombre">Cuarto frío <span class="tira__unidad">(°C)</span></span><span class="tira__valor num" data-valor>—</span><span class="tira__estado" data-estado></span></div>
+              <svg class="tira__grafico" role="img" height="92"></svg>
+            </div>
+            <div class="tira" data-tira="congelador">
+              <div class="tira__cabeza"><span class="etiqueta etiqueta--hueca">T3</span><span class="tira__nombre">Congelador <span class="tira__unidad">(°C)</span></span><span class="tira__valor num" data-valor>—</span><span class="tira__estado" data-estado></span></div>
+              <svg class="tira__grafico" role="img" height="92"></svg>
+            </div>
+            <div class="tira tira--estados" data-tira="estados">
+              <div class="tira__cabeza"><span class="tira__nombre">Puertas y bomba</span><span class="tira__valor tira__valor--lista" data-valor>—</span></div>
+              <svg class="tira__grafico" role="img" height="68"></svg>
+            </div>
+            <div class="tira" data-tira="vibracion">
+              <div class="tira__cabeza"><span class="etiqueta etiqueta--hueca">V1</span><span class="tira__nombre">Vibración de la compresora de la nevera <span class="tira__unidad">(mm/s)</span></span><span class="tira__valor num" data-valor>—</span><span class="tira__estado" data-estado></span></div>
+              <svg class="tira__grafico" role="img" height="64"></svg>
+            </div>
+            <div class="tira tira--energia" data-tira="energia">
+              <div class="tira__cabeza"><span class="etiqueta etiqueta--hueca">E1</span><span class="tira__nombre">Consumo eléctrico <span class="tira__unidad" data-unidad>(kWh cada 15 min)</span></span><span class="tira__valor num" data-valor>—</span><span class="tira__estado" data-estado></span></div>
+              <ul class="leyenda" data-leyenda>
+                <li data-circuito="aire"><span class="leyenda__marca leyenda__marca--aire" aria-hidden="true"></span>Aire acondicionado <span class="num" data-kwh></span></li>
+                <li data-circuito="cocina"><span class="leyenda__marca leyenda__marca--cocina" aria-hidden="true"></span>Cocina y luces <span class="num" data-kwh></span></li>
+                <li data-circuito="refri"><span class="leyenda__marca leyenda__marca--refri" aria-hidden="true"></span>Refrigeración <span class="num" data-kwh></span></li>
+              </ul>
+              <svg class="tira__grafico" role="img" height="92"></svg>
+            </div>
+            <div class="tira" data-tira="tanque">
+              <div class="tira__cabeza"><span class="etiqueta etiqueta--hueca">N1</span><span class="tira__nombre">Tanque de agua <span class="tira__unidad">(% de 2,500 litros)</span></span><span class="tira__valor num" data-valor>—</span><span class="tira__estado" data-estado></span></div>
+              <svg class="tira__grafico" role="img" height="72"></svg>
+            </div>
+            <div class="tira" data-tira="humedad">
+              <div class="tira__cabeza"><span class="etiqueta etiqueta--hueca">H1</span><span class="tira__nombre">Humedad de la bodega <span class="tira__unidad">(% de humedad relativa)</span></span><span class="tira__valor num" data-valor>—</span><span class="tira__estado" data-estado></span></div>
+              <svg class="tira__grafico" role="img" height="72"></svg>
+            </div>
+            <svg class="eje-x" id="eje-x" aria-hidden="true" height="22"></svg>
+          </div>
+          <p class="nota" id="registrador-ayuda">Pasa el mouse o el dedo por los gráficos para leer cualquier momento; con el teclado, las flechas (Shift + flecha salta 10 min). La banda gris es el rango de tu regla de aviso y la línea se pone roja fuera de él. El fondo rojo marca el tiempo que duró cada aviso, desde que la lectura salió del rango.</p>
+          <p class="sr" id="registrador-anuncio" aria-live="polite"></p>
+          <div class="tabla-datos" id="tabla" hidden>
+            <p class="nota" id="tabla-nota">Un renglón cada 15 min con lo más alto de cada temperatura, los minutos que estuvo abierta cada puerta y el consumo. Se actualiza con la simulación; pausa para leerla con calma.</p>
+            <div class="desliza" tabindex="0" role="region" aria-labelledby="tabla-titulo">
+              <table>
+                <caption id="tabla-titulo">Lecturas de la ventana, por intervalo</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Intervalo</th>
+                    <th scope="col">Nevera máx.</th>
+                    <th scope="col">Cuarto frío máx.</th>
+                    <th scope="col">Congelador máx.</th>
+                    <th scope="col">Puerta nevera abierta</th>
+                    <th scope="col">Puerta cuarto frío abierta</th>
+                    <th scope="col">Bomba encendida</th>
+                    <th scope="col">Vibración máx.</th>
+                    <th scope="col">Consumo</th>
+                    <th scope="col">Tanque mín.</th>
+                    <th scope="col">Humedad máx.</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-cuerpo"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="bitacora" aria-labelledby="bitacora-titulo">
+          <h3 class="demo__titulo" id="bitacora-titulo">Bitácora de avisos</h3>
+          <p class="nota">«Empezó» es cuando la lectura salió del rango; «Terminó», cuando volvió. El aviso sale cuando se cumplen los minutos de la regla.</p>
+          <p class="vacio" id="bitacora-vacia">Todavía no hay avisos en lo simulado. Provoca una falla para ver el primero.</p>
+          <div class="desliza" tabindex="0" role="region" aria-labelledby="bitacora-titulo" id="bitacora-envoltura" hidden>
+            <table class="bitacora__tabla">
+              <thead>
+                <tr><th scope="col">Aviso</th><th scope="col">Empezó</th><th scope="col">Terminó</th><th scope="col">Duración</th></tr>
+              </thead>
+              <tbody id="bitacora"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="reglas" aria-labelledby="reglas-titulo">
+          <h3 class="demo__titulo" id="reglas-titulo">Reglas de aviso</h3>
+          <p class="nota">Un aviso sale cuando la lectura se sale del rango sin interrupción durante los minutos que pongas: los minutos que el cuarto frío pasa de 5&nbsp;°C cuando entra el proveedor no avisan. Se da por resuelto cuando lleva 5 min de vuelta en el rango. Los cambios cuentan desde el momento en que los haces.</p>
+          <ul class="reglas__lista" id="reglas"></ul>
+          <form class="nueva-regla" id="nueva-regla" novalidate>
+            <h4 class="nueva-regla__titulo">Agregar una regla</h4>
+            <div class="campos">
+              <label class="campo campo--ancho"><span>Sensor</span>
+                <select name="sensor" id="nueva-sensor"></select>
+              </label>
+              <div class="campos__par" data-solo="rango">
+                <label class="campo"><span>Mínimo <span data-unidad></span></span><input name="min" type="number" step="any" inputmode="decimal" aria-describedby="nueva-error"></label>
+                <label class="campo"><span>Máximo <span data-unidad></span></span><input name="max" type="number" step="any" inputmode="decimal" aria-describedby="nueva-error"></label>
+              </div>
+              <label class="campo"><span>Por más de (min)</span><input name="minutos" type="number" min="1" max="1440" step="1" inputmode="numeric" value="15" aria-describedby="nueva-error"></label>
+              <button class="boton" type="submit">Agregar regla</button>
+            </div>
+            <p class="error" id="nueva-error" role="alert"></p>
+          </form>
+        </section>
+
+        <section class="exportar" aria-labelledby="exportar-titulo">
+          <h3 class="demo__titulo" id="exportar-titulo">Registro de temperaturas para inspección</h3>
+          <p>Un CSV con la fecha, la hora y la lectura de la nevera, el cuarto frío y el congelador, el estado de las puertas y qué estaba fuera de rango. Se abre en Excel o en Hojas de cálculo. La primera fila dice que los datos son simulados.</p>
+          <p class="nota">En Panamá, el <a href="https://docs.panama.justia.com/federales/decretos-ejecutivos/352-de-2001-oct-17-2001.pdf" rel="noopener">Decreto Ejecutivo 352 de 2001 del MINSA</a> (art. 2.b) pide un termógrafo en las cámaras de enfriamiento y congelación y guardar el registro de temperaturas dos años como mínimo. No verificamos si sigue vigente ni si alcanza a los restaurantes.</p>
+          <form class="campos" id="exportar" novalidate>
+            <fieldset class="campo campo--grupo">
+              <legend>Periodo</legend>
+              <label class="opcion"><input type="radio" name="periodo" value="24" checked> Últimas 24 h</label>
+              <label class="opcion"><input type="radio" name="periodo" value="todo"> Todo lo simulado</label>
+            </fieldset>
+            <label class="campo"><span>Una fila cada</span>
+              <select name="cada">
+                <option value="60">minuto</option>
+                <option value="900" selected>15 min</option>
+                <option value="3600">hora</option>
+              </select>
+            </label>
+            <button class="boton boton--senal" type="submit" id="descargar" disabled>Descargar el CSV</button>
+          </form>
+          <p class="nota num" id="exportar-info" role="status"></p>
+          <details class="muestra-csv">
+            <summary>Ver las primeras filas</summary>
+            <pre id="csv-muestra"></pre>
+          </details>
+        </section>
+
+        <div class="restablecer">
+          <button class="boton boton--linea" type="button" id="restablecer" disabled>Restablecer datos de ejemplo</button>
+          <div class="restablecer__confirmar" id="restablecer-confirmar" hidden>
+            <p>Se borran tus fallas, tus reglas y los avisos, y el restaurante vuelve a las 10:30 del primer día. Si conectaste tu teléfono, la conexión se mantiene.</p>
+            <button class="boton" type="button" id="restablecer-si">Sí, restablecer</button>
+            <button class="boton boton--linea" type="button" id="restablecer-no">Cancelar</button>
+          </div>
+        </div>
+        </div>
+      </section>
+
+      <aside class="ficha" aria-label="Sobre esta demo">
+        <section class="ficha__bloque">
+          <h2 class="ficha__titulo">Qué estás viendo</h2>
+          <p>Un restaurante de ejemplo con <span data-cuenta-sensores>diez</span> sensores: tres de temperatura (nevera, cuarto frío y congelador), dos contactos de puerta, el nivel del tanque y su bomba, un medidor de energía con tres circuitos, la humedad de la bodega y la vibración de la compresora de la nevera.</p>
+          <p>Cada sensor reporta una lectura por minuto y las reglas deciden cuándo avisar. El cuarto frío pasa de 5&nbsp;°C unos minutos cuando entra el proveedor por la mañana (se ve en las 24&nbsp;h) y no avisa: la regla pide veinte minutos seguidos por encima. Ese 5&nbsp;°C es el límite de refrigeración del <a href="https://www.fda.gov/food/fda-food-code/food-code-2022" rel="noopener">Código de Alimentos de la FDA</a> (sección 3-501.16).</p>
+        </section>
+
+        <section class="ficha__bloque">
+          <details class="ficha__plegable">
+          <summary><h2 class="ficha__titulo">Cómo se instala en tu local</h2> <span class="ficha__plegable-pista">Equipo, ejemplos y precios de lista</span></summary>
+          <p>Equipo típico para un local como este. Los modelos son ejemplos con el precio de lista que consultamos el 3 de octubre de 2026 en tiendas de Estados Unidos, sin envío ni impuestos.</p>
+          <dl class="equipo">
+            <div><dt><span class="etiqueta etiqueta--hueca">T1–T3</span><span>Sensor de temperatura inalámbrico</span></dt>
+              <dd>Uno por equipo de frío. La sonda va en el centro, lejos de la puerta y del ventilador, y su cable plano pasa por el empaque sin dañarlo. Funciona con baterías. Por ejemplo, el <a href="https://store.mcci.com/products/milesight-environment-monitoring-sensor-em300-th" rel="noopener">Milesight EM300-TH</a> (LoRaWAN, US$65) o el <a href="https://itead.cc/product/sonoff-zigbee-temperature-and-humidity-sensor-snzb-02p/" rel="noopener">Sonoff SNZB-02P</a> (Zigbee, US$10.90).</dd></div>
+            <div><dt><span class="etiqueta etiqueta--hueca">P1 P2</span><span>Contacto magnético de puerta</span></dt>
+              <dd>Un imán en la puerta y el sensor en el marco, con baterías. Por ejemplo, el <a href="https://us.shelly.com/products/shelly-blu-door-window-zb-white" rel="noopener">Shelly BLU Door/Window ZB</a> (Zigbee, US$22.99).</dd></div>
+            <div><dt><span class="etiqueta etiqueta--hueca">E1</span><span>Medidor de energía con pinzas</span></dt>
+              <dd>Va en el tablero eléctrico: una pinza abraza el cable de cada circuito sin cortarlo. Lo instala un electricista y se alimenta del mismo tablero. Por ejemplo, el <a href="https://us.shelly.com/products/shelly-em-gen3-50a" rel="noopener">Shelly EM Gen3 de 50&nbsp;A</a> (Wi-Fi, US$69.99); cuántos hacen falta depende de cuántos circuitos quieras ver por separado.</dd></div>
+            <div><dt><span class="etiqueta etiqueta--hueca">N1 B1</span><span>Nivel del tanque y bomba</span></dt>
+              <dd>Un sensor ultrasónico en la tapa mide la distancia hasta el agua; con el alto del tanque salen el porcentaje y los litros. Por ejemplo, el <a href="https://shop.dragino.com/index.php?product_id=152&amp;rt=product%2Fproduct" rel="noopener">Dragino LDDS75</a> (LoRaWAN, US$88). Una pinza en el cable de la bomba dice si está encendida.</dd></div>
+            <div><dt><span class="etiqueta etiqueta--hueca">V1</span><span>Vibración de la compresora</span></dt>
+              <dd>Pegado con imán o tornillo a la carcasa de la compresora. Avisa cuando vibra más de lo normal, para que la revise un técnico.</dd></div>
+            <div><dt><span class="etiqueta etiqueta--hueca">H1</span><span>Humedad de la bodega</span></dt>
+              <dd>A media altura y lejos de la puerta, con baterías. El mismo Sonoff SNZB-02P mide temperatura y humedad.</dd></div>
+            <div><dt><span>Cómo llegan las lecturas a internet</span></dt>
+              <dd>Dentro de un local hay tres caminos: Wi-Fi (los Shelly se conectan directo al router), Zigbee con un coordinador como el <a href="https://itead.cc/product/zigbee-3-0-usb-dongle/" rel="noopener">Sonoff ZBDongle-E</a> (US$19.90) en un equipo pequeño como <a href="https://www.nabucasa.com/news/2026-01-08-green-pricing-change/" rel="noopener">Home Assistant Green</a> (US$199), o LoRaWAN con una puerta de enlace propia como la <a href="https://store.rakwireless.com/products/rak7268-8-channel-indoor-lorawan-gateway" rel="noopener">RAK7268V2</a> (US$154). Propia porque <a href="https://www.thethingsnetwork.org/country/panama/" rel="noopener">The Things Network</a> no registra ninguna en Panamá, y tampoco encontramos planes NB-IoT ni LTE-M de los operadores de aquí. La puerta de enlace va enchufada cerca del router y, con una UPS pequeña para los dos, el aviso de corte de corriente sale aunque se vaya la luz. El cuarto frío es una caja de metal que corta el Wi-Fi: ahí conviene LoRaWAN o una sonda con la antena por fuera.</dd></div>
+          </dl>
+          <p>Lo que necesita tu local: conexión a internet y un tomacorriente para la puerta de enlace; los sensores de temperatura, de puertas y de humedad van con baterías. Para vacunas o medicamentos, la sonda va dentro de un frasco con glicol para que mida como el producto y no salte cada vez que abren, como recomienda la <a href="https://www.cdc.gov/vaccines/hcp/downloads/storage-handling-toolkit.pdf" rel="noopener">guía de almacenamiento de vacunas de los CDC</a>.</p>
+          <p>El precio de la instalación, del tablero y de los avisos se cotiza después de ver el local: depende de cuántos equipos haya y de dónde estén.</p>
+          </details>
+        </section>
+
+        <section class="ficha__bloque">
+          <h2 class="ficha__titulo">Qué es simulado y qué no</h2>
+          <ul class="lista">
+            <li><strong>Simulado:</strong> las lecturas (física sencilla, semilla fija), las fallas y el reloj. En la demo, durante el corte, el medidor E1 sigue reportando 0&nbsp;kW y de ahí sale el aviso. En una instalación, el medidor se queda sin corriente con el tablero; el aviso lo da la puerta de enlace con su UPS cuando pierde la corriente o deja de oír al medidor.</li>
+            <li><strong>Maqueta:</strong> el mensaje de WhatsApp. En la instalación real sale por la API de WhatsApp Business de Meta con una plantilla aprobada; también puede ir por correo.</li>
+            <li><strong>Funciona de verdad, en tu navegador:</strong> las reglas con su duración mínima, la apertura y el cierre de los avisos, la bitácora, el CSV y, si lo activas, el envío del aviso a tu teléfono por un relevo público de pruebas (ntfy.sh).</li>
+            <li>Lo que cambias se guarda solo en este navegador. Nada sale de tu equipo salvo ese envío al teléfono, y solo si lo activas.</li>
+          </ul>
+        </section>
+
+        <section class="ficha__bloque">
+          <h2 class="ficha__titulo">Servicios relacionados</h2>
+          <ul class="servicios">
+            <li><a href="/servicio-tablero-de-sensores.html"><span class="servicios__nombre">Tablero de sensores del negocio</span></a></li>
+            <li><a href="/servicio-temperatura-de-neveras.html"><span class="servicios__nombre">Sensores de temperatura en neveras y cuartos fríos</span></a></li>
+            <li><a href="/servicio-consumo-por-cabana.html"><span class="servicios__nombre">Consumo de luz y agua por cabaña</span></a></li>
+            <li><a href="/servicio-sensores-en-motores.html"><span class="servicios__nombre">Sensores de vibración y temperatura en motores</span></a></li>
+            <li><a href="/servicio-energia-solar-y-consumo.html"><span class="servicios__nombre">Medición de energía solar y consumo</span></a></li>
+          </ul>
+          <p>El tablero y los avisos son software que hacemos nosotros. También hacemos:</p>
+          <ul class="servicios">
+            <li><a href="/servicio-tablero-de-ventas.html"><span class="servicios__nombre">Tablero de ventas y operación</span></a></li>
+            <li><a href="/servicio-automatizaciones.html"><span class="servicios__nombre">Automatizaciones</span></a></li>
+            <li><a href="/servicio-software-a-medida.html"><span class="servicios__nombre">Software a medida</span></a></li>
+          </ul>
+          <a class="boton boton--senal ficha__cotizar" href="/#pregunta">Preguntar por este servicio</a>
+        </section>
+      </aside>
+    </div>
+
+    <p class="aviso-demo">Demostración con datos simulados de un restaurante ficticio. No hay sensores conectados ni se manda nada a WhatsApp. Lo que cambias se guarda solo en este navegador; «Restablecer datos de ejemplo» lo borra.</p>
+  </main>
+
+  <div class="notificacion" id="notificacion" hidden>
+    <p class="notificacion__de">Avisos del local (maqueta de WhatsApp)</p>
+    <p class="notificacion__texto" id="notificacion-texto"></p>
+    <div class="notificacion__acciones">
+      <button class="boton boton--senal" type="button" id="notificacion-ver">Ver el aviso</button>
+      <button class="boton boton--linea" type="button" id="notificacion-cerrar">Cerrar</button>
+    </div>
+  </div>
+
+  <footer class="pie">
+    <div class="envoltura pie__fila">
+      <p><a class="marca" href="../../"><picture><source srcset="../../assets/marca/logo-oscuro.svg" media="(prefers-color-scheme: dark)"><img src="../../assets/marca/logo-claro.svg" alt="alphateklab" width="142" height="32"></picture></a><br>Soluciones tecnológicas para negocios en Panamá</p>
+      <ul class="pie__enlaces">
+        <li><a href="/servicios.html">Servicios</a></li>
+        <li><a href="../">Demos</a></li>
+        <li><a href="/#pregunta">Pregúntanos</a></li>
+        <li><a href="../../privacidad/">Privacidad</a></li>
+      </ul>
+    </div>
+  </footer>
+  <script>
+    // Si un archivo de la demo no carga (sin red, o un 404), el módulo no llega a correr y nadie mostraría el
+    // error: esto lo muestra a los 8 s. Si la demo arranca después, ella misma lo vuelve a ocultar.
+    (function () {
+      var CLAVE = 'atk-sensores';
+      var demo = document.getElementById('demo');
+      var error = document.getElementById('demo-error');
+      document.getElementById('demo-error-restablecer').addEventListener('click', function () {
+        try { localStorage.removeItem(CLAVE); } catch (e) { /* sin almacenamiento */ }
+        location.reload();
+      });
+      setTimeout(function () {
+        if (demo.getAttribute('data-estado') !== 'cargando') return;
+        demo.setAttribute('data-estado', 'error');
+        document.getElementById('demo-error-texto').textContent = 'No se pudieron cargar los archivos de la demo. Revisa tu conexión y vuelve a cargar la página.';
+        error.hidden = false;
+      }, 8000);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,650 @@
+/* Recorrido 3D · estilos propios de la demo. Solo tokens de ../../assets/atk.css. */
+
+html {
+  overflow-x: clip;
+  /* La cabecera es fija: lo que se trae a la vista (Tab, scrollIntoView, «Saltar al contenido») queda debajo de ella.
+     pagina.mjs mide su alto (cambia con el tamaño de letra); sin JavaScript vale el de siempre, 61 px. */
+  scroll-padding-top: calc(var(--alto-cabecera, 61px) + var(--e-3));
+}
+/* Un display de una clase (.boton, .etiqueta…) no debe ganarle al atributo hidden. */
+[hidden] { display: none !important; }
+main { padding-top: var(--e-4); }
+/* Con letra al 200 % en 320 px una palabra larga («videojuego») no cabe en la columna: que se parta, no que se corte. */
+main h1, main h2, main h3, main p, main li, main a, main th, main td { overflow-wrap: anywhere; }
+@media (max-width: 360px) {
+  main h1, main h2 { hyphens: auto; }
+}
+/* El enlace «Saltar al contenido» se esconde por su propia altura (con letra grande, −60 px no alcanzan). */
+.saltar:not(:focus) { top: 0; transform: translateY(-110%); }
+/* Con letra al 200 % en 320 px, la marca y el menú no caben en una fila: que el menú baje. */
+.cabecera__fila { flex-wrap: wrap; row-gap: 0; }
+/* Objetivos de 44 px en la cabecera y el pie (atk.css deja los enlaces del menú en 40 px y «Privacidad» en 19). */
+.nav a, .pie__nota a { display: inline-flex; align-items: center; min-height: 44px; }
+.cabecera .marca, .pie .marca { min-height: 44px; }
+
+.migas span[aria-current] { color: var(--tinta-2); }
+
+.titular { margin-block: var(--e-4) var(--e-5); max-width: 62rem; }
+.titular__h1 { font-size: clamp(1.9rem, 1.1rem + 3.4vw, 3.25rem); }
+.titular__bajada { margin-top: var(--e-3); max-width: var(--medida); color: var(--tinta-2); font-size: var(--t-m); }
+
+/* ── disposición: demo grande, información al lado en escritorio ── */
+.disposicion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'demo' 'info' 'plano';
+  gap: var(--e-7);
+}
+.demo { grid-area: demo; min-width: 0; }
+.info { grid-area: info; min-width: 0; }
+.plano-ejemplo { grid-area: plano; min-width: 0; }
+@media (min-width: 1040px) {
+  .disposicion {
+    grid-template-columns: minmax(0, 1fr) 330px;
+    grid-template-areas: 'demo info' 'plano info';
+    column-gap: var(--e-7);
+    row-gap: var(--e-8);
+    align-items: start;
+  }
+}
+
+.boton--chico { min-height: 44px; padding: 0.45em 0.8em; font-size: var(--t-xs); }
+
+/* ── pestañas ── */
+.pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-1);
+  border-bottom: 1px solid var(--linea-fuerte);
+  margin-bottom: var(--e-3);
+}
+.pestanas__boton {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  padding: var(--e-3) var(--e-3);
+  min-height: 48px;
+  font: inherit;
+  font-weight: 600;
+  font-size: var(--t-s);
+  color: var(--tinta-2);
+  cursor: pointer;
+  transition: color var(--mov), border-color var(--mov);
+}
+.pestanas__boton[aria-selected='true'] { color: var(--tinta); border-bottom-color: var(--senal); }
+@media (hover: hover) and (pointer: fine) {
+  .pestanas__boton:hover { color: var(--tinta); border-bottom-color: var(--linea-fuerte); }
+  .pestanas__boton[aria-selected='true']:hover { border-bottom-color: var(--senal); }
+}
+
+.aviso-propio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-3);
+  margin-bottom: var(--e-3);
+  padding: var(--e-2) var(--e-3);
+  background: var(--senal-suave);
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  font-size: var(--t-s);
+}
+.aviso-propio span { flex: 1 1 16rem; }
+
+/* ── visor ── */
+.visor {
+  position: relative;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  background: var(--papel-2);
+  overflow: hidden;
+}
+/* La escena guarda su proporción, pero crece si lo de adentro no cabe (la caja de «Entrar» o el aviso de error con
+   letra al 200 % en 320 px): con overflow: clip no es un contenedor de scroll, y una caja con aspect-ratio crece hasta
+   su contenido. La caja de entrada y el aviso van en la celda de la rejilla (en el flujo); lo demás, encima. */
+.visor__escena {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  overflow: clip;
+  outline-offset: -3px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (min-width: 700px) {
+  .visor__escena { aspect-ratio: 16 / 10; }
+}
+/* El lienzo tapa el outline: el anillo de foco va en una capa encima de todo. */
+.visor__escena:focus-visible { outline: none; }
+.visor__escena:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 3px var(--foco), inset 0 0 0 5px var(--papel);
+}
+/* Con el 3D abierto, que la escena no pase de la pantalla (un teléfono acostado). */
+.visor[data-estado='listo'] .visor__escena { max-height: 74svh; touch-action: none; cursor: grab; }
+/* Fuera del estado «listo» (cargando o con error) no queda nada del recorrido anterior detrás del aviso. */
+.visor:not([data-estado='listo']) :is(.visor__ambiente, .visor__minimapa, .visor__mira, .visor__joystick, .visor__consejo, .visor__capa-medidas) { display: none; }
+.visor[data-estado='listo'] .visor__escena:active { cursor: grabbing; }
+.visor[data-midiendo='si'] .visor__escena { cursor: crosshair; }
+.visor__lienzo { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.visor__lienzo.visor__lienzo--fundido { opacity: 0; }
+.visor__lienzo { transition: opacity 150ms var(--ease-salida); }
+
+.visor__portada, .visor__portada img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.visor[data-estado='listo'] .visor__portada,
+.visor[data-estado='listo'] .visor__entrada { display: none; }
+
+.visor__entrada {
+  grid-area: 1 / 1;
+  align-self: end;
+  position: relative;
+  z-index: 1;
+  margin: var(--e-4);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2) var(--e-4);
+  padding: var(--e-3);
+  background: var(--papel);
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  max-width: 34rem;
+}
+/* En escritorio, arriba: abajo quedaba cortada por el borde de la pantalla en una laptop de 800 px de alto. */
+@media (min-width: 700px) {
+  .visor__entrada { align-self: start; }
+}
+/* Mientras carga o con el aviso de error, la caja de entrada no compite con «Volver a intentarlo» (sigue ocupando su
+   lugar para que la escena no cambie de alto). */
+.visor:is([data-estado='cargando'], [data-estado='error']) .visor__entrada { visibility: hidden; }
+.visor__entrada .boton { min-height: 52px; font-size: var(--t-m); padding-inline: 1.3em; }
+.visor__peso { flex: 1 1 14rem; font-size: var(--t-xs); color: var(--tinta-2); }
+
+.visor__estado {
+  grid-area: 1 / 1;
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: var(--e-5);
+  background: color-mix(in srgb, var(--papel) 82%, transparent);
+  z-index: 5;
+}
+.visor__estado[hidden] { display: none; }
+.visor__estado-caja {
+  display: grid;
+  justify-items: center;
+  gap: var(--e-3);
+  max-width: 30rem;
+  padding: var(--e-5);
+  background: var(--papel);
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  text-align: center;
+}
+.visor[data-estado='error'] .giro { display: none; }
+.giro {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--linea);
+  border-top-color: var(--tinta);
+  animation: girar 1.1s linear infinite;
+}
+@keyframes girar { to { transform: rotate(1turn); } }
+
+/* HUD */
+.visor__ambiente {
+  font-family: var(--f-titulo);
+  position: absolute;
+  top: var(--e-3);
+  left: var(--e-3);
+  z-index: 3;
+  /* Lo que deja el minimapa (mismo ancho que .visor__minimapa más sus márgenes). */
+  max-width: calc(100% - clamp(104px, 27%, 176px) - var(--e-2) - var(--e-3) - var(--e-2));
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  background: var(--senal);
+  color: var(--sobre-senal);
+  font-weight: 700;
+  font-size: var(--t-s);
+  line-height: 1.15;
+  padding: 0.45em 0.7em 0.45em 0.55em;
+  border-radius: 2px;
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
+}
+.visor__ambiente::before {
+  content: '';
+  flex: none;
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: var(--papel);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.25);
+}
+/* El nombre se parte en dos líneas antes que cortarse («Recámara prin…» en el teléfono). */
+.visor__ambiente-nombre { min-width: 0; overflow-wrap: break-word; }
+.visor__ambiente-area { font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.visor__ambiente.es-nuevo { animation: ficha var(--dur-estado) var(--ease-salida); }
+@keyframes ficha { from { transform: translateY(calc(var(--mov-dist) * -0.6)); opacity: 0.4; } }
+@media (prefers-reduced-motion: reduce) {
+  .visor__ambiente.es-nuevo { animation: fundido 150ms ease-out; }
+  @keyframes fundido { from { opacity: 0.4; } }
+}
+
+.visor__minimapa {
+  position: absolute;
+  top: var(--e-2);
+  right: var(--e-2);
+  z-index: 3;
+  width: clamp(104px, 27%, 176px);
+  padding: 4px;
+  background: color-mix(in srgb, var(--papel) 92%, transparent);
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  touch-action: manipulation;
+}
+.visor__minimapa svg { display: block; width: 100%; height: auto; cursor: pointer; }
+/* En una pantalla táctil, el primer toque lo agranda a todo el ancho de la escena, con los nombres. */
+.minimapa__barra { display: none; }
+.visor__minimapa .pl-etiquetas--compactas { display: none; }
+.visor__minimapa--grande {
+  left: var(--e-2);
+  width: auto;
+  max-height: calc(100% - 2 * var(--e-2));
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  padding: var(--e-2);
+  background: var(--papel);
+  box-shadow: 0 2px 12px rgb(0 0 0 / 0.2);
+}
+.visor__minimapa--grande svg { flex: 1 1 auto; min-height: 0; }
+.visor__minimapa--grande .minimapa__barra { display: flex; align-items: center; justify-content: space-between; gap: var(--e-2); }
+.minimapa__pista { font-size: var(--t-xs); color: var(--tinta-2); }
+.visor__minimapa--grande .pl-etiquetas--compactas { display: inline; }
+.visor__minimapa .pl-nombre { fill: var(--tinta); font-family: var(--f-titulo); font-weight: 700; pointer-events: none; }
+.minimapa__jugador { fill: var(--senal); stroke: var(--tinta); stroke-width: 0.12; }
+.minimapa__cono { fill: var(--senal); opacity: 0.4; }
+.visor__minimapa .pl-piso { fill: var(--papel); stroke: none; }
+.visor__minimapa .pl-piso.es-actual { fill: var(--senal-suave); }
+.visor__minimapa .pl-muro { stroke: var(--tinta); }
+.visor__minimapa .pl-ventana, .visor__minimapa .pl-vidrio, .visor__minimapa .pl-ventana-alta, .visor__minimapa .pl-puerta, .visor__minimapa .pl-corrediza, .visor__minimapa .pl-vano { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .visor__minimapa .pl-piso:hover { fill: var(--papel-3); }
+}
+
+.visor__mira {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--tinta), var(--tinta)) center / 2px 100% no-repeat,
+    linear-gradient(var(--tinta), var(--tinta)) center / 100% 2px no-repeat;
+  filter: drop-shadow(0 0 1px var(--papel)) drop-shadow(0 0 1px var(--papel));
+}
+
+.visor__joystick {
+  position: absolute;
+  left: var(--e-4);
+  bottom: var(--e-4);
+  z-index: 3;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--papel) 85%, transparent);
+  background: color-mix(in srgb, var(--tinta) 22%, transparent);
+  pointer-events: none;
+}
+.visor__pomo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  border-radius: 50%;
+  background: var(--papel);
+  border: 2px solid var(--tinta);
+}
+.visor__joystick.esta-activo { border-color: var(--senal); }
+
+.visor__capa-medidas { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+.medida-etiqueta {
+  font-family: var(--f-titulo);
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: var(--senal);
+  color: var(--sobre-senal);
+  font-weight: 700;
+  font-size: var(--t-s);
+  font-variant-numeric: tabular-nums;
+  padding: 0.25em 0.5em;
+  border-radius: 2px;
+  white-space: nowrap;
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.25);
+}
+
+.visor__consejo {
+  position: absolute;
+  left: 50%;
+  bottom: var(--e-3);
+  transform: translateX(-50%);
+  z-index: 3;
+  max-width: calc(100% - 32px);
+  padding: var(--e-2) var(--e-3);
+  background: var(--tinta);
+  color: var(--papel);
+  font-size: var(--t-s);
+  border-radius: var(--radio);
+  text-align: center;
+}
+.visor__joystick:not([hidden]) ~ .visor__consejo { left: auto; right: var(--e-3); transform: none; max-width: calc(100% - 160px); }
+
+.visor__barra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2);
+  padding: var(--e-2);
+  background: var(--papel);
+  border-top: 1px solid var(--linea-fuerte);
+}
+.visor__barra[hidden] { display: none; }
+.visor__barra .boton { min-height: 44px; padding: 0.55em 0.9em; }
+/* Relleno solo para un modo encendido de verdad («Medir»). «Ver desde arriba / Caminar por dentro» es una acción. */
+.visor__barra .boton[aria-pressed='true'] { --b-fondo: var(--tinta); --b-texto: var(--papel); border-color: var(--tinta); }
+.solo-mouse { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .solo-mouse { display: inline-flex; }
+}
+
+/* pantalla completa (API nativa o, en iPhone, la página entera) */
+.visor:fullscreen,
+.visor.visor--maximizado {
+  display: flex;
+  flex-direction: column;
+  border: 0;
+  border-radius: 0;
+  width: 100%;
+  height: 100%;
+}
+.visor.visor--maximizado {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  height: 100dvh;
+}
+.visor:fullscreen .visor__escena,
+.visor.visor--maximizado .visor__escena { flex: 1; aspect-ratio: auto; max-height: none; }
+body.con-visor-maximizado { overflow: hidden; }
+
+.ayuda { margin-top: var(--e-3); display: grid; gap: var(--e-1); font-size: var(--t-xs); color: var(--tinta-2); max-width: var(--medida); }
+.ayuda__quien { font-weight: 600; color: var(--tinta); }
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 0.3em;
+  border: 1px solid var(--linea-fuerte);
+  border-bottom-width: 2px;
+  border-radius: 2px;
+  background: var(--papel);
+  color: var(--tinta);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.medidas { margin-top: var(--e-4); }
+.medidas__titulo { font-size: var(--t-s); }
+.medidas__lista { margin: var(--e-2) 0 0; padding-left: 1.6em; font-size: var(--t-s); display: flex; flex-wrap: wrap; gap: var(--e-1) var(--e-5); }
+
+/* ── información al lado ── */
+.info__h2 { font-size: var(--t-l); margin-bottom: var(--e-3); }
+.info > section + section { margin-top: var(--e-6); padding-top: var(--e-5); border-top: 1px solid var(--linea); }
+.info p + p { margin-top: var(--e-3); }
+.info p, .info li { font-size: var(--t-s); color: var(--tinta-2); }
+.info strong { color: var(--tinta); font-weight: 600; }
+.info__dato { font-weight: 600; color: var(--tinta); }
+.info .info__propio { padding: var(--e-2) var(--e-3); background: var(--senal-suave); border-radius: var(--radio); color: var(--tinta); }
+.info__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--e-3); }
+.info__mas { margin-top: var(--e-4); }
+.info__cotizar { margin-top: var(--e-4); }
+
+.relacionados { list-style: none; margin: 0; padding: 0; }
+.relacionados li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 2px;
+  padding-block: var(--e-3);
+  border-top: 1px solid var(--linea);
+}
+.relacionados li:last-child { border-bottom: 1px solid var(--linea); }
+.relacionados a { font-weight: 600; color: var(--tinta); text-decoration-color: var(--linea-fuerte); }
+/* Zona táctil de 44 px sin mover el texto: el relleno crece hacia arriba y abajo y el margen negativo lo compensa. */
+.relacionados a, .migas a { display: inline-block; padding-block: 10px; margin-block: -10px; }
+.migas a { padding: 12px 2px; margin: -12px -2px; }
+.relacionados__precio { font-size: var(--t-xs); color: var(--tinta-2); }
+
+/* ── plano de ejemplo ── */
+.plano-ejemplo__h2 { font-size: var(--t-xl); margin-bottom: var(--e-4); }
+.plano-ejemplo__figura { margin: 0; }
+.plano-svg--pagina { display: block; width: 100%; height: auto; max-height: 640px; }
+.plano-ejemplo__pie { margin-top: var(--e-2); font-size: var(--t-xs); color: var(--tinta-3); }
+
+.plano-svg .pl-piso { fill: var(--papel); stroke: none; }
+.plano-svg .pl-piso--balcon { fill: var(--papel-3); }
+.plano-svg .pl-muro { stroke: var(--tinta); }
+.plano-svg .pl-muro--baranda { stroke: var(--tinta-3); }
+.plano-svg .pl-ventana { stroke: var(--papel); }
+.plano-svg .pl-vidrio { stroke: var(--tinta); stroke-width: 0.03; }
+.plano-svg .pl-puerta { fill: none; stroke: var(--tinta-3); stroke-width: 0.03; }
+.plano-svg .pl-puerta--entrada { stroke: var(--tinta); stroke-width: 0.04; }
+.plano-svg .pl-corrediza { stroke: var(--tinta); stroke-width: 0.04; }
+.plano-svg .pl-vano { stroke: var(--tinta-3); stroke-width: 0.03; stroke-dasharray: 0.1 0.08; }
+/* Ventana alta (más arriba del corte): el muro sigue y la ventana va en discontinua clara sobre él. */
+.plano-svg .pl-ventana-alta, .editor__lienzo .pl-ventana-alta { stroke: var(--papel); stroke-width: 0.04; stroke-dasharray: 0.1 0.07; }
+.plano-svg .pl-nombre { fill: var(--tinta); font-family: var(--f-titulo); font-weight: 700; }
+.plano-svg .pl-area { fill: var(--tinta-2); font-weight: 400; font-variant-numeric: tabular-nums; }
+.plano-svg .pl-cotas line { stroke: var(--tinta-3); stroke-width: 0.02; }
+.plano-svg .pl-cotas text { fill: var(--tinta-2); font-family: var(--f-texto); font-variant-numeric: tabular-nums; }
+/* En el teléfono el plano mide unos 358 px: los rótulos de escritorio quedaban de 6 a 9 px. Ahí van los compactos
+   (solo el nombre, tan grande como cabe; el área está en la tabla de abajo) y las cotas más grandes. */
+.pl-etiquetas--compactas { display: none; }
+@media (max-width: 699px) {
+  .plano-svg--pagina .pl-etiquetas--normales, .editor__lienzo .pl-etiquetas--normales { display: none; }
+  .plano-svg--pagina .pl-etiquetas--compactas, .editor__lienzo .pl-etiquetas--compactas { display: inline; }
+  .plano-svg--pagina .pl-cotas text { font-size: 0.4px; }
+}
+
+/* Con letra muy grande en un teléfono angosto, la tabla se desplaza dentro de su caja, no la página. */
+.tabla-caja { margin-top: var(--e-5); max-width: 100%; overflow-x: auto; }
+.tabla-ambientes {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-s);
+}
+/* Cifras alineadas solo donde hay cifras: con tabular-nums, el guion de «Sala-comedor» se abría («Sala - comedor»). */
+.tabla-ambientes td { font-variant-numeric: tabular-nums; }
+.tabla-ambientes th, .tabla-ambientes td {
+  text-align: left;
+  padding: var(--e-2) var(--e-2) var(--e-2) 0;
+  border-bottom: 1px solid var(--linea);
+  vertical-align: middle;
+}
+.tabla-ambientes thead th { font-size: var(--t-xs); color: var(--tinta-2); font-weight: 600; border-bottom-color: var(--linea-fuerte); }
+.tabla-ambientes tbody th { font-weight: 600; }
+.tabla-ambientes td { color: var(--tinta-2); }
+.tabla-ambientes__num { text-align: right !important; white-space: nowrap; }
+.tabla-ambientes__ir { width: 1%; text-align: right !important; padding-right: 0 !important; }
+/* El botón «Ir» no se parte letra a letra (la regla de overflow-wrap de arriba lo partía en «I / r») y mide 44 px. */
+.tabla-ambientes__ir .boton { white-space: nowrap; overflow-wrap: normal; min-width: 44px; }
+.tabla-ambientes tfoot th, .tabla-ambientes tfoot td { font-weight: 600; color: var(--tinta); border-bottom: 0; padding-block: var(--e-1); }
+.tabla-ambientes__total th, .tabla-ambientes__total td { border-top: 2px solid var(--tinta); padding-top: var(--e-2) !important; }
+
+.aviso-demo--pagina { margin-top: var(--e-8); }
+
+/* ── editor ── */
+.editor__intro { font-size: var(--t-s); color: var(--tinta-2); max-width: var(--medida); margin-bottom: var(--e-4); }
+.editor { display: grid; gap: var(--e-5); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 760px) {
+  .editor { grid-template-columns: minmax(0, 1fr) minmax(250px, 300px); align-items: start; }
+}
+.editor__principal { min-width: 0; }
+
+.herramientas {
+  display: inline-flex;
+  flex-wrap: wrap;
+  margin: 0 0 var(--e-3);
+  padding: 0;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  overflow: hidden;
+}
+.herramientas__opcion { position: relative; }
+.herramientas__opcion input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.herramientas__opcion span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.95em;
+  font-weight: 600;
+  font-size: var(--t-s);
+  color: var(--tinta-2);
+  background: var(--papel);
+  border-right: 1px solid var(--linea);
+  transition: background-color var(--mov), color var(--mov);
+}
+.herramientas__opcion:last-child span { border-right: 0; }
+.herramientas__opcion input:checked + span { background: var(--tinta); color: var(--papel); }
+.herramientas__opcion input:focus-visible + span { outline: 2px solid var(--foco); outline-offset: -4px; }
+@media (hover: hover) and (pointer: fine) {
+  .herramientas__opcion input:not(:checked):hover + span { background: var(--papel-2); color: var(--tinta); }
+}
+
+.editor__tipo { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-2) var(--e-3); margin-bottom: var(--e-2); font-size: var(--t-s); }
+.editor__tipo[hidden] { display: none; }
+.editor__pista { font-size: var(--t-xs); color: var(--tinta-2); margin-bottom: var(--e-2); }
+
+select, input[type='text'] {
+  font: inherit;
+  font-size: var(--t-s);
+  color: var(--tinta);
+  background: var(--papel);
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  min-height: 44px;
+  padding: 0 0.6em;
+  max-width: 100%;
+}
+input[inputmode='decimal'] { font-variant-numeric: tabular-nums; }
+
+.editor__lienzo {
+  position: relative;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  background: var(--papel);
+  overflow: hidden;
+}
+.editor__lienzo svg { display: block; width: 100%; height: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
+.editor__lienzo svg:focus-visible { outline: 2px solid var(--foco); outline-offset: -2px; }
+.ed-linea { stroke: var(--linea); stroke-width: 0.012; }
+.ed-linea--metro { stroke: var(--linea-fuerte); stroke-width: 0.018; }
+.ed-regla { fill: var(--tinta-3); font-family: var(--f-texto); font-size: 0.34px; font-variant-numeric: tabular-nums; }
+.ed-vacio { fill: var(--tinta-2); font-family: var(--f-texto); font-size: 0.36px; font-weight: 600; }
+.ed-previa { fill: var(--senal-suave); stroke: var(--tinta); stroke-width: 0.04; stroke-dasharray: 0.12 0.08; }
+.ed-previa--mal { fill: var(--peligro-fondo); stroke: var(--peligro); }
+.ed-previa-texto { fill: var(--tinta); font-family: var(--f-titulo); font-size: 0.32px; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* En el teléfono la cuadrícula mide unos 27 px por metro: la regla y los textos del dibujo, más grandes. */
+@media (max-width: 699px) {
+  .ed-regla { font-size: 0.4px; }
+  .ed-previa-texto, .ed-vacio { font-size: 0.44px; }
+}
+.ed-abertura-previa { stroke: var(--senal); stroke-width: 0.16; stroke-linecap: butt; }
+.ed-abertura-previa--mal { stroke: var(--peligro); }
+.editor__lienzo .pl-piso { fill: color-mix(in srgb, var(--papel-2) 70%, transparent); }
+.editor__lienzo .pl-piso--balcon { fill: color-mix(in srgb, var(--papel-3) 80%, transparent); }
+.editor__lienzo .pl-piso.es-elegido { fill: var(--senal-suave); }
+.editor__lienzo .pl-muro { stroke: var(--tinta); }
+.editor__lienzo .pl-muro--baranda { stroke: var(--tinta-3); }
+.editor__lienzo .pl-ventana { stroke: var(--papel); }
+.editor__lienzo .pl-vidrio { stroke: var(--tinta); stroke-width: 0.03; }
+.editor__lienzo .pl-puerta { fill: none; stroke: var(--tinta-3); stroke-width: 0.03; }
+.editor__lienzo .pl-puerta--entrada { stroke: var(--tinta); stroke-width: 0.04; }
+.editor__lienzo .pl-nombre { fill: var(--tinta); font-family: var(--f-titulo); font-weight: 700; }
+.editor__lienzo .pl-area { fill: var(--tinta-2); font-weight: 400; }
+.editor[data-herramienta='borrar'] .editor__lienzo svg { cursor: not-allowed; }
+.editor[data-herramienta='ambiente'] .editor__lienzo svg { cursor: crosshair; }
+.editor[data-herramienta='puerta'] .editor__lienzo svg,
+.editor[data-herramienta='ventana'] .editor__lienzo svg { cursor: copy; }
+
+.editor__mensaje { min-height: 1.55em; margin-top: var(--e-2); font-size: var(--t-s); }
+.editor__mensaje.es-error { color: var(--peligro); font-weight: 600; }
+.editor__mensaje.es-ok { color: var(--ok); }
+
+.editor__nombre { margin-bottom: var(--e-5); }
+.editor__nombre label { display: block; font-size: var(--t-xs); color: var(--tinta-2); margin-bottom: 2px; }
+.editor__nombre input { width: 100%; }
+.editor__h3 { font-size: var(--t-m); display: flex; justify-content: space-between; gap: var(--e-3); align-items: baseline; }
+.editor__total { font-size: var(--t-xs); font-weight: 500; color: var(--tinta-2); }
+.editor__lista { list-style: none; margin: var(--e-3) 0 0; padding: 0; }
+.editor__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--e-1) var(--e-2);
+  padding-block: var(--e-2);
+  border-top: 1px solid var(--linea);
+}
+.editor__item:last-child { border-bottom: 1px solid var(--linea); }
+.editor__item.es-elegido { background: linear-gradient(90deg, var(--senal-suave), transparent 70%); }
+.editor__item input[type='text'] { width: 100%; font-weight: 600; }
+.editor__item-datos { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--e-1) var(--e-3); align-items: center; font-size: var(--t-xs); color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+.editor__item-datos select { min-height: 44px; font-size: var(--t-xs); }
+.editor__vacio { margin-top: var(--e-3); font-size: var(--t-s); color: var(--tinta-2); }
+.editor__avisos { list-style: none; margin: var(--e-3) 0 0; padding: 0; display: grid; gap: var(--e-2); }
+.editor__avisos li { font-size: var(--t-xs); padding: var(--e-2) var(--e-3); background: var(--aviso-fondo); color: var(--tinta); border-radius: var(--radio); }
+.editor__avisos li.editor__conteo { background: none; padding: 0; color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+.editor__plegable { margin-top: var(--e-4); border-top: 1px solid var(--linea); padding-top: var(--e-2); }
+.editor__plegable summary { cursor: pointer; font-weight: 600; font-size: var(--t-s); min-height: 44px; display: flex; align-items: center; }
+.formulario { display: grid; gap: var(--e-3); margin-top: var(--e-2); }
+.formulario label { display: block; font-size: var(--t-xs); color: var(--tinta-2); margin-bottom: 2px; }
+.formulario__fila select, .formulario__fila input { width: 100%; }
+.formulario__cuatro { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e-2) var(--e-3); }
+.formulario__cuatro input { width: 100%; }
+.editor__acciones { display: flex; flex-wrap: wrap; gap: var(--e-2); margin-top: var(--e-5); }
+.editor__acciones .boton { min-height: 44px; }
+.editor__nota { margin-top: var(--e-3); font-size: var(--t-xs); color: var(--tinta-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  .giro { animation-duration: 2.2s; }
+}
+
+/* al entrar, el visor queda bajo la cabecera; «Importar JSON» muestra el foco del campo de archivo oculto */
+#visor {
+  scroll-margin-top: 72px;
+}
+.editor__acciones:has(#importar:focus-visible) label[for="importar"] {
+  outline: 2px solid var(--foco, #176b64);
+  outline-offset: 2px;
+}

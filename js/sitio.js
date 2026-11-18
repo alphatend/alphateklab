@@ -171,7 +171,7 @@ function itemPreguntar(consulta, i, { dudosa = false, arriba = false } = {}) {
   li.setAttribute('aria-selected', 'false');
   li.id = `res-preguntar-${i}`;
   li.className = `resultado resultado--preguntar${dudosa ? ' resultado--dudosa' : ''}`;
-  li.dataset.url = `${RAIZ}cotizar/?q=${encodeURIComponent(consulta)}`;
+  li.dataset.url = `${RAIZ}#pregunta`;
   li.innerHTML = `<div class="resultado__fila"><svg class="ico" aria-hidden="true"><use href="#i-chat-circle-dots"></use></svg><span class="resultado__texto"><strong></strong><small></small></span><kbd class="resultado__enter" aria-hidden="true">↵</kbd></div>`;
   // arriba de los resultados («¿No es esto?» antes de verlos no se entiende) o al final de la lista
   li.querySelector('strong').textContent = dudosa ? `No lo tenemos descrito así: pregúntanos por «${consulta}»` : arriba ? `Pregúntanos por «${consulta}»` : `¿No es esto? Pregúntanos por «${consulta}»`;
@@ -219,7 +219,7 @@ function bloqueVacio(consulta) {
   div.querySelector('span').textContent = consulta;
   const [wa, mas] = div.querySelectorAll('a');
   wa.href = enlaceWa;
-  mas.href = `${RAIZ}cotizar/?q=${encodeURIComponent(consulta)}`;
+  mas.href = `${RAIZ}#pregunta`;
   const cerca = parecidos(consulta);
   if (cerca.length) {
     const p = Object.assign(document.createElement('p'), { className: 'sin-resultados__cerca' });
@@ -399,7 +399,7 @@ function conectarBusqueda({ campo, lista, vacio, sugerencias, estado, alElegir }
     const li = items()[activo];
     if (li) return ir(li.dataset.url);
     if (q !== ultimo) await actualizar();
-    ir(hubo ? `${RAIZ}servicios/?q=${encodeURIComponent(q)}` : `${RAIZ}cotizar/?q=${encodeURIComponent(q)}`);
+    ir(hubo ? `${RAIZ}servicios.html` : `${RAIZ}#pregunta`);
   }
   campo.addEventListener('input', actualizar);
   campo.addEventListener('keydown', (e) => {
@@ -631,7 +631,7 @@ document.addEventListener('click', (e) => {
     const n = agregarVarios(varios.dataset.cotizarVarios.split(' '));
     pintarCotizacion();
     varios.textContent = n ? `Agregado${n > 1 ? `s (${n})` : ''}. Ver mi lista` : 'Ya estaban en tu lista. Ver mi lista';
-    varios.onclick = () => (location.href = `${RAIZ}cotizar/`);
+    varios.onclick = () => (location.href = `${RAIZ}#pregunta`);
     return;
   }
   const b = e.target.closest('[data-cotizar]');
@@ -648,7 +648,7 @@ document.addEventListener('click', (e) => {
       nota.setAttribute('role', 'status');
       b.after(nota);
     }
-    nota.replaceChildren(elegidos.includes(b.dataset.cotizar) ? `En tu lista (${elegidos.length}) · ` : 'Quitado de tu lista · ', Object.assign(document.createElement('a'), { href: `${RAIZ}cotizar/`, textContent: 'Ver lista' }));
+    nota.replaceChildren(elegidos.includes(b.dataset.cotizar) ? `En tu lista (${elegidos.length}) · ` : 'Quitado de tu lista · ', Object.assign(document.createElement('a'), { href: `${RAIZ}#pregunta`, textContent: 'Ver lista' }));
   }
 });
 window.addEventListener('storage', pintarCotizacion);

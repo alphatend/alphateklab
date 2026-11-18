@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es-PA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Avisos del local · alphateklab</title>
+  <meta name="description" content="Recibe en tu teléfono los avisos de la demo del tablero de sensores de alphateklab.">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="../../assets/marca/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../../assets/marca/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="../../assets/marca/favicon-180.png">
+  <link rel="preload" href="../../assets/fuentes/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../assets/fuentes/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../assets/atk.css">
+  <link rel="stylesheet" href="demo.css">
+  <script type="module" src="js/telefono.mjs"></script>
+  <noscript><style>#estado, .chat--tel, .tel__nota-recarga { display: none; }</style></noscript>
+</head>
+<body class="pagina-telefono">
+  <header class="cabecera">
+    <div class="envoltura cabecera__fila">
+      <a class="marca" href="../../"><picture><source srcset="../../assets/marca/logo-oscuro.svg" media="(prefers-color-scheme: dark)"><img src="../../assets/marca/logo-claro.svg" alt="alphateklab, inicio" width="142" height="32"></picture></a>
+      <a class="tel__volver" href="./">Ver el tablero</a>
+    </div>
+  </header>
+
+  <main class="envoltura tel" id="principal">
+    <h1 class="tel__titulo">Avisos del restaurante de ejemplo</h1>
+    <p class="relevo__aviso">Modo demostración entre dispositivos: los datos pasan por un servidor público de pruebas (ntfy.sh). No escribas datos reales.</p>
+
+    <form class="tel__sala campos" id="sala-form" hidden novalidate>
+      <label class="campo campo--ancho"><span>Código de la sala (10 letras y números, está debajo del QR en el tablero)</span>
+        <input id="sala-codigo" name="sala" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="14" inputmode="text" aria-describedby="sala-error">
+      </label>
+      <button class="boton boton--senal" type="submit">Conectar</button>
+      <p class="error" id="sala-error" role="alert"></p>
+    </form>
+
+    <p class="tel__estado" id="estado" role="status">Preparando…</p>
+
+    <div class="chat chat--tel">
+      <div class="chat__cabeza">
+        <span class="chat__avatar" aria-hidden="true">RE</span>
+        <p><span class="chat__nombre">Avisos del local</span><span class="chat__sub" id="sala-texto">maqueta de WhatsApp con el texto exacto</span></p>
+      </div>
+      <div class="chat__cuerpo" id="chat" role="log" aria-label="Mensajes de aviso" tabindex="0">
+        <p class="chat__vacio" id="chat-vacio">Todavía no llegó ningún aviso. En el tablero, deja la puerta de la nevera abierta o usa «Enviar un aviso de prueba».</p>
+      </div>
+    </div>
+    <p class="nota" id="vibrar" hidden>Toca la pantalla una vez para que el teléfono vibre con cada aviso.</p>
+    <p class="nota tel__nota-recarga">Los mensajes no se guardan: si recargas esta página, empiezan de nuevo.</p>
+    <noscript><p class="nota">Esta página necesita JavaScript para escuchar los avisos.</p></noscript>
+  </main>
+</body>
+</html>

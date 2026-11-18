@@ -38,22 +38,6 @@
         { e: 1, s: 'wa', t: 'Aviso: la caja 1 cerró con B/. 12.00 menos de lo vendido.', alerta: true },
       ],
     },
-    clinica: {
-      equipos: [
-        { ico: 'i-calendar-check', nombre: 'Agenda en línea', valor: '18 citas hoy' },
-        { ico: 'i-chat-circle-dots', nombre: 'Recordatorios', valor: '16 confirmadas' },
-        { ico: 'i-monitor', nombre: 'Pantalla de turnos', valor: 'Turno 12' },
-        { ico: 'i-robot', nombre: 'Asistente con IA', valor: '9 chats atendidos' },
-      ],
-      inicio: { wa: 'Mañana tienes 18 citas; 16 ya confirmaron.', cifra: '4 %', etiqueta: 'inasistencias del mes', clientes: 'Recordatorio enviado a los 18 pacientes de mañana.' },
-      eventos: [
-        { e: 3, s: 'clientes', t: 'El asistente agendó una cita a las 10:47 p. m., con la clínica cerrada.', v: '10 chats atendidos' },
-        { e: 1, s: 'wa', t: 'Aviso: 2 pacientes de mañana no han confirmado su cita.', alerta: true },
-        { e: 0, s: 'panel', cifra: '17 de 18', etiqueta: 'pacientes atendidos', v: '18 citas hoy' },
-        { e: 1, s: 'clientes', t: 'Un paciente canceló y su hora se ofreció a la lista de espera.', v: '17 confirmadas' },
-        { e: 2, s: 'panel', cifra: '9 min', etiqueta: 'espera promedio', v: 'Turno 13' },
-      ],
-    },
     hotel: {
       equipos: [
         { ico: 'i-lock-key', nombre: 'Cerraduras con código', valor: '4 cabañas' },
@@ -124,24 +108,6 @@
         ['16:30', 'Arroz de 5 lb: quedan 6. Al ritmo de hoy se acaba el jueves.'],
         ['21:05', '<strong>Aviso:</strong> la caja 1 cerró con B/. 12.00 menos de lo vendido.', 'aviso'],
         ['21:30', '<strong>Resumen de hoy</strong><span>214 personas entraron</span><span>96 ventas</span><span>B/. 1,840.50 vendidos</span><span>3 productos por pedir</span>', 'resumen'],
-      ],
-    },
-    clinica: {
-      negocio: 'Clínica de ejemplo',
-      bajada: 'Cómo llega una cita en una clínica de ejemplo, y lo que pasa para que el paciente no falte.',
-      pasos: [
-        ['El paciente agenda en línea', ' a cualquier hora; el asistente con IA le ofrece los espacios libres.'],
-        ['Le recordamos la cita', ' 2 días y 1 día antes.'],
-        ['Confirma con un toque, o libera la hora', ' para alguien de la lista de espera.'],
-        ['Si alguien no confirma, te avisa', ' a tiempo para llamarlo.'],
-        ['Al cerrar, el resumen del día', ' te llega al teléfono.'],
-      ],
-      chat: [
-        ['22:47', 'Nueva cita agendada por el asistente: martes 10:30 a. m., consulta de control.'],
-        ['08:00', 'Recordatorio enviado a los 18 pacientes de mañana.'],
-        ['10:15', '16 confirmaron. 1 canceló y su hora ya se ofreció a la lista de espera.'],
-        ['17:00', '<strong>Aviso:</strong> 2 pacientes de mañana no han confirmado su cita.', 'aviso'],
-        ['18:30', '<strong>Resumen de hoy</strong><span>18 citas</span><span>17 atendidas</span><span>1 reprogramada</span><span>Inasistencias del mes: 4 %</span>', 'resumen'],
       ],
     },
     hotel: {

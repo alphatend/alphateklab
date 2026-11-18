@@ -1,123 +1,34 @@
-# alphateklab · portada de productos y sitio de Citas Médicas
+# alphateklab.com · el sitio de la agencia
 
-**Desde el 17-nov-2026** (Edwin) la raíz, `index.html`, es la **portada nueva de alphateklab**: la propuesta de rediseño
-que se hizo para dev.alphateklab.com (en la Mac de Edwin, `propuesta-dev-v2`), con sus páginas en la raíz
-(`servicio-*.html`, `negocio-*.html`, `tipo-*.html`, `servicios.html`, `soluciones.html`, `paquetes.html`, `demos.html`,
-`equipos.html`, `telefono.html`, `como-trabajamos.html`) y sus recursos en `assets/v2.css`, `assets/v2.js`,
-`assets/sistema.js`, `assets/equipo/`, `assets/qr-mesa.svg` y `assets/v2/` (allí van el logo, los íconos y dos tarjetas
-de demos que tienen el mismo nombre que los del sitio pero otro contenido). Es HTML estático: se edita a mano.
-`generar-portada.mjs --raiz` ya solo escribe `food/`; la portada anterior (Med, Food y alphatend) se ve en la vista
-previa (`portada-nueva/`) y en el historial. Med, Food, el expediente, las guías y las demos privadas siguen igual.
-Se quitaron de la propuesta lo que estaba por confirmar (RUC, aviso de operación, preguntas sin respuesta, la foto del
-equipo, los casos de Resultados y las horas de respuesta). Los enlaces a privacidad, guías, créditos y el laboratorio
-siguen yendo a dev.alphateklab.com. Las páginas nuevas todavía no están en el sitemap.
+**Desde el 17-nov-2026 alphateklab.com es solo la agencia** (Jonathan: «Solo quiero que exista alphateklab.com, donde
+ofrecemos nuestros servicios. Nada de cuentas.alphateklab.com, nada de lo médico aparte»; y sin tarjetas de lealtad):
 
-**Desde el 8-oct-2026** (Edwin) la raíz de alphateklab.com es la **portada de alphateklab**, con sus productos: **Med**
-(en `med/`; se llamó Citas Médicas hasta el 10-oct, `PRODUCTO` en `datos/producto.mjs`), **Food** (cafeterías, bares y restaurantes: pedidos por QR y software a la medida, en `food/`; la tarjeta de lealtad, Vuelve, está oculta desde el 11-oct)
-y **alphatend** (su propio dominio). La genera `herramientas/generar-portada.mjs` desde `datos/portada.mjs` y
-`datos/food.mjs`; ver «Portada y Food» abajo.
+- **La raíz** es la portada nueva de Edwin (su commit 30d862f, la propuesta de rediseño que estuvo en dev.alphateklab.com),
+  con sus páginas en la raíz (`servicio-*.html`, `negocio-*.html`, `tipo-*.html`, `servicios.html`, `soluciones.html`,
+  `paquetes.html`, `demos.html`, `equipos.html`, `telefono.html`, `como-trabajamos.html`) y sus recursos en
+  `assets/v2.css`, `assets/v2.js`, `assets/sistema.js`, `assets/equipo/`, `assets/qr-mesa.svg` y `assets/v2/`.
+  Es HTML estático: **se edita a mano** (no hay generador para estas páginas).
+- **Se quitaron (17-nov):** Med entero (`med/`, `citasmed/`, `expediente-clinico/`, `expediente-clinico-electronico-panama/`,
+  `entrar/`, `registro/`, `terminos/`, su privacidad, su 404, sus generadores `generar-citas`, `capturas-citas`,
+  `imagenes-citas`, `og-citas`, sus datos `producto`, `paginas`, `guias-citas` y sus pruebas), la sección Clínicas y sus
+  servicios (agente de citas, videoconsulta, expediente del paciente, turnos en sala de espera, encuesta después de la
+  cita), el programa de clientes frecuentes (lealtad) y las secciones viejas del catálogo (`servicios/`, `soluciones/`,
+  `cotizar/`, `diagnostico/`), que las páginas nuevas reemplazan. Todo sigue en el historial de git (el último commit
+  con Med es 30d862f).
+- **Sin subdominios:** nada enlaza a dev.alphateklab.com ni a cuentas.alphateklab.com (lo cuida
+  `pruebas/solo-agencia.test.mjs`). Lo que la portada nueva tomaba de dev se trajo aquí: la privacidad de la agencia
+  (`privacidad/`, con los formularios) y las demos del laboratorio (`laboratorio/sensores`, `camara`, `recorrido-360`,
+  `recorrido-3d`). Siguen del sitio de antes, con su estilo: `guias/`, `creditos/`, `laboratorio/` y `404.html`.
+- **El formulario «Pedir mi propuesta»** (portada, paquetes y teléfono) manda el mensaje y el correo o WhatsApp por
+  FormSubmit al mismo `destino` que Food (`datos/food.mjs`); antes no mandaba nada (venía del prototipo).
+- **La demo de reservas** se enlaza en su página de cabañas (`alphateklab-reservas/alojamiento.html`); la demo trae
+  todavía la plantilla de consultorio en su propio repositorio.
+- **Food** (`food/`) la genera `node herramientas/generar-portada.mjs --raiz` desde `datos/portada.mjs` y
+  `datos/food.mjs` (ya sin Med). Vuelve (la tarjeta de lealtad) sigue oculta (`publicado: false`).
+- **Pruebas:** `npm run prueba`. `llms.txt` y `sitemap.xml` se escribieron a mano el 17-nov desde los títulos y
+  descripciones de las páginas: si cambian las páginas, se actualizan.
 
-Del 7 al 8-oct alphateklab.com vendía solo **Citas Médicas**, el sistema de agenda y expediente para clínicas y
-consultorios (decisión de Edwin): su portada es una sola página larga (desde el 8-oct en `med/`), con privacidad, 404
-y /citasmed/ (lleva a `med/`). El sitio de la agencia (catálogo de servicios, soluciones por negocio, guías, demos, cotizador) quedó entero
-en la rama **`sitio-agencia`**; para volver a él: `git checkout sitio-agencia -- .` sobre `main` (o publicar esa rama).
-
-- **Generar, en este orden:** `node herramientas/generar-portada.mjs --raiz` (la raíz, `index.html`, y `food/`) y
-  después `node herramientas/generar-citas.mjs`. Este escribe `med/` (la portada de Citas Médicas), las páginas de
-  función y las guías, `privacidad/`, `terminos/`, `404.html`, `citasmed/`, `sitemap.xml`, `robots.txt` y `llms.txt`
-  (el sitemap, llms.txt y la privacidad nombran `food/` si está); con el registro en línea (`REGISTRO` en
-  `datos/sitio.mjs`), también `registro/` y `entrar/`, que siguen en la raíz. No se editan a mano los HTML generados. Ojo: en los scripts que van dentro de una plantilla
-  del generador, las barras invertidas van dobles (`\\s`, `\\/`); si no, se pierden y el script no corre.
-- **Contenido:**
-  - Todo sale de `datos/producto.mjs`: los precios, las dos partes (Agenda y Expediente), las filas de funciones, la
-    conversación del recordatorio, el dictado, la hoja impresa, los accesos, los pasos y las preguntas.
-  - El contacto (WhatsApp y correo) sale de `datos/sitio.mjs`. Sin contacto, la portada sale sin el formulario de la
-    prueba y dice que respondan el correo con el que les llegó la página (`PRUEBA.sinContacto`). Para verlo en local: `WHATSAPP=507… CORREO=… node herramientas/generar-citas.mjs`, y antes de publicar,
-    generar otra vez sin esas variables.
-- **Precios (Edwin, 7-oct; los mismos de la app, `web/js/nucleo/plan.mjs` de citas-piloto):** son netos, sin sumar ITBMS.
-  - Expediente: $29.99 al mes por profesional (cada médico que hace expedientes; la recepción, enfermería y
-    administración no pagan).
-  - Agenda: $14.99 al mes por clínica. Los mensajes de WhatsApp van APARTE: sin paquete (la recepción manda cada
-    recordatorio con un toque desde el WhatsApp de la clínica), o 200, 500 o 1000 al mes por $15, $25 o $35, que salen
-    solos. «Sin paquete» es lo que viene marcado (Edwin, 8-oct): que los $14.99 no parezcan incluir los mensajes.
-  - Al lado, el precio de antes tachado: $49.99 el expediente y $34.99 la agenda, en las tarjetas y en Precios
-    (`PRECIOS.antes`; Edwin, 7-oct). Solo se muestra: no se cobra ni se suma. Los mensajes no llevan tachado.
-  - Prueba gratis de 7 días, sin tarjeta, y después mes a mes, sin plan anual.
-- **Propuesta de valor (Edwin, 7-oct):** el expediente que el médico dicta con IA, sin escribir a mano ni teclear,
-  explicado para el médico joven y para el que no se lleva con la tecnología. El expediente va primero en todo (héroe,
-  tarjetas, secciones, precios, calculadora); la agenda después, explicada por lo que ahorra: la secretaria ya no llama
-  paciente por paciente. En las tarjetas de los planes, poco (lo destacado y lo esencial); el detalle, en las secciones.
-- **Iniciar sesión (Edwin, 7-oct):** arriba, «Iniciar sesión» (en el teléfono, «Entrar») lleva a `entrar/`: se escribe el
-  usuario (o se pega la dirección) y pasa a `<clínica>.alphateklab.com/entrar.html?usuario=…`. La clínica la dice el
-  servicio de cuentas (`cuentas.alphateklab.com/api/clinica?usuario=…`): en las cuentas del registro viejo el usuario
-  no es la dirección (`edwincutire` en `clinica-alpha`). Si no contesta, va por lo de antes del primer punto. Con el
-  correo no se puede.
-- **Cabecera y tema:** arriba solo el logo de alphateklab, como antes. La página sale en claro aunque el equipo esté en
-  oscuro, y el botón de la luna pasa al oscuro (se recuerda en `localStorage`, `atk-tema`); las capturas oscuras las
-  pone `js/citas.js` desde `data-oscuro`.
-- **Estilo:** `assets/citas.css` sobre los tokens de `assets/atk.css`; el script es `js/citas.js` (tema, menú,
-  animaciones, calculadora y formulario). Edwin pidió una portada con más vida, como las de los programas médicos
-  grandes.
-  - **Movimiento:**
-    - Las tarjetas del héroe entran con CSS.
-    - Lo demás aparece al bajar con `animation-timeline: view()`.
-    - La conversación y el dictado se animan solo mientras se ven.
-    - Con «reducir movimiento», o sin soporte, todo queda quieto y visible: nada espera al JavaScript para verse.
-  - **Lo que no lleva:** testimonios, logos de clientes ni cifras sin fuente.
-- **Pantallas:**
-  - Son capturas reales del piloto (`~/alphateklab/piloto-citas`) con un consultorio y pacientes inventados.
-  - `node herramientas/capturas-citas.mjs <carpeta>` las saca en claro y oscuro, levantando un servidor temporal del
-    piloto (`PILOTO=<carpeta>` para otra copia del código).
-  - `node herramientas/imagenes-citas.mjs <carpeta>` las pasa a WebP en `assets/producto/citas-*.webp`.
-  - `node herramientas/og-citas.mjs` rehace `assets/og-citas.jpg`, la imagen al compartir.
-- **Pruebas (cerrojos):**
-  - `npm run prueba` (`node --test pruebas/citas.test.mjs pruebas/portada.test.mjs pruebas/sintaxis.test.mjs`) revisa
-    que lo publicado esté al día con `datos/`, los precios, los enlaces, las imágenes, los datos estructurados y el
-    formulario de Food.
-  - `node pruebas/navegador/citas.mjs <url>` (también con `MOTOR=webkit`) revisa de 320 a 1440 px (también la raíz y
-    Food), la consola, el menú, los paquetes, la calculadora, el formulario, las animaciones, el modo oscuro y los
-    títulos.
-- **Portada y Food (8-oct):**
-  - **Vuelve oculta (Edwin, 11-oct: «de momento no ofreceremos ese servicio»; no se borra):** su servicio lleva
-    `publicado: false` en `datos/food.mjs` y no sale nada de ella en la portada, food/ ni llms.txt (ni tarjeta, ni
-    sección, ni accesos de arriba, ni preguntas); sus datos siguen ahí. Sin ella, «Probar gratis» de food/ va directo
-    a #contacto y no hay «Iniciar sesión». Para volver a ponerla: `publicado: true` y devolver los textos generales de
-    Food (título, descripción, héroe, formulario y su tarjeta de la portada en `datos/portada.mjs`) a los del commit
-    11c67ae; `pruebas/portada.test.mjs` exige hoy que no aparezca, así que esa prueba cambia también.
-  - La vista previa sin publicar: `node herramientas/generar-portada.mjs` escribe `portada-nueva/` (noindex). No se
-    versiona.
-  - Food no tiene WhatsApp: «Contactar» lleva a su formulario (nombre, correo y lo que necesitan), que manda
-    FormSubmit (formsubmit.co) al `destino` de `datos/food.mjs`. Sin destino, `--raiz` no genera. El primer envío
-    desde el sitio publicado le llega a ese correo para activar el formulario.
-  - El caso real de Food son pantallas del sistema de pedidos por QR de un restaurante: no se nombra al restaurante
-    ni se ve su logo (pedido de Edwin).
-  - `med.alphateklab.com` y `food.alphateklab.com` van hoy al servidor de las clínicas (comodín `*.alphateklab.com`):
-    para usarlos, que lleven a `med/` y `food/` desde ese servidor y quedar reservados para que ninguna clínica los
-    tome.
-  - Correr las dos contra local y contra el sitio en vivo después de cada push.
-- **Buscadores (8-oct):**
-  - **Páginas de función:** la portada resume y `datos/paginas.mjs` da el detalle de cada parte en su propia página: hoy `expediente-clinico/`.
-    - Cada una lleva el título y la descripción a la medida de Google (≤70 y ≤160), su canónica, las migas y sus preguntas en JSON-LD.
-    - Va en el sitemap, en `llms.txt` y en el pie de todas las páginas, y su sección de la portada la enlaza («Todo sobre…»).
-    - Lo que dicen está comprobado en el código del sistema: si el sistema cambia, se cambian.
-  - **Guías:** van en `datos/guias-citas.mjs`; `datos/guias.mjs` es de la agencia.
-    - Hoy hay una: `expediente-clinico-electronico-panama/`, sobre lo que pide la ley.
-    - Cada dato legal lleva su norma, su artículo y el enlace a la Gaceta Oficial. La prueba exige que cada enlace de afuera esté en las fuentes y sea un `.gob.pa`.
-    - Lo que el texto de la ley no resuelve va a «preguntarle a un abogado».
-  - **Investigación del 8-oct:** en Panamá se busca «expediente clínico electrónico en Panamá» y «ley 68 expediente clínico».
-    - «Citas Médicas» solo trae pacientes que buscan cita en la CSS: los títulos dicen la función.
-    - Nada de páginas por especialidad o por ciudad con el mismo texto (serían páginas puerta).
-  - **La de la agenda espera:** la portada vende paquetes de mensajes que «salen solos» y el sistema todavía no manda nada solo (ver el comentario en `datos/paginas.mjs`).
-  - **`llms.txt`** (para ChatGPT y compañía, que es por donde más llega la gente a alphatend) sale de los mismos datos.
-  - **IndexNow:** la clave está en `datos/sitio.mjs` y se sirve en `/<clave>.txt`. Después de publicar y de que Pages termine: `node herramientas/indexnow.mjs`.
-  - **HTTPS obligatorio** en GitHub Pages (`https_enforced`, 8-oct): http y www van a `https://alphateklab.com/`.
-  - **Cerrojos de `pruebas/citas.test.mjs`:** las pruebas «para los buscadores».
-- **Pendiente (7-oct):** quitar del repositorio las páginas y fuentes del sitio de la agencia que siguen en `main`
-  (`servicios/`, `soluciones/`, `guias/`, `laboratorio/`, `cotizar/`, `diagnostico/`, `creditos/`, sus `datos/`, `js/`,
-  pruebas y herramientas). La portada ya no las enlaza, pero se abren por su dirección. Están a salvo en
-  `sitio-agencia`.
-
-Lo de abajo describe el sitio de la agencia (rama `sitio-agencia`).
+Lo de abajo describe el sitio de la agencia de antes (rama `sitio-agencia`); queda como historia.
 
 # Sitio de la agencia (hasta el 6-oct-2026)
 

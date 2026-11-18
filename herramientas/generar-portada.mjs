@@ -152,13 +152,13 @@ function cabecera({ R, menu, accion, movil = '' }) {
 }
 
 function pie(R) {
-  const destino = { med: R.a('med/'), food: R.food(), alphatend: 'https://alphatend.com/' };
+  const destino = { food: R.food(), alphatend: 'https://alphatend.com/' };
   const productos = PRODUCTOS.map((p) => `<li><a href="${destino[p.id] ?? R.portada(`#${p.id}`)}">${esc(p.nombre)}</a></li>`).join('');
   return `<footer class="portada-pie">
   <div class="envoltura portada-pie__fila">
     <img class="logo logo--claro" src="${R.a('assets/marca/logo-claro.svg')}" alt="alphateklab" width="142" height="32" loading="lazy" /><img class="logo logo--oscuro" src="${R.a('assets/marca/logo-oscuro.svg')}" alt="alphateklab" width="142" height="32" loading="lazy" />
     <nav aria-label="Productos, al pie"><ul>${productos}</ul></nav>
-    <nav aria-label="Legal"><ul><li><a href="${R.a('privacidad/')}">Privacidad</a></li><li><a href="${R.a('terminos/')}">Términos</a></li></ul></nav>
+    <nav aria-label="Legal"><ul><li><a href="${R.a('privacidad/')}">Privacidad</a></li></ul></nav>
     <p class="portada-pie__nota">© 2026 alphateklab · Panamá</p>
   </div>
 </footer>

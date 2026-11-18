@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="es-PA">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Recorrido 3D · alphateklab</title>
+<meta name="description" content="Camina como en un videojuego por un apartamento de ejemplo de 95 m²: entra a cada ambiente, mide paredes y dibuja tu propio plano para recorrerlo en 3D. Demo del recorrido 3D para bienes raíces." />
+<link rel="canonical" href="/laboratorio/recorrido-3d/" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Recorrido 3D de una propiedad, como videojuego · alphateklab" />
+<meta property="og:description" content="Camina por un apartamento de ejemplo de 95 m² desde el teléfono, mide paredes y dibuja tu propio plano para recorrerlo en 3D." />
+<meta property="og:url" content="https://alphateklab.com/laboratorio/recorrido-3d/" />
+<meta property="og:locale" content="es_PA" />
+<meta property="og:image" content="https://alphateklab.com/laboratorio/recorrido-3d/img/og-recorrido-3d.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Vista desde arriba del apartamento de ejemplo en 3D, sin techo: sala-comedor con balcón, cocina, tres recámaras y dos baños." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="theme-color" content="#f7f5ef" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#161b1c" media="(prefers-color-scheme: dark)" />
+<link rel="icon" href="../../assets/marca/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="../../assets/marca/favicon-32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="../../assets/marca/favicon-180.png" />
+<link rel="preload" href="../../assets/fuentes/manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="../../assets/fuentes/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="../../assets/atk.css" />
+<link rel="stylesheet" href="demo.css" />
+<script type="module" src="js/pagina.mjs"></script>
+<noscript><style>.pestanas, .visor__entrada, .ayuda { display: none; }</style></noscript>
+</head>
+<body>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+<header class="cabecera">
+  <div class="envoltura cabecera__fila">
+    <a class="marca" href="../../"><picture><source media="(prefers-color-scheme: dark)" srcset="../../assets/marca/logo-oscuro.svg" /><img src="../../assets/marca/logo-claro.svg" alt="alphateklab, inicio" width="142" height="32" /></picture></a>
+    <nav class="nav" aria-label="Principal">
+      <a href="/servicios.html">Servicios</a>
+      <a href="../">Demos</a>
+      <a href="/#pregunta">Pregúntanos</a>
+    </nav>
+  </div>
+</header>
+
+<main id="contenido" class="envoltura">
+  <nav class="migas" aria-label="Estás en">
+    <a href="../../">alphateklab</a><span aria-hidden="true">/</span><a href="../">demos</a><span aria-hidden="true">/</span><span aria-current="page">recorrido 3D</span>
+  </nav>
+
+  <div class="titular">
+    <h1 class="display titular__h1">Recorrido 3D de una propiedad, como videojuego</h1>
+    <p class="titular__bajada">Para agentes de bienes raíces: quien busca casa camina por el apartamento desde su teléfono, entra a cada cuarto y mide lo que quiera antes de agendar la visita.</p>
+  </div>
+
+  <div class="disposicion">
+    <section class="demo" aria-label="Demostración">
+      <div class="pestanas" role="tablist" aria-label="Qué quieres hacer">
+        <button class="pestanas__boton" type="button" role="tab" id="pestana-recorrido" aria-controls="panel-recorrido" aria-selected="true">Recorrido en 3D</button>
+        <button class="pestanas__boton" type="button" role="tab" id="pestana-editor" aria-controls="panel-editor" aria-selected="false" tabindex="-1">Dibuja tu plano</button>
+      </div>
+
+      <div class="panel" id="panel-recorrido" role="tabpanel" aria-labelledby="pestana-recorrido">
+        <p class="aviso-propio" id="aviso-propio" hidden>
+          <span id="aviso-propio-texto">Estás recorriendo tu plano.</span>
+          <button class="boton boton--senal boton--chico" type="button" id="actualizar-propio" hidden>Ver los cambios en 3D</button>
+          <button class="boton boton--linea boton--chico" type="button" id="volver-ejemplo">Volver al apartamento de ejemplo</button>
+          <button class="boton boton--linea boton--chico" type="button" id="seguir-editando">Seguir dibujando</button>
+        </p>
+        <div class="visor" id="visor" data-estado="reposo">
+          <div class="visor__escena" id="escena" role="region" aria-label="Recorrido 3D del apartamento de ejemplo" aria-describedby="ayuda-recorrido">
+            <picture class="visor__portada">
+              <source media="(max-width: 699px) and (prefers-color-scheme: dark)" srcset="img/vista-previa-vertical-oscura.webp" width="800" height="1000" />
+              <source media="(max-width: 699px)" srcset="img/vista-previa-vertical.webp" width="800" height="1000" />
+              <source media="(prefers-color-scheme: dark)" srcset="img/vista-previa-oscura.webp" width="1600" height="1000" />
+              <img src="img/vista-previa.webp" width="1600" height="1000" alt="Vista desde arriba del apartamento de ejemplo en 3D, sin techo: sala-comedor con balcón a la izquierda, cocina, tres recámaras arriba y dos baños." />
+            </picture>
+            <div class="visor__entrada" id="entrada">
+              <button class="boton boton--senal" type="button" id="entrar">Entrar al recorrido</button>
+              <p class="visor__peso">Caminas con las flechas del teclado o con el dedo, como en un videojuego.</p>
+            </div>
+            <div class="visor__estado" id="estado-visor" hidden>
+              <div class="visor__estado-caja" role="status">
+                <span class="giro" aria-hidden="true"></span>
+                <p id="estado-texto">Cargando el visor 3D…</p>
+                <button class="boton boton--senal" type="button" id="reintentar" hidden>Volver a intentarlo</button>
+              </div>
+            </div>
+            <p class="visor__ambiente" id="hud-ambiente" aria-hidden="true" hidden></p>
+            <div class="visor__minimapa" id="minimapa" hidden></div>
+            <span class="visor__mira" id="mira" aria-hidden="true" hidden></span>
+            <div class="visor__joystick" id="joystick" aria-hidden="true" hidden><span class="visor__pomo" id="pomo"></span></div>
+            <div class="visor__capa-medidas" id="capa-medidas" aria-hidden="true"></div>
+            <p class="visor__consejo" id="consejo" aria-hidden="true" hidden></p>
+          </div>
+          <div class="visor__barra" id="barra" hidden>
+            <button class="boton boton--linea" type="button" id="b-vista">Ver desde arriba</button>
+            <button class="boton boton--linea" type="button" id="b-medir" aria-pressed="false">Medir</button>
+            <button class="boton boton--linea" type="button" id="b-borrar-medidas" hidden>Borrar medidas</button>
+            <button class="boton boton--linea solo-mouse" type="button" id="b-mouse">Mirar con el mouse</button>
+            <button class="boton boton--linea" type="button" id="b-completa">Pantalla completa</button>
+          </div>
+        </div>
+        <div class="ayuda" id="ayuda-recorrido">
+          <p><span class="ayuda__quien">Con teclado:</span> <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> o las flechas para caminar (las flechas de los lados giran) y <kbd>Mayús</kbd> para ir más rápido. Arrastra con el mouse para mirar. <kbd>V</kbd> cambia la vista y <kbd>M</kbd> mide.</p>
+          <p><span class="ayuda__quien">Con el dedo:</span> el pulgar izquierdo camina con el joystick y el derecho mira arrastrando. Toca el minimapa para agrandarlo y elegir a qué ambiente ir.</p>
+        </div>
+        <div class="medidas" id="medidas" hidden>
+          <h3 class="medidas__titulo">Medidas</h3>
+          <ol class="medidas__lista num" id="lista-medidas"></ol>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-editor" role="tabpanel" aria-labelledby="pestana-editor" hidden>
+        <p class="editor__intro">Dibuja cada ambiente arrastrando sobre la cuadrícula (cada cuadro mide 0.50 m), ponle nombre y puertas, y recórrelo en 3D.</p>
+        <div class="editor">
+          <div class="editor__principal">
+            <fieldset class="herramientas">
+              <legend class="sr">Herramienta</legend>
+              <label class="herramientas__opcion"><input type="radio" name="herramienta" value="ambiente" checked /><span>Ambiente</span></label>
+              <label class="herramientas__opcion"><input type="radio" name="herramienta" value="puerta" /><span>Puerta</span></label>
+              <label class="herramientas__opcion"><input type="radio" name="herramienta" value="ventana" /><span>Ventana</span></label>
+              <label class="herramientas__opcion"><input type="radio" name="herramienta" value="borrar" /><span>Borrar</span></label>
+            </fieldset>
+            <div class="editor__tipo">
+              <label for="tipo-nuevo">Tipo del próximo ambiente</label>
+              <select id="tipo-nuevo">
+                <option value="sala">Sala o comedor</option>
+                <option value="recamara">Recámara</option>
+                <option value="bano">Baño</option>
+                <option value="cocina">Cocina</option>
+                <option value="lavanderia">Lavandería</option>
+                <option value="pasillo">Pasillo</option>
+                <option value="balcon">Balcón o terraza</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+            <p class="editor__pista" id="editor-pista">Arrastra sobre la cuadrícula para dibujar un rectángulo.</p>
+            <div class="editor__lienzo" id="editor-lienzo"></div>
+            <p class="editor__mensaje" id="editor-mensaje" role="status"></p>
+          </div>
+          <div class="editor__lado">
+            <div class="formulario__fila editor__nombre">
+              <label for="editor-nombre">Nombre del plano</label>
+              <input id="editor-nombre" type="text" maxlength="60" autocomplete="off" />
+            </div>
+            <h3 class="editor__h3">Ambientes <span class="num editor__total" id="editor-total"></span></h3>
+            <ul class="editor__lista" id="editor-lista"></ul>
+            <p class="editor__vacio" id="editor-vacio" hidden>Todavía no hay ambientes. Arrastra sobre la cuadrícula o agrégalos con medidas.</p>
+            <ul class="editor__avisos" id="editor-avisos"></ul>
+            <details class="editor__plegable">
+              <summary>Agregar un ambiente con medidas</summary>
+              <form class="formulario" id="form-ambiente" novalidate>
+                <div class="formulario__fila">
+                  <label for="fa-nombre">Nombre</label>
+                  <input id="fa-nombre" name="nombre" type="text" maxlength="40" autocomplete="off" placeholder="Recámara 2" />
+                </div>
+                <div class="formulario__fila">
+                  <label for="fa-tipo">Tipo</label>
+                  <select id="fa-tipo" name="tipo"></select>
+                </div>
+                <div class="formulario__cuatro">
+                  <div><label for="fa-x">Desde la izquierda (m)</label><input id="fa-x" name="x" type="text" inputmode="decimal" autocomplete="off" value="0" /></div>
+                  <div><label for="fa-y">Desde arriba (m)</label><input id="fa-y" name="y" type="text" inputmode="decimal" autocomplete="off" value="0" /></div>
+                  <div><label for="fa-ancho">Ancho (m)</label><input id="fa-ancho" name="ancho" type="text" inputmode="decimal" autocomplete="off" value="3" /></div>
+                  <div><label for="fa-largo">Largo (m)</label><input id="fa-largo" name="largo" type="text" inputmode="decimal" autocomplete="off" value="3" /></div>
+                </div>
+                <button class="boton boton--linea" type="submit">Agregar ambiente</button>
+              </form>
+            </details>
+            <details class="editor__plegable">
+              <summary>Agregar una puerta o ventana con medidas</summary>
+              <form class="formulario" id="form-abertura" novalidate>
+                <div class="formulario__fila">
+                  <label for="fp-tipo">Qué</label>
+                  <select id="fp-tipo" name="tipo"><option value="puerta">Puerta (0.80 m)</option><option value="ventana">Ventana (1.00 m)</option></select>
+                </div>
+                <div class="formulario__fila">
+                  <label for="fp-ambiente">En el ambiente</label>
+                  <select id="fp-ambiente" name="ambiente"></select>
+                </div>
+                <div class="formulario__fila">
+                  <label for="fp-lado">Pared</label>
+                  <select id="fp-lado" name="lado"><option value="arriba">De arriba</option><option value="abajo">De abajo</option><option value="izquierda">De la izquierda</option><option value="derecha">De la derecha</option></select>
+                </div>
+                <div class="formulario__fila">
+                  <label for="fp-pos">Centro a cuántos metros de la esquina de arriba o de la izquierda</label>
+                  <input id="fp-pos" name="pos" type="text" inputmode="decimal" autocomplete="off" value="1" />
+                </div>
+                <button class="boton boton--linea" type="submit">Agregar</button>
+              </form>
+            </details>
+            <div class="editor__acciones">
+              <button class="boton boton--senal" type="button" id="ver-3d">Ver en 3D</button>
+              <button class="boton boton--linea" type="button" id="deshacer" disabled>Deshacer</button>
+              <button class="boton boton--linea" type="button" id="exportar">Descargar una copia del plano</button>
+              <label class="boton boton--linea" for="importar">Cargar una copia</label>
+              <input class="sr" type="file" id="importar" accept="application/json,.json" />
+              <button class="boton boton--linea" type="button" id="restablecer">Restablecer datos de ejemplo</button>
+              <button class="boton boton--linea" type="button" id="vaciar">Empezar en blanco</button>
+            </div>
+            <p class="editor__nota" id="editor-nota">Tu dibujo se guarda solo en este navegador; no se envía a ningún lado.</p>
+          </div>
+        </div>
+      </div>
+      <noscript><p class="aviso-demo">El recorrido y el editor necesitan JavaScript. El plano y la lista de ambientes de abajo se ven sin él.</p></noscript>
+    </section>
+
+    <aside class="info" aria-label="Sobre esta demo">
+      <section aria-labelledby="h-que">
+        <h2 class="info__h2" id="h-que">Qué estás viendo</h2>
+        <!-- gen:resumen -->
+<p>Un apartamento de ejemplo de <span class="num">95.04 m²</span> (88.00 m² adentro y 7.04 m² de balcón) con sala-comedor, cocina, tres recámaras, dos baños, lavandería y balcón. Es un <strong>modelo de ejemplo dibujado a partir de un plano, no un escaneo</strong>: la propiedad no existe.</p>
+<!-- /gen:resumen -->
+        <p>Caminas a la altura de los ojos (1.60 m) y las paredes no se atraviesan. El área de cada ambiente se calcula del plano y lo que mides sale de la misma geometría.</p>
+        <p class="info__propio" id="info-propio" hidden>Ahora recorres el plano que dibujaste. Este texto, el plano y la tabla de ambientes son del apartamento de ejemplo.</p>
+      </section>
+      <section aria-labelledby="h-como">
+        <h2 class="info__h2" id="h-como">Cómo se hace con una propiedad real</h2>
+        <p>Con una cámara 360 en trípode (la Insta360 X5 salió en abril de 2025 a <a href="https://www.insta360.com/blog/news/insta360-launches-X5-360-action-cam.html" rel="noopener">$549.99</a>) tomamos una foto esférica en cada ambiente. Quien la abre gira la vista y salta de un ambiente al siguiente, pero no camina ni mide: es lo que muestra la <a href="../recorrido-360/">demo del recorrido 360</a>.</p>
+        <p>Para caminar como aquí hace falta un modelo 3D. Lo escaneamos con un iPhone Pro con sensor LiDAR, que toma la forma de cada ambiente con sus medidas, o grabamos video y una app como Scaniverse o Polycam lo convierte en un modelo de puntos (un «splat») que se ve como la propiedad. El modelo se limpia y se comprime para que abra en un teléfono (un escaneo de 1 GB en formato PLY <a href="https://blog.playcanvas.com/playcanvas-open-sources-sog-format-for-gaussian-splatting/" rel="noopener">quedó en 42 MB en formato SOG</a>) y se publica en un enlace de tu dominio, para tu anuncio o tu WhatsApp, con un visor de código abierto (Spark, en el caso de un splat), sin la suscripción de una plataforma de recorridos.</p>
+        <p>Para la toma o el escaneo, la propiedad tiene que estar con las luces encendidas, las cortinas abiertas y todo en orden.</p>
+        <p>No prometemos que se venda más caro: un <a href="https://www.library.hbs.edu/working-knowledge/are-virtual-tours-still-worth-it-in-real-estate-evidence-from-75000-home-sales" rel="noopener">estudio de Harvard Business School e Ivey con 75,178 ventas en Los Ángeles</a> (2023) no encontró efecto del recorrido sobre el precio cuando se controla la calidad de las fotos. Sirve para que quien agenda la visita ya sepa cómo es la propiedad.</p>
+      </section>
+      <section aria-labelledby="h-simulado">
+        <h2 class="info__h2" id="h-simulado">Qué es simulado aquí y qué no</h2>
+        <p><span class="info__dato">Simulado:</span> la propiedad, que es ficticia; las paredes lisas, sin muebles, con materiales y luz hechos en código. En un recorrido real ves la propiedad como es, con sus muebles y su luz. Un escaneo real también pesa más (decenas de megabytes, contra menos de medio megabyte de esta página con el 3D incluido) y en un teléfono modesto se mueve con menos soltura.</p>
+        <p><span class="info__dato">Funciona de verdad en esta demo:</span> caminar sin atravesar las paredes, el minimapa, la vista desde arriba, medir, el área de cada ambiente y el editor de planos, que descarga y vuelve a cargar una copia del dibujo. Tu dibujo queda solo en este navegador. El visor (three.js, 170 KB comprimidos) se descarga de cdn.jsdelivr.net cuando esa parte de la página aparece en pantalla. En una propiedad real, el escaneo trae la forma y las medidas; los choques con las paredes, el minimapa y las fichas con los m² de cada ambiente se arman con el plano que sale del escaneo (servicio B03) y se cotizan aparte.</p>
+      </section>
+      <section aria-labelledby="h-servicios">
+        <h2 class="info__h2" id="h-servicios">Servicios relacionados</h2>
+        <!-- gen:servicios -->
+<ul class="relacionados">
+          <li><a href="/servicio-recorrido-3d.html">Recorrido 360 y 3D de la propiedad</a></li>
+          <li><a href="/servicio-planos-desde-el-escaneo.html">Plano con medidas a partir del escaneo</a></li>
+          <li><a href="/servicio-fotos-de-la-propiedad.html">Fotos profesionales de la propiedad</a><span class="relacionados__precio num">+$300, como extra del recorrido 360 o 3D</span></li>
+          <li><a href="/servicio-sitio-de-propiedades.html">Sitio de propiedades con fichas y recorridos</a></li>
+          <li><a href="/servicio-agente-de-whatsapp-para-inmobiliarias.html">Agente de WhatsApp para prospectos de bienes raíces</a></li>
+          <li><a href="/servicio-tomas-con-dron.html">Tomas aéreas con dron</a></li>
+        </ul>
+<!-- /gen:servicios -->
+        <p class="info__mas">alphateklab también hace páginas web, apps, software a medida y automatizaciones. <a href="/servicios.html">Ver todos los servicios</a></p>
+        <p class="info__cotizar"><a class="boton boton--senal" href="/#pregunta">Preguntar por el recorrido para tus propiedades</a></p>
+      </section>
+    </aside>
+
+    <section class="plano-ejemplo" aria-labelledby="h-plano">
+      <h2 class="plano-ejemplo__h2" id="h-plano">Plano del apartamento de ejemplo</h2>
+      <figure class="plano-ejemplo__figura">
+        <!-- gen:plano -->
+<svg class="plano-svg plano-svg--pagina" viewBox="-1.25 -1.25 12.75 11.35" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="titulo-plano-svg"><title id="titulo-plano-svg">Plano del apartamento de ejemplo: Recámara principal 12.92 m², Baño principal 3.52 m², Recámara 2 9.52 m², Recámara 3 9.52 m², Pasillo 7.52 m², Sala-comedor 27.56 m², Cocina 10.08 m², Baño 2 3.52 m², Lavandería 3.84 m², Balcón 7.04 m².</title><g class="pl-pisos"><polygon class="pl-piso pl-piso--recamara" data-ambiente="recamara-principal" points="0,0 3.8,0 3.8,3.4 0,3.4"/><polygon class="pl-piso pl-piso--bano" data-ambiente="bano-principal" points="3.8,0 5.4,0 5.4,2.2 3.8,2.2"/><polygon class="pl-piso pl-piso--recamara" data-ambiente="recamara-2" points="5.4,0 8.2,0 8.2,3.4 5.4,3.4"/><polygon class="pl-piso pl-piso--recamara" data-ambiente="recamara-3" points="8.2,0 11,0 11,3.4 8.2,3.4"/><polygon class="pl-piso pl-piso--pasillo" data-ambiente="pasillo" points="3.8,2.2 5.4,2.2 5.4,3.4 9.4,3.4 9.4,4.4 3.8,4.4"/><polygon class="pl-piso pl-piso--sala" data-ambiente="sala-comedor" points="0,3.4 3.8,3.4 3.8,4.4 6.6,4.4 6.6,8 0,8"/><polygon class="pl-piso pl-piso--cocina" data-ambiente="cocina" points="6.6,4.4 9.4,4.4 9.4,8 6.6,8"/><polygon class="pl-piso pl-piso--bano" data-ambiente="bano-2" points="9.4,3.4 11,3.4 11,5.6 9.4,5.6"/><polygon class="pl-piso pl-piso--lavanderia" data-ambiente="lavanderia" points="9.4,5.6 11,5.6 11,8 9.4,8"/><polygon class="pl-piso pl-piso--balcon" data-ambiente="balcon" points="0.6,8 5,8 5,9.6 0.6,9.6"/></g><g class="pl-muros"><line class="pl-muro pl-muro--exterior" x1="-0.1" y1="0" x2="1.1" y2="0" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="2.7" y1="0" x2="4.3" y2="0" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="4.3" y1="0" x2="4.9" y2="0" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="4.9" y1="0" x2="6" y2="0" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="7.6" y1="0" x2="8.8" y2="0" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="10.4" y1="0" x2="11.1" y2="0" stroke-width="0.2"/><line class="pl-muro pl-muro--interior" x1="3.74" y1="2.2" x2="5.46" y2="2.2" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="-0.06" y1="3.4" x2="3.86" y2="3.4" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="5.34" y1="3.4" x2="6" y2="3.4" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="6.8" y1="3.4" x2="8.4" y2="3.4" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="9.2" y1="3.4" x2="11.06" y2="3.4" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="3.74" y1="4.4" x2="9.46" y2="4.4" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="9.34" y1="5.6" x2="11.06" y2="5.6" stroke-width="0.12"/><line class="pl-muro pl-muro--exterior" x1="-0.1" y1="8" x2="1.2" y2="8" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="3.6" y1="8" x2="5.3" y2="8" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="6.3" y1="8" x2="7.3" y2="8" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="8.7" y1="8" x2="11.1" y2="8" stroke-width="0.2"/><line class="pl-muro pl-muro--baranda" x1="0.57" y1="9.6" x2="5.03" y2="9.6" stroke-width="0.06"/><line class="pl-muro pl-muro--exterior" x1="0" y1="-0.1" x2="0" y2="1.1" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="0" y1="2.3" x2="0" y2="3.6" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="0" y1="4.5" x2="0" y2="5.6" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="0" y1="7.2" x2="0" y2="8.1" stroke-width="0.2"/><line class="pl-muro pl-muro--baranda" x1="0.6" y1="7.97" x2="0.6" y2="9.63" stroke-width="0.06"/><line class="pl-muro pl-muro--interior" x1="3.8" y1="-0.06" x2="3.8" y2="1.4" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="3.8" y1="2.1" x2="3.8" y2="2.4" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="3.8" y1="3.2" x2="3.8" y2="3.4" stroke-width="0.12"/><line class="pl-muro pl-muro--baranda" x1="5" y1="7.97" x2="5" y2="9.63" stroke-width="0.06"/><line class="pl-muro pl-muro--interior" x1="5.4" y1="-0.06" x2="5.4" y2="3.46" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="6.6" y1="4.34" x2="6.6" y2="5.3" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="6.6" y1="7.1" x2="6.6" y2="8.06" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="8.2" y1="-0.06" x2="8.2" y2="3.46" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="9.4" y1="3.34" x2="9.4" y2="3.55" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="9.4" y1="4.25" x2="9.4" y2="7" stroke-width="0.12"/><line class="pl-muro pl-muro--interior" x1="9.4" y1="7.8" x2="9.4" y2="8.06" stroke-width="0.12"/><line class="pl-muro pl-muro--exterior" x1="11" y1="-0.1" x2="11" y2="1.1" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="11" y1="2.3" x2="11" y2="4.2" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="11" y1="4.2" x2="11" y2="4.8" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="11" y1="4.8" x2="11" y2="6.3" stroke-width="0.2"/><line class="pl-muro pl-muro--exterior" x1="11" y1="7.3" x2="11" y2="8.1" stroke-width="0.2"/></g><g class="pl-aberturas"><path class="pl-puerta pl-puerta--entrada" d="M0 3.6L0.9 3.6A0.9 0.9 0 0 1 0 4.5"/><line class="pl-vano" x1="3.8" y1="3.4" x2="3.8" y2="4.4"/><path class="pl-puerta" d="M3.8 3.2L3 3.2A0.8 0.8 0 0 1 3.8 2.4"/><path class="pl-puerta" d="M3.8 2.1L4.5 2.1A0.7 0.7 0 0 0 3.8 1.4"/><path class="pl-puerta" d="M6 3.4L6 2.6A0.8 0.8 0 0 1 6.8 3.4"/><path class="pl-puerta" d="M8.4 3.4L8.4 2.6A0.8 0.8 0 0 1 9.2 3.4"/><path class="pl-puerta" d="M9.4 3.55L10.1 3.55A0.7 0.7 0 0 1 9.4 4.25"/><line class="pl-vano" x1="6.6" y1="5.3" x2="6.6" y2="7.1"/><path class="pl-puerta" d="M9.4 7.8L10.2 7.8A0.8 0.8 0 0 0 9.4 7"/><line class="pl-corrediza" x1="1.2" y1="8.05" x2="2.52" y2="8.05"/><line class="pl-corrediza" x1="2.28" y1="7.95" x2="3.6" y2="7.95"/><line class="pl-ventana" x1="1.1" y1="0" x2="2.7" y2="0" stroke-width="0.2"/><line class="pl-vidrio" x1="1.1" y1="0" x2="2.7" y2="0"/><line class="pl-ventana" x1="0" y1="1.1" x2="0" y2="2.3" stroke-width="0.2"/><line class="pl-vidrio" x1="0" y1="1.1" x2="0" y2="2.3"/><line class="pl-ventana-alta" x1="4.3" y1="0" x2="4.9" y2="0"/><line class="pl-ventana" x1="6" y1="0" x2="7.6" y2="0" stroke-width="0.2"/><line class="pl-vidrio" x1="6" y1="0" x2="7.6" y2="0"/><line class="pl-ventana" x1="8.8" y1="0" x2="10.4" y2="0" stroke-width="0.2"/><line class="pl-vidrio" x1="8.8" y1="0" x2="10.4" y2="0"/><line class="pl-ventana" x1="11" y1="1.1" x2="11" y2="2.3" stroke-width="0.2"/><line class="pl-vidrio" x1="11" y1="1.1" x2="11" y2="2.3"/><line class="pl-ventana-alta" x1="11" y1="4.2" x2="11" y2="4.8"/><line class="pl-ventana" x1="11" y1="6.3" x2="11" y2="7.3" stroke-width="0.2"/><line class="pl-vidrio" x1="11" y1="6.3" x2="11" y2="7.3"/><line class="pl-ventana" x1="7.3" y1="8" x2="8.7" y2="8" stroke-width="0.2"/><line class="pl-vidrio" x1="7.3" y1="8" x2="8.7" y2="8"/><line class="pl-ventana" x1="5.3" y1="8" x2="6.3" y2="8" stroke-width="0.2"/><line class="pl-vidrio" x1="5.3" y1="8" x2="6.3" y2="8"/><line class="pl-ventana" x1="0" y1="5.6" x2="0" y2="7.2" stroke-width="0.2"/><line class="pl-vidrio" x1="0" y1="5.6" x2="0" y2="7.2"/></g><g class="pl-etiquetas pl-etiquetas--normales"><text class="pl-nombre" x="1.9" y="1.627" font-size="0.324" text-anchor="middle"><tspan x="1.9" dy="0">Recámara principal</tspan><tspan class="pl-area" x="1.9" dy="0.373" font-size="0.279">12.92 m²</tspan></text><text class="pl-nombre" x="4.7" y="0.582" font-size="0.273" text-anchor="middle"><tspan x="4.7" dy="0">Baño</tspan><tspan x="4.7" dy="0.314">principal</tspan><tspan class="pl-area" x="4.7" dy="0.314" font-size="0.235">3.52 m²</tspan></text><text class="pl-nombre" x="6.8" y="1.624" font-size="0.34" text-anchor="middle"><tspan x="6.8" dy="0">Recámara 2</tspan><tspan class="pl-area" x="6.8" dy="0.391" font-size="0.292">9.52 m²</tspan></text><text class="pl-nombre" x="9.6" y="1.624" font-size="0.34" text-anchor="middle"><tspan x="9.6" dy="0">Recámara 3</tspan><tspan class="pl-area" x="9.6" dy="0.391" font-size="0.292">9.52 m²</tspan></text><text class="pl-nombre" x="4.65" y="3.474" font-size="0.34" text-anchor="middle"><tspan x="4.65" dy="0">Pasillo</tspan><tspan class="pl-area" x="4.65" dy="0.391" font-size="0.292">7.52 m²</tspan></text><text class="pl-nombre" x="2.15" y="5.773" font-size="0.34" text-anchor="middle"><tspan x="2.15" dy="0">Sala-comedor</tspan><tspan class="pl-area" x="2.15" dy="0.391" font-size="0.292">27.56 m²</tspan></text><text class="pl-nombre" x="8" y="6.124" font-size="0.34" text-anchor="middle"><tspan x="8" dy="0">Cocina</tspan><tspan class="pl-area" x="8" dy="0.391" font-size="0.292">10.08 m²</tspan></text><text class="pl-nombre" x="10.2" y="4.423" font-size="0.34" text-anchor="middle"><tspan x="10.2" dy="0">Baño 2</tspan><tspan class="pl-area" x="10.2" dy="0.391" font-size="0.292">3.52 m²</tspan></text><text class="pl-nombre" x="10.2" y="6.245" font-size="0.246" text-anchor="middle"><tspan x="10.2" dy="0">Lavandería</tspan><tspan class="pl-area" x="10.2" dy="0.283" font-size="0.211">3.84 m²</tspan></text><text class="pl-nombre" x="2.8" y="8.724" font-size="0.34" text-anchor="middle"><tspan x="2.8" dy="0">Balcón</tspan><tspan class="pl-area" x="2.8" dy="0.391" font-size="0.292">7.04 m²</tspan></text></g><g class="pl-etiquetas pl-etiquetas--compactas"><text class="pl-nombre" x="1.9" y="1.588" font-size="0.5" text-anchor="middle"><tspan x="1.9" dy="0">Recámara</tspan><tspan x="1.9" dy="0.575">principal</tspan></text><text class="pl-nombre" x="4.833" y="0.884" font-size="0.37" text-anchor="middle" transform="rotate(-90 4.833 0.967)"><tspan x="4.833" dy="0">Baño</tspan><tspan x="4.833" dy="0.425">principal</tspan></text><text class="pl-nombre" x="6.8" y="1.588" font-size="0.5" text-anchor="middle"><tspan x="6.8" dy="0">Recámara</tspan><tspan x="6.8" dy="0.575">2</tspan></text><text class="pl-nombre" x="9.6" y="1.588" font-size="0.5" text-anchor="middle"><tspan x="9.6" dy="0">Recámara</tspan><tspan x="9.6" dy="0.575">3</tspan></text><text class="pl-nombre" x="4.763" y="3.977" font-size="0.494" text-anchor="middle"><tspan x="4.763" dy="0">Pasillo</tspan></text><text class="pl-nombre" x="2.15" y="6.025" font-size="0.5" text-anchor="middle"><tspan x="2.15" dy="0">Sala-comedor</tspan></text><text class="pl-nombre" x="8" y="6.375" font-size="0.5" text-anchor="middle"><tspan x="8" dy="0">Cocina</tspan></text><text class="pl-nombre" x="10.233" y="4.721" font-size="0.5" text-anchor="middle"><tspan x="10.233" dy="0">Baño</tspan><tspan x="10.233" dy="0.575">2</tspan></text><text class="pl-nombre" x="10.433" y="6.904" font-size="0.392" text-anchor="middle" transform="rotate(-90 10.433 6.767)"><tspan x="10.433" dy="0">Lavandería</tspan></text><text class="pl-nombre" x="2.8" y="8.975" font-size="0.5" text-anchor="middle"><tspan x="2.8" dy="0">Balcón</tspan></text></g><g class="pl-cotas"><line x1="0" y1="-0.55" x2="11" y2="-0.55"/><line x1="0" y1="-0.67" x2="0" y2="-0.43"/><line x1="11" y1="-0.67" x2="11" y2="-0.43"/><text x="5.5" y="-0.67" font-size="0.26" text-anchor="middle">11.00 m</text><line x1="-0.55" y1="0" x2="-0.55" y2="8"/><line x1="-0.67" y1="0" x2="-0.43" y2="0"/><line x1="-0.67" y1="8" x2="-0.43" y2="8"/><text x="-0.67" y="4" font-size="0.26" text-anchor="middle" transform="rotate(-90 -0.67 4)">8.00 m</text></g></svg>
+<!-- /gen:plano -->
+        <figcaption class="plano-ejemplo__pie">Medidas a eje de pared. Muros cortados a 1.20 m de altura. La línea discontinua en un hueco es un vano sin puerta; sobre un muro, una ventana alta (la de cada baño), que queda por encima del corte.</figcaption>
+      </figure>
+      <div class="tabla-caja" role="region" aria-labelledby="h-plano" tabindex="0">
+      <table class="tabla-ambientes">
+        <caption class="sr">Ambientes del apartamento de ejemplo con sus medidas y área</caption>
+        <thead>
+          <tr><th scope="col">Ambiente</th><th scope="col">Medidas</th><th scope="col" class="tabla-ambientes__num">Área</th><th scope="col"><span class="sr">Ir en 3D</span></th></tr>
+        </thead>
+        <!-- gen:tabla -->
+<tbody>
+          <tr><th scope="row">Recámara principal</th><td>3.80 × 3.40 m</td><td class="tabla-ambientes__num">12.92 m²</td><td class="tabla-ambientes__ir"><button class="boton boton--linea boton--chico" type="button" data-ir="recamara-principal" hidden>Ir<span class="sr"> a Recámara principal en 3D</span></button></td></tr>
+          <tr><th scope="row">Baño principal</th><td>1.60 × 2.20 m</td><td class="tabla-ambientes__num">3.52 m²</td><td class="tabla-ambientes__ir"><button class="boton boton--linea boton--chico" type="button" data-ir="bano-principal" hidden>Ir<span class="sr"> a Baño principal en 3D</span></button></td></tr>
+          <tr><th scope="row">Recámara 2</th><td>2.80 × 3.40 m</td><td class="tabla-ambientes__num">9.52 m²</td><td class="tabla-ambientes__ir"><button class="boton boton--linea boton--chico" type="button" data-ir="recamara-2" hidden>Ir<span class="sr"> a Recámara 2 en 3D</span></button></td></tr>
+          <tr><th scope="row">Recámara 3</th><td>2.80 × 3.40 m</td><td class="tabla-ambientes__num">9.52 m²</td><td class="tabla-ambientes__ir"><button class="boton boton--linea boton--chico" type="button" data-ir="recamara-3" hidden>Ir<span class="sr"> a Recámara 3 en 3D</span></button></td></tr>
+          <tr><th scope="row">Pasillo</th><td>5.60 × 2.20 m, en L</td><td class="tabla-ambientes__num">7.52 m²</td><td class="tabla-ambientes__ir"><button class="boton boton--linea boton--chico" type="button" data-ir="pasillo" hidden>Ir<span class="sr"> a Pasillo en 3D</span></button></td></tr>
+          <tr><th scope="row">Sala-comedor</th><td>6.60 × 4.60 m, en L</td><td class="tabla-ambientes__num">27.56 m²</td><td class="tabla-ambientes__ir"><button class="boton boton--linea boton--chico" type="button" data-ir="sala-comedor" hidden>Ir<span class="sr"> a Sala-comedor en 3D</span></button></td></tr>
+          <tr><th scope="row">Cocina</th><td>2.80 × 3.60 m</td><td class="tabla-ambientes__num">10.08 m²</td><td class="tabla-ambientes__ir"><button class="boton boton--linea boton--chico" type="button" data-ir="cocina" hidden>Ir<span class="sr"> a Cocina en 3D</span></button></td></tr>
+          <tr><th scope="row">Baño 2</th><td>1.60 × 2.20 m</td><td class="tabla-ambientes__num">3.52 m²</td><td class="tabla-ambientes__ir"><button class="boton boton--linea boton--chico" type="button" data-ir="bano-2" hidden>Ir<span class="sr"> a Baño 2 en 3D</span></button></td></tr>
+          <tr><th scope="row">Lavandería</th><td>1.60 × 2.40 m</td><td class="tabla-ambientes__num">3.84 m²</td><td class="tabla-ambientes__ir"><button class="boton boton--linea boton--chico" type="button" data-ir="lavanderia" hidden>Ir<span class="sr"> a Lavandería en 3D</span></button></td></tr>
+          <tr><th scope="row">Balcón</th><td>4.40 × 1.60 m</td><td class="tabla-ambientes__num">7.04 m²</td><td class="tabla-ambientes__ir"><button class="boton boton--linea boton--chico" type="button" data-ir="balcon" hidden>Ir<span class="sr"> a Balcón en 3D</span></button></td></tr>
+        </tbody>
+        <tfoot>
+          <tr><th scope="row">Interior</th><td></td><td class="tabla-ambientes__num">88.00 m²</td><td></td></tr>
+          <tr><th scope="row">Balcón</th><td></td><td class="tabla-ambientes__num">7.04 m²</td><td></td></tr>
+          <tr class="tabla-ambientes__total"><th scope="row">Total</th><td></td><td class="tabla-ambientes__num">95.04 m²</td><td></td></tr>
+        </tfoot>
+<!-- /gen:tabla -->
+      </table>
+      </div>
+    </section>
+  </div>
+
+  <p class="aviso-demo aviso-demo--pagina">Demostración con un apartamento ficticio. Las medidas salen de un plano de ejemplo y no corresponden a ninguna propiedad en venta.</p>
+</main>
+
+<footer class="pie">
+  <div class="envoltura pie__fila">
+    <p><a class="marca" href="../../"><picture><source media="(prefers-color-scheme: dark)" srcset="../../assets/marca/logo-oscuro.svg" /><img src="../../assets/marca/logo-claro.svg" alt="alphateklab, inicio" width="142" height="32" /></picture></a><br />Soluciones tecnológicas para negocios en Panamá: software, webs, apps e inteligencia artificial, y la instalación de pantallas, cámaras, sensores y QR en tu local.</p>
+    <p class="pie__nota">Las demos usan negocios y propiedades de ejemplo: sus nombres y medidas son ficticios.<br />Actualizado el 3 de octubre de 2026.<br /><a href="../../privacidad/">Privacidad</a></p>
+  </div>
+</footer>
+<p class="sr" id="anuncio" aria-live="polite"></p>
+<!-- gen:datos -->
+<script type="application/json" id="datos-plano">{"formato":"atk-plano","version":1,"nombre":"Apartamento de ejemplo","nota":"Modelo de ejemplo dibujado a partir de un plano, no un escaneo. La propiedad no existe.","alto":2.6,"inicio":{"x":0.9,"y":4.1,"rumbo":120},"ambientes":[{"id":"recamara-principal","nombre":"Recámara principal","tipo":"recamara","poligono":[[0,0],[3.8,0],[3.8,3.4],[0,3.4]]},{"id":"bano-principal","nombre":"Baño principal","tipo":"bano","poligono":[[3.8,0],[5.4,0],[5.4,2.2],[3.8,2.2]],"etiqueta":[4.7,0.8]},{"id":"recamara-2","nombre":"Recámara 2","tipo":"recamara","poligono":[[5.4,0],[8.2,0],[8.2,3.4],[5.4,3.4]]},{"id":"recamara-3","nombre":"Recámara 3","tipo":"recamara","poligono":[[8.2,0],[11,0],[11,3.4],[8.2,3.4]]},{"id":"pasillo","nombre":"Pasillo","tipo":"pasillo","poligono":[[3.8,2.2],[5.4,2.2],[5.4,3.4],[9.4,3.4],[9.4,4.4],[3.8,4.4]]},{"id":"sala-comedor","nombre":"Sala-comedor","tipo":"sala","poligono":[[0,3.4],[3.8,3.4],[3.8,4.4],[6.6,4.4],[6.6,8],[0,8]]},{"id":"cocina","nombre":"Cocina","tipo":"cocina","poligono":[[6.6,4.4],[9.4,4.4],[9.4,8],[6.6,8]]},{"id":"bano-2","nombre":"Baño 2","tipo":"bano","poligono":[[9.4,3.4],[11,3.4],[11,5.6],[9.4,5.6]]},{"id":"lavanderia","nombre":"Lavandería","tipo":"lavanderia","poligono":[[9.4,5.6],[11,5.6],[11,8],[9.4,8]],"etiqueta":[10.2,6.3]},{"id":"balcon","nombre":"Balcón","tipo":"balcon","poligono":[[0.6,8],[5,8],[5,9.6],[0.6,9.6]]}],"paredes":[{"a":[0,0],"b":[11,0],"grosor":0.2,"tipo":"exterior"},{"a":[3.8,2.2],"b":[5.4,2.2],"grosor":0.12,"tipo":"interior"},{"a":[0,3.4],"b":[3.8,3.4],"grosor":0.12,"tipo":"interior"},{"a":[5.4,3.4],"b":[11,3.4],"grosor":0.12,"tipo":"interior"},{"a":[3.8,4.4],"b":[9.4,4.4],"grosor":0.12,"tipo":"interior"},{"a":[9.4,5.6],"b":[11,5.6],"grosor":0.12,"tipo":"interior"},{"a":[0,8],"b":[11,8],"grosor":0.2,"tipo":"exterior"},{"a":[0.6,9.6],"b":[5,9.6],"grosor":0.06,"tipo":"baranda"},{"a":[0,0],"b":[0,8],"grosor":0.2,"tipo":"exterior"},{"a":[0.6,8],"b":[0.6,9.6],"grosor":0.06,"tipo":"baranda"},{"a":[3.8,0],"b":[3.8,4.4],"grosor":0.12,"tipo":"interior"},{"a":[5,8],"b":[5,9.6],"grosor":0.06,"tipo":"baranda"},{"a":[5.4,0],"b":[5.4,3.4],"grosor":0.12,"tipo":"interior"},{"a":[6.6,4.4],"b":[6.6,8],"grosor":0.12,"tipo":"interior"},{"a":[8.2,0],"b":[8.2,3.4],"grosor":0.12,"tipo":"interior"},{"a":[9.4,3.4],"b":[9.4,8],"grosor":0.12,"tipo":"interior"},{"a":[11,0],"b":[11,8],"grosor":0.2,"tipo":"exterior"}],"aberturas":[{"tipo":"puerta-cerrada","x":0,"y":4.05,"ancho":0.9},{"tipo":"vano","x":3.8,"y":3.9,"ancho":1},{"tipo":"puerta","x":3.8,"y":2.8,"ancho":0.8,"bisagra":"b"},{"tipo":"puerta","x":3.8,"y":1.75,"ancho":0.7,"bisagra":"b"},{"tipo":"puerta","x":6.4,"y":3.4,"ancho":0.8},{"tipo":"puerta","x":8.8,"y":3.4,"ancho":0.8},{"tipo":"puerta","x":9.4,"y":3.9,"ancho":0.7},{"tipo":"vano","x":6.6,"y":6.2,"ancho":1.8},{"tipo":"puerta","x":9.4,"y":7.4,"ancho":0.8,"bisagra":"b"},{"tipo":"corrediza","x":2.4,"y":8,"ancho":2.4},{"tipo":"ventana","x":1.9,"y":0,"ancho":1.6,"antepecho":0.9,"dintel":2.2},{"tipo":"ventana","x":0,"y":1.7,"ancho":1.2,"antepecho":0.9,"dintel":2.2},{"tipo":"ventana","x":4.6,"y":0,"ancho":0.6,"antepecho":1.6,"dintel":2.2},{"tipo":"ventana","x":6.8,"y":0,"ancho":1.6,"antepecho":0.9,"dintel":2.2},{"tipo":"ventana","x":9.6,"y":0,"ancho":1.6,"antepecho":0.9,"dintel":2.2},{"tipo":"ventana","x":11,"y":1.7,"ancho":1.2,"antepecho":0.9,"dintel":2.2},{"tipo":"ventana","x":11,"y":4.5,"ancho":0.6,"antepecho":1.6,"dintel":2.2},{"tipo":"ventana","x":11,"y":6.8,"ancho":1,"antepecho":1.1,"dintel":2.2},{"tipo":"ventana","x":8,"y":8,"ancho":1.4,"antepecho":1.1,"dintel":2.2},{"tipo":"ventana","x":5.8,"y":8,"ancho":1,"antepecho":0.9,"dintel":2.2},{"tipo":"ventana","x":0,"y":6.4,"ancho":1.6,"antepecho":0.9,"dintel":2.2}]}</script>
+<!-- /gen:datos -->
+</body>
+</html>

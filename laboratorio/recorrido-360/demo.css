@@ -1,0 +1,198 @@
+/* Recorrido 360: solo tokens de atk.css. Comparte la estructura de las demás páginas del laboratorio. */
+
+.lab {
+  padding-block: var(--e-5) var(--e-7);
+  display: grid;
+  gap: var(--e-5);
+}
+.lab__cabeza {
+  display: grid;
+  gap: var(--e-3);
+  max-width: 54rem;
+}
+.lab__titulo {
+  font-size: var(--t-3xl);
+}
+.lab__bajada {
+  font-size: var(--t-l);
+  color: var(--tinta-2);
+  max-width: 52ch;
+}
+.lab__cuerpo {
+  display: grid;
+  gap: var(--e-6);
+}
+@media (min-width: 1040px) {
+  .lab__cuerpo {
+    grid-template-columns: minmax(0, 1fr) 21rem;
+    align-items: start;
+  }
+}
+.lab__lateral {
+  display: grid;
+  gap: var(--e-5);
+  font-size: var(--t-s);
+}
+.lab__lateral h2 {
+  font-size: var(--t-m);
+  margin-bottom: var(--e-2);
+}
+.lab__lateral p + p {
+  margin-top: var(--e-2);
+}
+.lab__lateral section {
+  border-top: 1px solid var(--linea);
+  padding-top: var(--e-3);
+}
+.lab__servicios {
+  list-style: none;
+  margin: 0 0 var(--e-3);
+  padding: 0;
+  display: grid;
+  gap: var(--e-2);
+}
+.lab__servicios a {
+  display: inline-flex;
+  gap: 0.5em;
+  align-items: center;
+  color: var(--tinta);
+}
+
+/* visor */
+.visor {
+  display: grid;
+  gap: var(--e-3);
+}
+.visor__lienzo {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 10;
+  background: var(--papel-3);
+  border: 1px solid var(--linea);
+  overflow: hidden;
+}
+@media (max-width: 640px) {
+  .visor__lienzo {
+    aspect-ratio: 4 / 5;
+  }
+}
+.visor__previa {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.visor__entrar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+}
+.visor__estado {
+  font-size: var(--t-s);
+  color: var(--tinta-2);
+  min-height: 1.5em;
+}
+
+/* puntos del visor con la señal de la marca */
+.visor__lienzo .pnlm-hotspot-base.pnlm-scene {
+  background: var(--senal);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  box-shadow: 0 0 0 3px rgb(21 23 27 / 0.75);
+}
+.visor__lienzo .pnlm-hotspot-base.pnlm-scene::after {
+  content: "";
+  position: absolute;
+  inset: 9px 10px 9px 8px;
+  background: #15171b;
+  clip-path: polygon(0 0, 100% 50%, 0 100%, 25% 50%);
+}
+.visor__lienzo .pnlm-hotspot-base.pnlm-info {
+  background: #fbfcfa;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  box-shadow: 0 0 0 3px rgb(21 23 27 / 0.75);
+}
+.visor__lienzo .pnlm-hotspot-base.pnlm-info::after {
+  content: "i";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 800 15px/1 var(--f-texto);
+  color: #15171b;
+}
+.visor__lienzo .pnlm-tooltip span {
+  font-family: var(--f-texto);
+  font-size: 14px;
+  line-height: 1.35;
+  background: rgb(21 23 27 / 0.92);
+  max-width: 240px;
+  white-space: normal;
+  border-radius: 3px;
+}
+.visor__lienzo .pnlm-load-box,
+.visor__lienzo .pnlm-info-box {
+  font-family: var(--f-texto);
+}
+
+/* ambientes: el plano en lista, también para teclado y lector de pantalla */
+.ambientes {
+  display: grid;
+  gap: var(--e-2);
+}
+.ambientes__titulo {
+  font-size: var(--t-s);
+  color: var(--tinta-2);
+}
+.ambientes__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2);
+}
+.ambiente {
+  font: inherit;
+  font-size: var(--t-s);
+  min-height: 44px;
+  padding: 0.5em 0.9em;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--tinta);
+  cursor: pointer;
+  transition: background-color var(--dur-estado) var(--ease-salida);
+}
+.ambiente[aria-current="true"] {
+  background: var(--tinta);
+  color: var(--papel);
+  border-color: var(--tinta);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ambiente:hover:not([aria-current="true"]) {
+    background: var(--papel-2);
+  }
+}
+
+.creditos {
+  font-size: var(--t-xs);
+  color: var(--tinta-3);
+  display: grid;
+  gap: var(--e-2);
+}
+.creditos h2 {
+  font-size: var(--t-s);
+  color: var(--tinta-2);
+}
+.creditos ul {
+  margin: 0;
+  padding-left: 1.1em;
+}

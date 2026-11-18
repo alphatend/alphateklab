@@ -1305,7 +1305,8 @@ p {
   letter-spacing: -0.025em;
   margin-bottom: 18px;
 }
-.pregunta__form textarea {
+.pregunta__form textarea,
+.pregunta__form input[name="contacto"] {
   width: 100%;
   padding: 16px;
   border: 2px solid var(--grafito);
@@ -1315,7 +1316,8 @@ p {
   color: var(--grafito);
   resize: vertical;
 }
-.pregunta__form textarea:focus {
+.pregunta__form textarea:focus,
+.pregunta__form input[name="contacto"]:focus {
   outline: 3px solid var(--grafito);
   outline-offset: 2px;
 }
@@ -4017,3 +4019,5 @@ body.con-menu {
   background: var(--grafito);
   color: var(--senal);
 }
+
+.pregunta__form input[name="contacto"] { margin-top: 10px; }

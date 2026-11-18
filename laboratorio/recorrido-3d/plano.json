@@ -1,0 +1,627 @@
+{
+ "formato": "atk-plano",
+ "version": 1,
+ "nombre": "Apartamento de ejemplo",
+ "nota": "Modelo de ejemplo dibujado a partir de un plano, no un escaneo. La propiedad no existe.",
+ "alto": 2.6,
+ "inicio": {
+  "x": 0.9,
+  "y": 4.1,
+  "rumbo": 120
+ },
+ "ambientes": [
+  {
+   "id": "recamara-principal",
+   "nombre": "Recámara principal",
+   "tipo": "recamara",
+   "poligono": [
+    [
+     0,
+     0
+    ],
+    [
+     3.8,
+     0
+    ],
+    [
+     3.8,
+     3.4
+    ],
+    [
+     0,
+     3.4
+    ]
+   ]
+  },
+  {
+   "id": "bano-principal",
+   "nombre": "Baño principal",
+   "tipo": "bano",
+   "poligono": [
+    [
+     3.8,
+     0
+    ],
+    [
+     5.4,
+     0
+    ],
+    [
+     5.4,
+     2.2
+    ],
+    [
+     3.8,
+     2.2
+    ]
+   ],
+   "etiqueta": [
+    4.7,
+    0.8
+   ]
+  },
+  {
+   "id": "recamara-2",
+   "nombre": "Recámara 2",
+   "tipo": "recamara",
+   "poligono": [
+    [
+     5.4,
+     0
+    ],
+    [
+     8.2,
+     0
+    ],
+    [
+     8.2,
+     3.4
+    ],
+    [
+     5.4,
+     3.4
+    ]
+   ]
+  },
+  {
+   "id": "recamara-3",
+   "nombre": "Recámara 3",
+   "tipo": "recamara",
+   "poligono": [
+    [
+     8.2,
+     0
+    ],
+    [
+     11,
+     0
+    ],
+    [
+     11,
+     3.4
+    ],
+    [
+     8.2,
+     3.4
+    ]
+   ]
+  },
+  {
+   "id": "pasillo",
+   "nombre": "Pasillo",
+   "tipo": "pasillo",
+   "poligono": [
+    [
+     3.8,
+     2.2
+    ],
+    [
+     5.4,
+     2.2
+    ],
+    [
+     5.4,
+     3.4
+    ],
+    [
+     9.4,
+     3.4
+    ],
+    [
+     9.4,
+     4.4
+    ],
+    [
+     3.8,
+     4.4
+    ]
+   ]
+  },
+  {
+   "id": "sala-comedor",
+   "nombre": "Sala-comedor",
+   "tipo": "sala",
+   "poligono": [
+    [
+     0,
+     3.4
+    ],
+    [
+     3.8,
+     3.4
+    ],
+    [
+     3.8,
+     4.4
+    ],
+    [
+     6.6,
+     4.4
+    ],
+    [
+     6.6,
+     8
+    ],
+    [
+     0,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "cocina",
+   "nombre": "Cocina",
+   "tipo": "cocina",
+   "poligono": [
+    [
+     6.6,
+     4.4
+    ],
+    [
+     9.4,
+     4.4
+    ],
+    [
+     9.4,
+     8
+    ],
+    [
+     6.6,
+     8
+    ]
+   ]
+  },
+  {
+   "id": "bano-2",
+   "nombre": "Baño 2",
+   "tipo": "bano",
+   "poligono": [
+    [
+     9.4,
+     3.4
+    ],
+    [
+     11,
+     3.4
+    ],
+    [
+     11,
+     5.6
+    ],
+    [
+     9.4,
+     5.6
+    ]
+   ]
+  },
+  {
+   "id": "lavanderia",
+   "nombre": "Lavandería",
+   "tipo": "lavanderia",
+   "poligono": [
+    [
+     9.4,
+     5.6
+    ],
+    [
+     11,
+     5.6
+    ],
+    [
+     11,
+     8
+    ],
+    [
+     9.4,
+     8
+    ]
+   ],
+   "etiqueta": [
+    10.2,
+    6.3
+   ]
+  },
+  {
+   "id": "balcon",
+   "nombre": "Balcón",
+   "tipo": "balcon",
+   "poligono": [
+    [
+     0.6,
+     8
+    ],
+    [
+     5,
+     8
+    ],
+    [
+     5,
+     9.6
+    ],
+    [
+     0.6,
+     9.6
+    ]
+   ]
+  }
+ ],
+ "paredes": [
+  {
+   "a": [
+    0,
+    0
+   ],
+   "b": [
+    11,
+    0
+   ],
+   "grosor": 0.2,
+   "tipo": "exterior"
+  },
+  {
+   "a": [
+    3.8,
+    2.2
+   ],
+   "b": [
+    5.4,
+    2.2
+   ],
+   "grosor": 0.12,
+   "tipo": "interior"
+  },
+  {
+   "a": [
+    0,
+    3.4
+   ],
+   "b": [
+    3.8,
+    3.4
+   ],
+   "grosor": 0.12,
+   "tipo": "interior"
+  },
+  {
+   "a": [
+    5.4,
+    3.4
+   ],
+   "b": [
+    11,
+    3.4
+   ],
+   "grosor": 0.12,
+   "tipo": "interior"
+  },
+  {
+   "a": [
+    3.8,
+    4.4
+   ],
+   "b": [
+    9.4,
+    4.4
+   ],
+   "grosor": 0.12,
+   "tipo": "interior"
+  },
+  {
+   "a": [
+    9.4,
+    5.6
+   ],
+   "b": [
+    11,
+    5.6
+   ],
+   "grosor": 0.12,
+   "tipo": "interior"
+  },
+  {
+   "a": [
+    0,
+    8
+   ],
+   "b": [
+    11,
+    8
+   ],
+   "grosor": 0.2,
+   "tipo": "exterior"
+  },
+  {
+   "a": [
+    0.6,
+    9.6
+   ],
+   "b": [
+    5,
+    9.6
+   ],
+   "grosor": 0.06,
+   "tipo": "baranda"
+  },
+  {
+   "a": [
+    0,
+    0
+   ],
+   "b": [
+    0,
+    8
+   ],
+   "grosor": 0.2,
+   "tipo": "exterior"
+  },
+  {
+   "a": [
+    0.6,
+    8
+   ],
+   "b": [
+    0.6,
+    9.6
+   ],
+   "grosor": 0.06,
+   "tipo": "baranda"
+  },
+  {
+   "a": [
+    3.8,
+    0
+   ],
+   "b": [
+    3.8,
+    4.4
+   ],
+   "grosor": 0.12,
+   "tipo": "interior"
+  },
+  {
+   "a": [
+    5,
+    8
+   ],
+   "b": [
+    5,
+    9.6
+   ],
+   "grosor": 0.06,
+   "tipo": "baranda"
+  },
+  {
+   "a": [
+    5.4,
+    0
+   ],
+   "b": [
+    5.4,
+    3.4
+   ],
+   "grosor": 0.12,
+   "tipo": "interior"
+  },
+  {
+   "a": [
+    6.6,
+    4.4
+   ],
+   "b": [
+    6.6,
+    8
+   ],
+   "grosor": 0.12,
+   "tipo": "interior"
+  },
+  {
+   "a": [
+    8.2,
+    0
+   ],
+   "b": [
+    8.2,
+    3.4
+   ],
+   "grosor": 0.12,
+   "tipo": "interior"
+  },
+  {
+   "a": [
+    9.4,
+    3.4
+   ],
+   "b": [
+    9.4,
+    8
+   ],
+   "grosor": 0.12,
+   "tipo": "interior"
+  },
+  {
+   "a": [
+    11,
+    0
+   ],
+   "b": [
+    11,
+    8
+   ],
+   "grosor": 0.2,
+   "tipo": "exterior"
+  }
+ ],
+ "aberturas": [
+  {
+   "tipo": "puerta-cerrada",
+   "x": 0,
+   "y": 4.05,
+   "ancho": 0.9
+  },
+  {
+   "tipo": "vano",
+   "x": 3.8,
+   "y": 3.9,
+   "ancho": 1
+  },
+  {
+   "tipo": "puerta",
+   "x": 3.8,
+   "y": 2.8,
+   "ancho": 0.8,
+   "bisagra": "b"
+  },
+  {
+   "tipo": "puerta",
+   "x": 3.8,
+   "y": 1.75,
+   "ancho": 0.7,
+   "bisagra": "b"
+  },
+  {
+   "tipo": "puerta",
+   "x": 6.4,
+   "y": 3.4,
+   "ancho": 0.8
+  },
+  {
+   "tipo": "puerta",
+   "x": 8.8,
+   "y": 3.4,
+   "ancho": 0.8
+  },
+  {
+   "tipo": "puerta",
+   "x": 9.4,
+   "y": 3.9,
+   "ancho": 0.7
+  },
+  {
+   "tipo": "vano",
+   "x": 6.6,
+   "y": 6.2,
+   "ancho": 1.8
+  },
+  {
+   "tipo": "puerta",
+   "x": 9.4,
+   "y": 7.4,
+   "ancho": 0.8,
+   "bisagra": "b"
+  },
+  {
+   "tipo": "corrediza",
+   "x": 2.4,
+   "y": 8,
+   "ancho": 2.4
+  },
+  {
+   "tipo": "ventana",
+   "x": 1.9,
+   "y": 0,
+   "ancho": 1.6,
+   "antepecho": 0.9,
+   "dintel": 2.2
+  },
+  {
+   "tipo": "ventana",
+   "x": 0,
+   "y": 1.7,
+   "ancho": 1.2,
+   "antepecho": 0.9,
+   "dintel": 2.2
+  },
+  {
+   "tipo": "ventana",
+   "x": 4.6,
+   "y": 0,
+   "ancho": 0.6,
+   "antepecho": 1.6,
+   "dintel": 2.2
+  },
+  {
+   "tipo": "ventana",
+   "x": 6.8,
+   "y": 0,
+   "ancho": 1.6,
+   "antepecho": 0.9,
+   "dintel": 2.2
+  },
+  {
+   "tipo": "ventana",
+   "x": 9.6,
+   "y": 0,
+   "ancho": 1.6,
+   "antepecho": 0.9,
+   "dintel": 2.2
+  },
+  {
+   "tipo": "ventana",
+   "x": 11,
+   "y": 1.7,
+   "ancho": 1.2,
+   "antepecho": 0.9,
+   "dintel": 2.2
+  },
+  {
+   "tipo": "ventana",
+   "x": 11,
+   "y": 4.5,
+   "ancho": 0.6,
+   "antepecho": 1.6,
+   "dintel": 2.2
+  },
+  {
+   "tipo": "ventana",
+   "x": 11,
+   "y": 6.8,
+   "ancho": 1,
+   "antepecho": 1.1,
+   "dintel": 2.2
+  },
+  {
+   "tipo": "ventana",
+   "x": 8,
+   "y": 8,
+   "ancho": 1.4,
+   "antepecho": 1.1,
+   "dintel": 2.2
+  },
+  {
+   "tipo": "ventana",
+   "x": 5.8,
+   "y": 8,
+   "ancho": 1,
+   "antepecho": 0.9,
+   "dintel": 2.2
+  },
+  {
+   "tipo": "ventana",
+   "x": 0,
+   "y": 6.4,
+   "ancho": 1.6,
+   "antepecho": 0.9,
+   "dintel": 2.2
+  }
+ ]
+}

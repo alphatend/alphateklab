@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es-PA">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Recorrido 360 · alphateklab</title>
+<meta name="description" content="Demo de un recorrido 360 de una propiedad hecho con fotos de cámara 360: miras alrededor y pasas de un ambiente a otro desde el teléfono." />
+<link rel="canonical" href="/laboratorio/recorrido-360/" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Recorrido 360 · alphateklab" />
+<meta property="og:description" content="Demo de un recorrido 360 de una propiedad hecho con fotos de cámara 360." />
+<meta property="og:url" content="https://alphateklab.com/laboratorio/recorrido-360/" />
+<meta property="og:image" content="https://alphateklab.com/laboratorio/recorrido-360/vista-previa.webp" />
+<meta property="og:locale" content="es_PA" />
+<meta name="theme-color" content="#f4f5f2" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#111316" media="(prefers-color-scheme: dark)" />
+<link rel="icon" href="../../assets/marca/favicon.svg" type="image/svg+xml" />
+<link rel="preload" href="../../assets/fuentes/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="../../assets/atk.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.7/build/pannellum.css" />
+<link rel="stylesheet" href="demo.css" />
+</head>
+<body>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+<header class="cabecera">
+  <div class="envoltura cabecera__fila">
+    <a class="marca" href="../../"><picture><source srcset="../../assets/marca/logo-oscuro.svg" media="(prefers-color-scheme: dark)" /><img src="../../assets/marca/logo-claro.svg" alt="alphateklab, inicio" width="142" height="32" /></picture></a>
+    <nav class="nav" aria-label="Principal">
+      <a href="/servicios.html">Servicios</a>
+      <a href="../">Demos</a>
+      <a href="/#pregunta">Pregúntanos</a>
+    </nav>
+  </div>
+</header>
+
+<main id="contenido" class="envoltura lab">
+  <nav class="migas" aria-label="Ruta"><a href="../../">Inicio</a> <span aria-hidden="true">/</span> <a href="../">Demos</a> <span aria-hidden="true">/</span> <span aria-current="page">Recorrido 360</span></nav>
+  <div class="lab__cabeza">
+    <h1 class="display lab__titulo">Recorrido 360 de una propiedad</h1>
+    <p class="lab__bajada">Una foto esférica por ambiente, unida en un recorrido que el comprador abre desde el anuncio: mira alrededor arrastrando o moviendo el teléfono, y toca las flechas para pasar de un ambiente a otro.</p>
+  </div>
+
+  <div class="lab__cuerpo">
+    <section class="visor" aria-label="Recorrido 360" data-captura>
+      <div id="panorama" class="visor__lienzo" role="application" aria-roledescription="visor de fotos 360" aria-label="Foto 360 del ambiente actual. Arrastra para mirar alrededor; usa la lista de ambientes para cambiar de habitación.">
+        <img class="visor__previa" src="vista-previa.webp" alt="Vista de la sala del apartamento de ejemplo: piso de baldosa, puerta principal abierta y ventana con rejas." width="1280" height="720" />
+        <button class="boton boton--senal visor__entrar" type="button" id="entrar">Entrar al recorrido</button>
+      </div>
+      <p class="visor__estado" id="estado" role="status" aria-live="polite"></p>
+      <div class="ambientes" aria-labelledby="ambientes-titulo">
+        <h2 id="ambientes-titulo" class="ambientes__titulo">Ambientes</h2>
+        <ul class="ambientes__lista" id="ambientes"></ul>
+      </div>
+    </section>
+
+    <aside class="lab__lateral">
+      <section>
+        <h2>Qué estás viendo</h2>
+        <p>Cuatro fotos esféricas unidas como si fueran un apartamento vacío: sala con cocina, dos recámaras con aire split y un baño. Las flechas amarillas te llevan de un ambiente a otro y los círculos explican un detalle. En el teléfono, el botón de orientación del visor (aparece si tu teléfono lo permite) activa el giroscopio: mueves el teléfono y miras hacia ese lado.</p>
+      </section>
+      <section>
+        <h2>Cómo se hace con tu propiedad</h2>
+        <p>Vamos con una cámara 360 (una Insta360 X5, que saca fotos esféricas de 72 megapíxeles) y tomamos una foto desde el centro de cada ambiente, con la casa ordenada y las luces encendidas. Las reducimos para que abran rápido en el teléfono, las unimos en el recorrido y lo publicamos en tu dominio, con un enlace que pones en tu anuncio o en tu página.</p>
+        <p>Si además quieres caminar por la propiedad como en un videojuego y tomar medidas, eso es el recorrido 3D, que también está en el laboratorio.</p>
+      </section>
+      <section>
+        <h2>Qué es de ejemplo</h2>
+        <p>Las fotos son de lugares distintos, con licencia libre <abbr title="dominio público">CC0</abbr> de Poly Haven; no son de una propiedad en venta. Los créditos están abajo.</p>
+      </section>
+      <section>
+        <h2>Servicios relacionados</h2>
+        <ul class="lab__servicios">
+          <li><a href="/servicio-recorrido-3d.html">Recorrido 360 y 3D de la propiedad</a></li>
+          <li><a href="/servicio-fotos-de-la-propiedad.html">Fotos profesionales (+$300)</a></li>
+          <li><a href="/servicio-sitio-de-propiedades.html">Sitio de propiedades</a></li>
+        </ul>
+        <p><a class="boton boton--senal" href="/#pregunta">Preguntar por el recorrido para tus propiedades</a></p>
+      </section>
+    </aside>
+  </div>
+
+  <p class="aviso-demo"><span><strong>Demo.</strong> Funciona en tu navegador con fotos de ejemplo. Las fotos y el visor (Pannellum) se descargan de este sitio y de cdn.jsdelivr.net; no se guarda nada tuyo.</span></p>
+
+  <section class="creditos" aria-labelledby="creditos-titulo">
+    <h2 id="creditos-titulo">Créditos de las fotos</h2>
+    <ul id="creditos"></ul>
+    <p>Visor: <a href="https://pannellum.org/">Pannellum</a> 2.5.7, licencia MIT.</p>
+  </section>
+</main>
+
+<footer class="pie">
+  <div class="envoltura pie__fila">
+    <p><a class="marca" href="../../"><picture><source srcset="../../assets/marca/logo-oscuro.svg" media="(prefers-color-scheme: dark)" /><img src="../../assets/marca/logo-claro.svg" alt="alphateklab" width="142" height="32" /></picture></a><br />Soluciones tecnológicas para negocios en Panamá</p>
+    <p><a href="../">Todas las demos</a> · <a href="/#pregunta">Pregúntanos</a> · <a href="../../privacidad/">Privacidad</a></p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.7/build/pannellum.js" defer></script>
+<script type="module" src="recorrido.js"></script>
+</body>
+</html>

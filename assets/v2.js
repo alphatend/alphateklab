@@ -116,9 +116,33 @@
       cerrarMovil();
     }),
   );
-  form?.addEventListener('submit', (e) => {
+  // El mensaje sale por FormSubmit (formsubmit.co), igual que el de Food: el sitio es estático (17-nov). Sin JavaScript,
+  // el formulario se manda solo y FormSubmit vuelve a #pregunta.
+  let enviando = false;
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    nota.textContent = 'En el sitio, tu mensaje nos llega a info@alphateklab.com y te respondemos por escrito.';
+    if (enviando) return;
+    const boton = form.querySelector('button[type="submit"]');
+    enviando = true;
+    boton?.setAttribute('aria-disabled', 'true');
+    nota.textContent = 'Enviando…';
+    const datos = Object.fromEntries(new FormData(form));
+    try {
+      const r = await fetch(form.dataset.ajax, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(/@/.test(datos.contacto || '') ? { ...datos, _replyto: datos.contacto } : datos),
+      });
+      const respuesta = await r.json().catch(() => ({}));
+      if (!r.ok || String(respuesta.success) !== 'true') throw new Error(respuesta.message || `HTTP ${r.status}`);
+      form.reset();
+      nota.textContent = 'Recibimos tu mensaje. Te respondemos pronto por donde nos dejaste.';
+    } catch {
+      nota.textContent = 'No se pudo enviar. Revisa tu conexión e inténtalo otra vez, o escríbenos a info@alphateklab.com.';
+    } finally {
+      enviando = false;
+      boton?.removeAttribute('aria-disabled');
+    }
   });
   document.querySelector('[data-buscar]')?.addEventListener('submit', (e) => e.preventDefault());
   // copiar el correo de contacto (dentro del Artifact, un enlace mailto: no siempre abre el correo)
