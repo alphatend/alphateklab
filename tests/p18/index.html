@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="es" data-type="software" data-radius="sharp" data-buttons="tonal" data-motion>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>alphateklab: software a la medida para negocios en Panamá</title>
+<meta name="description" content="Creamos el software de tu negocio en Panamá y lo conectamos con los equipos de tu local: placas QR, pantallas, cámaras, sensores, cerraduras y GPS.">
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="alphateklab: software a la medida para negocios en Panamá">
+<meta property="og:description" content="El software de tu negocio, hecho a la medida y conectado con la pantalla, la cámara o el sensor de tu local.">
+<meta property="og:image" content="share.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/marca/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ffffff">
+<!-- <link rel="canonical" href="https://alphateklab.com/"> -->
+<meta name="site-kind" content="software">
+<meta name="page-type" content="software">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400..700&family=JetBrains+Mono:wght@400..500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/system.css">
+<link rel="stylesheet" href="assets/ui/cards.css">
+<link rel="stylesheet" href="assets/motion/motion.css">
+<link rel="stylesheet" href="assets/layout/layout.css">
+<!-- keep this <style> after the links: layout.css resets --ly-scale (start.mjs brand, as printed) -->
+<style>
+:root {
+  --p-bg: #ffffff; --p-surface: #f3f6fb; --p-ink: #0c1631; --p-muted: #55607a;
+  --p-accent: #2563eb; --p-accent-ink: #ffffff; --p-action: #2563eb; --p-action-ink: #ffffff;
+  --p-inv-bg: #0c1631; --p-inv-surface: #19243e; --p-inv-ink: #ffffff; --p-inv-muted: #989eac;
+  --p-inv-accent: #ffffff; --p-inv-accent-ink: #0c1631; --p-inv-action: #ffffff; --p-inv-action-ink: #0c1631;
+  --font-display: "Manrope", system-ui, sans-serif;
+  --font-text: "Manrope", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 500;
+  --display-tracking: -0.035em;
+  --display-tracking-xl: -0.045em;
+  --ly-scale: 0.97;
+}
+</style>
+<link rel="stylesheet" href="assets/p18.css">
+<script>document.documentElement.classList.add('m-enter','p18-js');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700);setTimeout(()=>document.documentElement.classList.add('p18-safe'),4500)</script>
+<script>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
+<link rel="modulepreload" href="assets/moments/moments.js">
+<link rel="modulepreload" href="assets/moments/lib.js">
+<link rel="modulepreload" href="assets/moments/counter-rolls/moment.js">
+</head>
+<body>
+<!-- type: software (alphateklab, a Panamanian studio selling its own custom software)
+     deal: hero centred (the direction fixes it; deal.mjs printed product), nav nav-centre, close close-type (the
+     form in the navy band, as the briefs ask), footer footer-statement dealt, built dark navy (the direction's one
+     navy band), rhythm dark-band (that navy band), buttons tonal, mark: the client's logo
+     palette: start.mjs brand, white #ffffff, navy ink #0c1631, blue #2563eb; Manrope (dealt second, named by the direction)
+     effect: the band, a CSS gradient of blue #2563eb to cyan #06b6d4 with the logo's amber, behind the hero product
+     moments: counter-rolls in #paginas (the four real counts: 79 services, 9 business types, 5 demos, 4 steps) -->
+<header class="nav nav--centre">
+  <div class="wrap nav__bar">
+    <a class="skip-link" href="#top">Saltar al contenido</a>
+    <a class="nav__logo" href="index.html"><img src="assets/marca/logo-claro.svg" alt="alphateklab" width="113" height="26"></a>
+    <nav class="nav__links" aria-label="Principal">
+      <div class="nav__item"><a class="nav__link" href="servicios.html">Servicios</a></div>
+      <div class="nav__item"><a class="nav__link" href="negocios.html">Negocios</a></div>
+      <div class="nav__item"><a class="nav__link" href="demos.html">Demos</a></div>
+      <div class="nav__item"><a class="nav__link" href="como-trabajamos.html">Cómo trabajamos</a></div>
+    </nav>
+    <div class="nav__actions">
+      <a class="btn btn--primary" href="#propuesta">Pedir mi propuesta</a>
+    </div>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-label="Menú">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO: centred words, then the order board, the sales card and the phone over the bottom of the band -->
+  <section class="hero hero--p18" data-enter aria-labelledby="hero-h">
+    <canvas class="layer hero-band" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <div class="hero-text">
+        <div class="hero__c">
+          <h1 id="hero-h">Tu negocio, conectado con software a la medida</h1>
+          <p class="hero__lead">Lo creamos en Panamá y lo conectamos con los equipos de tu local: la pantalla de la cocina, la cámara de la puerta, el sensor de la nevera.</p>
+          <div class="btn-row">
+            <a class="btn btn--primary" href="#propuesta">Pedir mi propuesta<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a>
+            <a class="btn btn--secondary" href="servicios.html">Ver servicios</a>
+          </div>
+        </div>
+        <div class="hero__show" data-enter-media>
+          <div class="hero__comp" role="img" aria-label="El panel de pedidos de un restaurante de ejemplo: entra el pedido de la mesa 4, las ventas del día suman B/. 612.40 y el aviso llega al teléfono del dueño">
+            <div class="win ui ui-p18-board" aria-hidden="true">
+              <div class="win__bar"><span class="win__dots"><i></i><i></i><i></i></span><span class="win__title">Panel de Pixbae (ejemplo)</span><span></span></div>
+              <div class="win__body">
+                <div class="side">
+                  <div class="app__brand"><span class="app__tile">P</span><span><b>Pixbae</b><small>cocina panameña</small></span></div>
+                  <ul class="side__nav"><li class="is-on">Cocina <span>6</span></li><li>Mesas y QR</li><li>Pedidos en línea</li><li>Reservas</li><li>Menú</li><li>Ventas</li></ul>
+                </div>
+                <div class="main">
+                  <div class="main__head"><b>Cocina</b><span>Hoy, 12:41 p. m.</span><span class="win__live">En vivo</span></div>
+                  <div class="board">
+                <div class="col col--new">
+                  <p class="col__h">Nuevos <span class="col__n">1</span></p>
+                  <div class="ord ord--new story">
+                    <div class="ord__h"><b>Mesa 4</b><span class="tag tag--qr">QR</span><time>ahora</time></div>
+                    <ul><li><b>2</b>Patacones con ceviche</li><li><b>1</b>Chicha de piña</li></ul>
+                    <div class="ord__act"><span class="is-main">Aceptar</span><span>Ver mesa</span></div>
+                  </div>
+                </div>
+                <div class="col">
+                  <p class="col__h">En preparación <span class="col__n">3</span></p>
+                  <div class="ord">
+                    <div class="ord__h"><b>Mesa 9</b><span class="tag">Mesero</span><time>6 min</time></div>
+                    <ul><li><b>1</b>Sancocho de gallina</li><li><b>2</b>Arroz con pollo</li></ul>
+                  </div>
+                  <div class="ord">
+                    <div class="ord__h"><b>Para llevar</b><span class="tag tag--qr">QR</span><time>9 min</time></div>
+                    <ul><li><b>3</b>Carimañolas</li><li><b>1</b>Limonada</li></ul>
+                    <p class="ord__note">Sin culantro</p>
+                  </div>
+                  <div class="ord">
+                    <div class="ord__h"><b>Mesa 2</b><span class="tag tag--warn">14 min</span></div>
+                    <ul><li><b>1</b>Corvina frita</li><li><b>2</b>Hojaldras</li></ul>
+                  </div>
+                </div>
+                <div class="col col--done">
+                  <p class="col__h">Listos <span class="col__n">2</span></p>
+                  <div class="ord">
+                    <div class="ord__h"><b>Mesa 11</b><span class="tag tag--ok">Listo</span><time>12:36</time></div>
+                    <ul><li><b>2</b>Tamal de olla</li><li><b>2</b>Café chiricano</li></ul>
+                    <div class="ord__act"><span>Entregado</span></div>
+                  </div>
+                  <div class="ord">
+                    <div class="ord__h"><b>Mesa 6</b><span class="tag tag--ok">Listo</span><time>12:31</time></div>
+                    <ul><li><b>1</b>Ropa vieja con arroz</li></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+              </div>
+            </div>
+            <div class="sales ui ui-p18-sales" aria-hidden="true">
+              <div class="sales__top"><span>Ventas de hoy</span><span class="sales__up">38 pedidos</span></div>
+              <p class="sales__n">B/. 612.40</p>
+              <p class="sales__sub">24 pedidos llegaron por el QR de la mesa</p>
+              <div class="bars"><i style="--h:22%"></i><i style="--h:38%"></i><i style="--h:30%"></i><i style="--h:52%"></i><i style="--h:84%"></i><i class="is-now" style="--h:100%"></i><i style="--h:12%"></i></div>
+              <div class="bars__x"><span>7 a. m.</span><span>12 p. m.</span><span>7 p. m.</span></div>
+            </div>
+            <div class="phone ui ui-p18-phone" aria-hidden="true">
+              <div class="phone__screen">
+                <span class="phone__island"></span>
+                <div class="phone__clock"><small>viernes 20 de noviembre</small><b>12:41</b></div>
+                <div class="notes">
+                  <div class="note story"><img src="assets/marca/favicon.svg" alt="" width="28" height="28" loading="lazy"><span class="note__h"><span>Pedidos</span><span>ahora</span></span><p><b>Mesa 4</b> pidió 2 patacones y 1 chicha.</p></div>
+                  <div class="note"><img src="assets/marca/favicon.svg" alt="" width="28" height="28" loading="lazy"><span class="note__h"><span>Sensores</span><span>12 min</span></span><p><b>Aviso:</b> la nevera 2 subió a 8.9 °C.</p></div>
+                  <div class="note"><img src="assets/marca/favicon.svg" alt="" width="28" height="28" loading="lazy"><span class="note__h"><span>Salón</span><span>20 min</span></span><p><b>Mesa 10</b> pidió la cuenta.</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOORS: the four inner pages, each with its real count (the counter-rolls moment rolls them once) -->
+  <section class="section" id="paginas" style="--hm: 2" aria-labelledby="paginas-h">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="paginas-h">Cada tema tiene su página. <span class="muted">Entra por el que te sirve.</span></h2>
+      </div>
+      <div class="doors" data-moment="counter-rolls">
+        <a class="door" href="servicios.html">
+          <div class="door__pic glow" role="img" aria-label="El buscador de servicios con la frase «que la nevera me avise» y dos resultados">
+            <div class="mini mini--search ui ui-p18-search" aria-hidden="true">
+              <div class="mini__field"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3" stroke-linecap="round"/></svg><span>que la nevera me avise</span><i></i></div>
+              <div class="mini__res">
+                <div><b>Sensores de temperatura en neveras</b><small>Sensores que avisan</small></div>
+                <div><b>Tablero de sensores del negocio</b><small>Software a medida</small></div>
+              </div>
+            </div>
+          </div>
+          <p class="door__num t-stat">79</p>
+          <h3 class="door__label">servicios en 8 tipos</h3>
+          <p class="door__text">Qué es cada tipo, qué resuelve y ejemplos, con la página de cada servicio.</p>
+          <span class="more">Ver servicios</span>
+        </a>
+        <a class="door" href="negocios.html">
+          <div class="door__pic"><img src="assets/fotos/restaurantes-640.webp" sizes="(max-width: 639px) 92vw, 302px" srcset="assets/fotos/restaurantes-640.webp 640w" alt="Mesera caminando entre las mesas de un restaurante lleno a la hora del almuerzo" loading="lazy" width="640" height="480" data-source="stand-in" data-subject="restaurante"></div>
+          <p class="door__num t-stat">9</p>
+          <h3 class="door__label">tipos de negocio</h3>
+          <p class="door__text">El problema de siempre en cada negocio y los servicios que lo resuelven.</p>
+          <span class="more">Ver negocios</span>
+        </a>
+        <a class="door" href="demos.html">
+          <div class="door__pic glow--b glow" role="img" aria-label="La demo de pedir desde la mesa: la carta de un restaurante de ejemplo">
+            <div class="mini mini--shot ui ui-p18-shot" aria-hidden="true"><img src="assets/producto/demo-mesa-560.webp" alt="" loading="lazy" width="560" height="350"></div>
+          </div>
+          <p class="door__num t-stat">5</p>
+          <h3 class="door__label">demos que puedes encender</h3>
+          <p class="door__text">Funcionan de verdad, con negocios de ejemplo que puedes probar ya.</p>
+          <span class="more">Ver demos</span>
+        </a>
+        <a class="door" href="como-trabajamos.html">
+          <div class="door__pic glow--c glow" role="img" aria-label="Los cuatro pasos de un proyecto, con los dos primeros hechos">
+            <div class="mini mini--steps ui ui-p18-steps" aria-hidden="true">
+              <div><i>1</i><b>Nos cuentas</b></div>
+              <div><i>2</i><b>Te mandamos la propuesta</b></div>
+              <div><i>3</i><b>Lo hacemos</b></div>
+              <div><i>4</i><b>Lo usas</b></div>
+            </div>
+          </div>
+          <p class="door__num t-stat">4</p>
+          <h3 class="door__label">pasos, la propuesta primero</h3>
+          <p class="door__text">Cómo es un proyecto, los paquetes para empezar y las preguntas frecuentes.</p>
+          <span class="more">Ver cómo trabajamos</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- GLIMPSE: one demo, the clinic's agenda and the reminder that reaches the patient -->
+  <section class="section" id="citas" style="--hm: 2" aria-labelledby="citas-h">
+    <div class="wrap">
+      <div class="split">
+        <div class="split__text">
+          <h2 id="citas-h">Citas que sí llegan</h2>
+          <p class="lede">La agenda de un consultorio le recuerda la cita al paciente y le insiste hasta que responde. Así se ve en la demo de citas.</p>
+          <ol class="flow">
+            <li><span>La recepción agenda la cita en la pantalla de la agenda.</span></li>
+            <li><span>El sistema le escribe al paciente 2 días o 1 día antes.</span></li>
+            <li><span>Si no contesta, le vuelve a escribir hasta que confirme o cancele.</span></li>
+          </ol>
+          <div class="btn-row">
+            <a class="btn btn--secondary" href="https://alphatend.github.io/alphateklab-reservas/">Encender la demo de citas</a>
+          </div>
+        </div>
+        <div class="split__pic glow" role="img" aria-label="La agenda de un consultorio de ejemplo con una cita pendiente a las 9:15, y en el teléfono de la paciente el recordatorio que pide confirmar">
+          <div class="shot-win ui ui-p18-agenda" aria-hidden="true">
+            <div class="win__bar"><span class="win__dots"><i></i><i></i><i></i></span><span class="win__title">Agenda de Dermatología Ríos (ejemplo)</span><span></span></div>
+            <img src="assets/producto/agenda-clinica-1200.webp" srcset="assets/producto/agenda-clinica-720.webp 720w, assets/producto/agenda-clinica-1200.webp 1200w" sizes="(max-width: 1023px) 92vw, 680px" alt="" loading="lazy" width="1200" height="587">
+          </div>
+          <div class="desk ui ui-p18-desk" aria-hidden="true">
+            <p class="desk__h">En recepción, hoy</p>
+            <div class="desk__row"><b>5</b><span>sin confirmar hoy y mañana</span></div>
+            <div class="desk__row"><b>3</b><span>por llamar</span></div>
+            <div class="desk__row"><b>0</b><span>en sala</span></div>
+          </div>
+          <div class="chat ui ui-p18-chat" aria-hidden="true">
+            <div class="chat__screen">
+              <div class="chat__head"><i>DR</i><span><b>Dermatología Ríos</b><small>consultorio de ejemplo</small></span></div>
+              <div class="chat__body">
+                <span class="chat__day">sábado 3 de octubre</span>
+                <div class="bub">Hola, Kathia. Te recordamos tu cita de crioterapia el lunes 5 a las 9:15 a. m. con el Dr. Luis Herrera.<small>9:00 a. m.</small></div>
+                <span class="chat__day">domingo 4 de octubre</span>
+                <div class="bub">Kathia, ¿nos confirmas tu cita de mañana a las 9:15 a. m.?<div class="bub__acts"><span>Confirmo</span><span>Cambiar</span></div><small>9:00 a. m.</small></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEGOCIOS: four business types with real photographs, the rest on their page -->
+  <section class="section" id="negocios" aria-labelledby="negocios-h">
+    <div class="wrap">
+      <div class="section-head section-head--split">
+        <div>
+          <h2 id="negocios-h">Soluciones para tu tipo de negocio</h2>
+          <p>El problema de siempre en cada negocio, y qué lo resuelve.</p>
+        </div>
+        <a class="more" href="negocios.html">Ver los 9 negocios</a>
+      </div>
+      <div class="biz">
+        <a class="biz__item" href="negocios.html#restaurantes">
+          <div class="biz__pic"><img src="assets/fotos/cocina-retrato-600.webp" srcset="assets/fotos/cocina-retrato-360.webp 360w, assets/fotos/cocina-retrato-600.webp 600w" sizes="(max-width: 639px) 45vw, (max-width: 1023px) 46vw, 302px" alt="Cocinero tomando una comanda impresa del riel de pedidos de la cocina" loading="lazy" width="600" height="750" data-source="stand-in" data-subject="cocina de restaurante"></div>
+          <h3>Restaurantes y cafés</h3>
+          <p>Los clientes esperan para pedir, para otra ronda y para pagar.</p>
+        </a>
+        <a class="biz__item" href="negocios.html#tiendas">
+          <div class="biz__pic"><img src="assets/fotos/comercio-retrato-600.webp" srcset="assets/fotos/comercio-retrato-360.webp 360w, assets/fotos/comercio-retrato-600.webp 600w" sizes="(max-width: 639px) 45vw, (max-width: 1023px) 46vw, 302px" alt="Interior de un minisúper con estantes de golosinas, una nevera de bebidas y dos personas en el mostrador" loading="lazy" width="600" height="750" data-source="stand-in" data-subject="minisúper"></div>
+          <h3>Tiendas y minisúper</h3>
+          <p>Hay pérdidas y no sabes dónde: mercancía que falta o la caja que no cuadra.</p>
+        </a>
+        <a class="biz__item" href="negocios.html#clinicas">
+          <div class="biz__pic"><img src="assets/fotos/salud-retrato-600.webp" srcset="assets/fotos/salud-retrato-360.webp 360w, assets/fotos/salud-retrato-600.webp 600w" sizes="(max-width: 639px) 45vw, (max-width: 1023px) 46vw, 302px" alt="Sala de espera luminosa de una clínica, con sofás turquesa y el mostrador de recepción" loading="lazy" width="600" height="750" data-source="stand-in" data-subject="clínica"></div>
+          <h3>Clínicas y consultorios</h3>
+          <p>Los pacientes no llegan y el hueco se pierde.</p>
+        </a>
+        <a class="biz__item" href="negocios.html#hospedaje">
+          <div class="biz__pic"><img src="assets/fotos/hospedaje-retrato-600.webp" srcset="assets/fotos/hospedaje-retrato-360.webp 360w, assets/fotos/hospedaje-retrato-600.webp 600w" sizes="(max-width: 639px) 45vw, (max-width: 1023px) 46vw, 302px" alt="Cabaña de madera con techo de paja entre palmas, frente a una montaña de bosque tropical" loading="lazy" width="600" height="750" data-source="stand-in" data-subject="cabaña"></div>
+          <h3>Hospedaje y turismo</h3>
+          <p>Pagas comisión por reservas que podrían ser directas.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- PASOS: the four steps beside the written proposal they lead to -->
+  <section class="section" id="como" style="--hm: 2" aria-labelledby="como-h">
+    <div class="wrap">
+      <div class="split">
+        <div class="split__text">
+          <h2 id="como-h">Primero la propuesta por escrito. Después, el equipo.</h2>
+          <ol class="steps">
+            <li><span class="steps__n">1</span><div><h3>Nos cuentas</h3><p>Qué te quita tiempo, qué equipo ya tienes y cuánto quieres invertir.</p></div></li>
+            <li><span class="steps__n">2</span><div><h3>Te mandamos la propuesta</h3><p>Qué haríamos, el equipo que hace falta y en cuánto tiempo queda.</p></div></li>
+            <li><span class="steps__n">3</span><div><h3>Lo hacemos</h3><p>Programamos y dejamos conectado el equipo. Lo pruebas antes de usarlo.</p></div></li>
+            <li><span class="steps__n">4</span><div><h3>Lo usas</h3><p>Le enseñamos a tu equipo y quedamos de soporte según lo acordado.</p></div></li>
+          </ol>
+          <a class="more" href="como-trabajamos.html">Ver cómo trabajamos</a>
+        </div>
+        <div class="split__pic glow--b glow" role="img" aria-label="Una propuesta escrita de ejemplo para un restaurante: tres etapas, el equipo que hace falta y la nota de que no se compra nada hasta aprobarla">
+          <div class="doc ui ui-p18-doc" aria-hidden="true">
+            <div class="doc__top"><img src="assets/marca/logo-claro.svg" alt="" width="87" height="20" loading="lazy"><span>Propuesta por escrito</span></div>
+            <div><h4>Pixbae, cocina panameña</h4><p class="doc__for">Restaurante de ejemplo, 12 mesas</p></div>
+            <div>
+              <p class="doc__label">Qué haríamos, por etapas</p>
+              <div class="doc__stages">
+                <div><b>Etapa 1</b><span>Menú QR a la medida</span></div>
+                <div><b>Etapa 2</b><span>Pedir y pagar desde la mesa, y la pantalla de cocina</span></div>
+                <div><b>Etapa 3</b><span>Mapa de mesas, punto de venta y factura electrónica</span></div>
+              </div>
+            </div>
+            <div>
+              <p class="doc__label">Equipo que hace falta</p>
+              <div class="doc__eq"><span>Placa con QR y NFC en cada mesa</span><span>Pantalla de cocina en la pared de la cocina</span></div>
+            </div>
+            <div>
+              <p class="doc__label">Lo que ya tienes y sirve</p>
+              <div class="doc__eq"><span>La tableta de la caja</span></div>
+            </div>
+            <div class="doc__foot"><p>No compramos nada hasta que la apruebas.</p><span>Aprobar</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- FOOTER.CLOSING: the one navy band, the form ("¿No encontraste lo que buscas?") and the links -->
+<footer class="footer closing p18-close" id="contacto" aria-labelledby="close-h">
+  <div class="wrap">
+    <div class="closing__cta">
+      <div class="ask" id="propuesta">
+        <div class="ask__text">
+          <h2 id="close-h">¿No encontraste lo que buscas?</h2>
+          <p>La lista es lo que ya tenemos descrito, no todo lo que podemos hacer. Cuéntanos qué necesitas y te decimos si lo podemos hacer.</p>
+        </div>
+        <form class="ask__form" data-pregunta>
+          <label for="pregunta-texto">Qué necesitas</label>
+          <textarea id="pregunta-texto" name="mensaje" rows="4" maxlength="600" placeholder="Ej.: quiero que mis vendedores vean el inventario desde el teléfono"></textarea>
+          <div class="ask__row">
+            <button class="btn btn--primary" type="submit">Pedir mi propuesta</button>
+            <span class="ask__small">Sin compromiso.</span>
+          </div>
+          <p class="ask__note" data-pregunta-nota role="status" aria-live="polite"></p>
+          <p class="ask__mail">O escríbenos a <span data-correo>info@alphateklab.com</span> <button type="button" class="btn btn--secondary copy" data-copiar>Copiar</button></p>
+        </form>
+      </div>
+    </div>
+    <div class="closing__links">
+      <div class="grid">
+        <div class="span-4 stack-4">
+          <a class="nav__logo" href="index.html"><img src="assets/marca/logo-oscuro.svg" alt="alphateklab" width="122" height="28" loading="lazy"></a>
+          <p class="footer__lede">Creamos el software de tu negocio en Panamá y lo conectamos con el equipo que haga falta.</p>
+        </div>
+        <div class="span-2 footer__col"><h3>Páginas</h3><ul><li><a href="servicios.html">Servicios</a></li><li><a href="negocios.html">Negocios</a></li><li><a href="demos.html">Demos</a></li><li><a href="como-trabajamos.html">Cómo trabajamos</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Negocios</h3><ul><li><a href="https://alphateklab.com/negocio-restaurantes.html">Restaurantes</a></li><li><a href="https://alphateklab.com/negocio-tiendas.html">Tiendas y minisúper</a></li><li><a href="https://alphateklab.com/negocio-clinicas.html">Clínicas</a></li><li><a href="https://alphateklab.com/negocio-hospedaje.html">Hospedaje</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>alphateklab</h3><ul><li><a href="como-trabajamos.html#preguntas">Preguntas frecuentes</a></li><li><a href="https://alphateklab.com/guias/">Guías</a></li><li><a href="https://alphateklab.com/privacidad/">Privacidad</a></li><li><a href="https://alphateklab.com/creditos/">Créditos</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Empresa panameña</h3><ul><li>Panamá, trabajamos a distancia</li><li>info@alphateklab.com</li></ul></div>
+      </div>
+      <div class="footer__legal">
+        <span>© 2026 alphateklab</span>
+        <span>Las demos usan negocios de ejemplo: sus nombres, platos, pacientes y reservas son ficticios.</span>
+        <details class="credits"><summary>Fotos de Unsplash y Wikimedia Commons</summary>
+          <p>Cocina: @_danbrad; minisúper: @che_3; clínica: @benyamin_bohlouli; cabaña: @yenvu2410; restaurante: @negley (Unsplash, licencia de Unsplash).</p>
+        </details>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="assets/system.js"></script>
+<script type="module" src="assets/motion/motion.js"></script>
+<script type="module" src="assets/layout/layout.js"></script>
+<script type="module" src="assets/p18.js"></script>
+</body>
+</html>
