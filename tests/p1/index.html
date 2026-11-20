@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="es" data-type="software" data-radius="soft" data-ground="sand" data-buttons="arrow" data-motion>
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>alphateklab: software a la medida para negocios en Panamá</title>
+<meta name="description" content="Creamos el software de tu negocio y lo conectamos con las placas QR, pantallas, cámaras, sensores, cerraduras y GPS de tu local. Te mandamos la propuesta por escrito.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="alphateklab: software a la medida para negocios en Panamá">
+<meta property="og:description" content="Software e IA a la medida, conectados con los equipos de tu local. Propuesta por escrito, sin compromiso.">
+<meta property="og:image" content="share.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/marca/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/marca/favicon-180.png">
+<meta name="theme-color" content="#0f0f0f">
+<link rel="canonical" href="https://alphateklab.com/">
+<meta name="site-kind" content="software">
+<meta name="page-type" content="software">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400..700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/system.css">
+<link rel="stylesheet" href="assets/ui/cards.css">
+<link rel="stylesheet" href="assets/motion/motion.css">
+<link rel="stylesheet" href="assets/backgrounds/backgrounds.css">
+<link rel="stylesheet" href="assets/layout/layout.css">
+<link rel="stylesheet" href="assets/icons/icon.css">
+<style>
+:root {
+  --p-bg: #0f0f0f; --p-surface: #1a1a1a; --p-ink: #ffffff; --p-muted: #8f8f8f;
+  --p-accent: #dafa9c; --p-accent-ink: #0f0f0f; --p-action: #dafa9c; --p-action-ink: #0f0f0f;
+  --p-inv-bg: #ffffff; --p-inv-surface: #ececec; --p-inv-ink: #0f0f0f; --p-inv-muted: #5f5f5f;
+  --p-inv-accent: #0f0f0f; --p-inv-accent-ink: #ffffff; --p-inv-action: #0f0f0f; --p-inv-action-ink: #ffffff;
+  --font-display: "Outfit", system-ui, sans-serif;
+  --font-text: "Outfit", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 400;
+  --display-tracking: -0.03em;
+  --display-tracking-xl: -0.04em;
+}
+</style>
+<link rel="stylesheet" href="assets/ui/base.css">
+<link rel="stylesheet" href="assets/ui/notify/fragment.css">
+<link rel="stylesheet" href="assets/ui/toggles/fragment.css">
+<link rel="stylesheet" href="assets/ui/stat/fragment.css">
+<link rel="stylesheet" href="assets/ui/integrations/fragment.css">
+<link rel="stylesheet" href="assets/ui/search/fragment.css">
+<link rel="stylesheet" href="assets/diagrams/diagram.css">
+<script>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
+<script src="assets/backgrounds/backgrounds.js"></script>
+<script>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
+<link rel="modulepreload" href="assets/moments/moments.js">
+<link rel="modulepreload" href="assets/moments/lib.js">
+<link rel="modulepreload" href="assets/moments/word-highlight/moment.js">
+<style>
+/* ---- Edwin's radius caps (BRIEF.md): containers and cards 8px at most, buttons and fields 6px, tags 4px.
+   start.mjs printed the :root block above with --radius soft; these tokens cap it. */
+html[data-radius="soft"] { --r-sm: 6px; --r-md: 8px; --r-lg: 8px; --r-btn: 6px; }
+.pill, .ui-chip, .badge, .tp-chip, .dg-node--chip, .step-num { border-radius: 4px; }
+.tab, .ui-btn, .nav__toggle, .loop-pause, .ui-pause, .ui-switch { border-radius: 6px; }
+button.ui-pause.ui-pause.ui-pause, button.loop-pause.loop-pause { border-radius: 6px; }
+button:is(.ui-pause, .loop-pause).ui-pause::before { border-radius: 8px; }
+.ui-switch i { border-radius: 4px; }
+.card { --c-r: 8px; }
+
+/* ---- type: labels in sentence case at 15px/500 (Edwin), never tracked capitals */
+.t-label { font-size: 15px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+
+/* ---- the client's logo: logo-oscuro.svg on this dark page, never redrawn */
+.nav__logo img, .footer__mark img { display: block; height: 26px; width: auto; }
+/* the h1's inline mark: the same file, cropped to its symbol (the first 128 of its 569 units) */
+.h1-mark { display: inline-block; width: .78em; height: .78em; vertical-align: -.08em; margin-right: .12em;
+  background: url("assets/marca/logo-oscuro.svg") 0 50% / auto 100% no-repeat; }
+
+/* ---- hero notice: a 4px tag in sentence case */
+.hero--centred h1 { max-width: 19ch; }
+.hero--centred .hero__lead { color: #c4c4c0; }
+.tp { --ink: #f1f1ee; --bg: #1d1d1d; --action: #dafa9c; }
+/* the pause disc on the lit sand of the hero frame: dark on light, so its ring reads */
+.hero__window > button.loop-pause { --ink: #1d1b18; --bg: #efe8dc; }
+.hero--centred .pill { height: 32px; font-size: 15px; gap: var(--s-3); }
+.hero--centred .pill .muted { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-strong); }
+
+/* ---- "Tu panel": the client's own window, drawn as live HTML (hero and the business tabs) */
+.tp { --tp-bg: #141414; --tp-2: #1d1d1d; --tp-line: rgb(255 255 255 / .08); --tp-ink: #f1f1ee; --tp-muted: #a3a3a0;
+  background: var(--tp-bg); color: var(--tp-ink); border-radius: 8px; overflow: hidden; text-align: left;
+  font: 400 14px/1.45 var(--font-text); box-shadow: 0 0 0 1px var(--tp-line), 0 30px 70px -30px rgb(0 0 0 / .8); }
+.tp__bar { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px; border-bottom: 1px solid var(--tp-line); font-size: 13px; color: var(--tp-muted); }
+.tp__dots { display: flex; gap: 6px; } .tp__dots i { width: 10px; height: 10px; border-radius: 50%; background: #333; }
+.tp__crumb { display: inline-flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; }
+.tp__crumb b { color: var(--tp-ink); font-weight: 500; }
+.tp__sym { width: 16px; height: 16px; flex: none; background: url("assets/marca/logo-oscuro.svg") 0 50% / auto 100% no-repeat; }
+.tp__sp { flex: 1; }
+.tp__body { display: grid; grid-template-columns: 252px minmax(0, 1fr); min-height: 420px; }
+.tp__side { border-right: 1px solid var(--tp-line); padding: 12px 10px; display: grid; align-content: start; gap: 2px; }
+.tp__head { font-size: 13px; color: var(--tp-muted); padding: 2px 8px 8px; }
+.tp__dev { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 0 10px; align-items: center; padding: 7px 8px; border-radius: 6px; font-size: 13px; }
+.tp__dev > svg { grid-row: 1 / span 2; width: 28px; height: 28px; padding: 6px; border-radius: 6px; background: var(--tp-2); color: var(--tp-ink); fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.tp__dev b { font-weight: 500; color: var(--tp-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tp__dev span { color: var(--tp-muted); white-space: nowrap; }
+.tp__dev.is-alert { background: rgb(218 250 156 / .08); }
+.tp__dev.is-alert span { color: var(--p-accent); }
+.tp__feed { display: grid; align-content: start; gap: 10px; padding: 14px 18px; min-width: 0; }
+.tp__msg { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 2px 10px; }
+.tp__msg > :is(svg, img, i) { grid-row: 1 / span 2; width: 24px; height: 24px; }
+.tp__msg > svg { padding: 4px; border-radius: 6px; background: var(--tp-2); fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.tp__msg > i { box-sizing: border-box; padding: 4px; border-radius: 6px; background: url("assets/marca/logo-oscuro.svg") 0 50% / auto 100% no-repeat content-box, var(--tp-2) padding-box; background-clip: content-box, padding-box; background-origin: content-box, padding-box; }
+.tp__who { font-size: 13px; color: var(--tp-muted); } .tp__who b { color: var(--tp-ink); font-weight: 500; }
+.tp__txt { margin: 0; color: var(--tp-ink); }
+.tp__msg--alert .tp__txt { padding-left: 10px; box-shadow: inset 2px 0 0 var(--p-accent); }
+.tp__tool { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--tp-muted); padding-left: 34px; }
+.tp__tool::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; }
+.tp__acts { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 34px; }
+.tp-chip { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; font-size: 13px; font-weight: 500; background: #f1f1ee; color: #0f0f0f; }
+.tp-chip + .tp-chip { background: rgb(255 255 255 / .08); color: var(--tp-ink); }
+.tp__wa { display: inline-flex; align-items: center; gap: 6px; }
+.tp__wa img { width: 16px; height: 16px; }
+
+/* the hero window: the exchange stands in its top 280px, above the fade */
+.hero--centred .tp__body { min-height: 360px; }
+@media (max-width: 1023px) { .hero--centred .tp__body { grid-template-columns: minmax(0, 1fr); } .hero--centred .tp__side { display: none; } }
+@media (max-width: 639px) {
+  .hero--centred .tp__bar .tp__when, .hero--centred .tp__tool { display: none; }
+  .hero--centred .tp__feed { padding: 12px 14px; gap: 8px; font-size: 13px; }
+  .hero--centred .tp__acts .tp-chip + .tp-chip { display: none; }
+}
+
+/* ---- negocios: the app window across the wrap, one tab at a time */
+#negocios .tabs { margin-bottom: var(--s-5); }
+#negocios .tp-frame { padding: 32px 32px 0; align-items: stretch; }
+#negocios .tp-app { position: relative; width: 100%; height: 100%; }
+#negocios .tp { height: 100%; display: flex; flex-direction: column; }
+#negocios .tp__body { flex: 1; min-height: 0; grid-template-columns: 340px minmax(0, 1fr); overflow: hidden; }
+#negocios .tp__feed { gap: 16px; padding: 18px 28px; font-size: 15px; }
+#negocios .tp__dev { font-size: 14px; padding: 9px 8px; }
+#negocios .tp__stat { margin: 14px 8px 0; padding: 14px 12px 4px; border-top: 1px solid var(--tp-line); }
+#negocios .tp__stat strong { display: block; font: 500 28px/1.1 var(--font-text); letter-spacing: -0.02em; color: var(--tp-ink); font-variant-numeric: tabular-nums; }
+#negocios .tp__stat span { font-size: 13px; color: var(--tp-muted); }
+#negocios .tp { border-radius: 8px 8px 0 0; }
+#negocios .tp-app::after { content: ""; position: absolute; inset: auto 1px 0 1px; height: 64px; background: linear-gradient(transparent, #141414); pointer-events: none; }
+#negocios .tp__time { font-variant-numeric: tabular-nums; }
+@media (max-width: 1023px) { #negocios .tp__body { grid-template-columns: minmax(0, 1fr); } #negocios .tp__side { display: none; } }
+@media (max-width: 639px) {
+  #negocios .tp-frame { flex: none; padding: 16px; --ratio: 0px; }
+  #negocios .tp { height: auto; border-radius: 8px; } #negocios .tp__body { overflow: visible; min-height: 0; } #negocios .tp-app::after { display: none; }
+  #negocios .tp__feed { padding: 14px; gap: 12px; font-size: 14px; } #negocios .tp__feed > .tp__head { display: none; } #negocios .tp__feed > .tp__msg:nth-of-type(-n+3) { display: none; } #negocios .tp__bar .tp__when { display: none; }
+}
+
+/* ---- demos: the five demos beside their screen */
+#demos .rows__name { font-size: var(--t-card); font-weight: 500; color: var(--ink); text-decoration: none; }
+#demos .rows > li { grid-template-columns: minmax(0, 1fr); cursor: default; }
+#demos .rows__name .ext { color: var(--muted); font-weight: 400; }
+@media (min-width: 1024px) and (max-width: 1279px) { #demos .rows > li > p { display: none; } }
+@media (min-width: 640px) and (max-width: 1023px) { #demos, #servicios { --h: 2; } }
+@media (max-width: 639px) { #demos .rows__name { display: inline-flex; align-items: center; min-height: 44px; } #demos .rows > li { padding-block: 4px; } #demos .rows > li > p { display: none; } #demos .demos__all { display: none; } }
+#demos .frame--photo { aspect-ratio: 16 / 10; border: 1px solid var(--line); }
+#demos .frame--photo img { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+#demos .demos__all { margin-top: var(--s-5); }
+#demos .demos__pick { margin: 0 0 var(--s-3); }
+@media (min-width: 640px) { #demos .rows > li { padding-block: 13px; } #demos .rows > li:first-child { padding-top: 0; } }
+
+/* ---- soluciones: four photographs, then the nine businesses */
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-5); }
+.strip img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 8px; }
+.biz { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 0 var(--s-5); }
+@media (min-width: 1280px) { #soluciones .group:last-child { display: flex; flex-direction: column; } #soluciones .biz { flex: 1 1 auto; grid-template-rows: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 1279px) { .biz__ic { display: none; } .biz a { padding: 14px 0; } }
+.biz__ic { width: 40px; height: 40px; border-radius: 6px; background: var(--p-surface); position: relative; margin-bottom: 8px; }
+.biz__ic::before { content: ""; position: absolute; inset: 10px; background: var(--ink); -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat; }
+@media (hover: hover) and (pointer: fine) { .biz a .biz__ic::before { transition: background-color 150ms var(--ease); } .biz a:hover .biz__ic::before { background: var(--accent); } }
+.biz__all { margin-top: var(--s-6); }
+.biz a { display: grid; align-content: start; gap: 6px; padding: 24px 0; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.biz__name { font: 500 var(--t-card)/1.3 var(--font-text); letter-spacing: -0.01em; }
+.biz p { margin: 0; color: var(--ink); opacity: .84; }
+.biz span { font-size: 15px; font-weight: 500; color: var(--muted); }
+@media (hover: hover) and (pointer: fine) { .biz a .biz__name { transition: color var(--m-in, 150ms) var(--ease); } .biz a:hover .biz__name { color: var(--accent); } }
+@media (min-width: 640px) and (max-width: 1023px) { .biz { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 639px) { .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .strip img { aspect-ratio: 1 / 1; } .strip img { aspect-ratio: 4 / 5; } .biz { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; } .biz a { padding: 18px 0; gap: 2px; } .biz a p { display: none; } .biz a .biz__name { font-size: 18px; } .biz__all { margin-top: var(--s-4); } }
+
+/* ---- servicios: the eight types, and the search over the 79 on the lit ground */
+.types { list-style: none; margin: 0; padding: 0; }
+.types li a { display: grid; grid-template-columns: minmax(0, 1fr) 7.5em; align-items: baseline; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.types li:first-child a { padding-top: 4px; }
+.types b { font-weight: 500; font-size: 18px; }
+.types small { font-size: 15px; font-weight: 500; color: var(--muted); text-align: right; white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) { .types li a b { transition: color 150ms var(--ease); } .types li a:hover b { color: var(--accent); } }
+.finder-frame { align-self: stretch; align-items: flex-start; padding: 40px; }
+.finder { width: 100%; max-width: 520px; padding: 18px; color: var(--u-ink); font: 400 14px/1.45 var(--font-text); }
+.finder__label { display: block; font-size: 15px; font-weight: 500; margin-bottom: 10px; }
+.finder__field { display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 14px; border: 1px solid var(--u-line-2); border-radius: 6px; background: var(--u-fill); }
+.finder__field:focus-within { outline: 2px solid var(--p-accent); outline-offset: 2px; }
+.finder__field svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; opacity: .7; }
+.finder__field input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: var(--u-ink); font: 400 17px/1 var(--font-text); }
+.finder__field input::placeholder { color: var(--u-muted); }
+.finder__note { margin: 18px 0 6px; font-size: 13px; color: var(--u-muted); }
+.finder__list { list-style: none; margin: 0; padding: 0; display: grid; }
+.finder__list a { display: grid; gap: 2px; padding: 9px 10px; margin: 0 -10px; border-radius: 6px; color: var(--u-ink); text-decoration: none; }
+.finder__list a b { font-weight: 500; font-size: 15px; }
+.finder__list a small { font-size: 13px; color: var(--u-muted); }
+.finder__list a:is(:hover, :focus-visible) { background: var(--u-fill-2); }
+.finder__list a:is(:hover, :focus-visible) b { text-decoration: underline; text-decoration-color: var(--p-accent); text-underline-offset: 3px; }
+.finder__empty { margin: 6px 0 0; font-size: 15px; }
+.finder__empty a { color: var(--u-ink); font-weight: 500; }
+@media (max-width: 639px) { .finder-frame { padding: 16px; } .finder { padding: 14px; } }
+
+@media (max-width: 1023px) { .types li a { border-bottom: 0; padding: 10px 0; } }
+@media (max-width: 639px) { .biz__all .link, .steps__more .link, #equipos .link { display: flex; justify-content: space-between; min-height: 44px; } .hero--centred .pill { width: 100%; justify-content: center; } }
+
+/* ---- paquetes: six cards, a working piece on each panel */
+#paquetes .panel { --p-h: 300px; }
+@media (min-width: 640px) and (max-width: 1279px) {
+  #paquetes { --h: 1; }
+  #paquetes > .wrap { display: flex; flex-direction: column; row-gap: var(--s-5); }
+  #paquetes .card > .panel { display: none; }
+  #paquetes .grid > .card { grid-column: auto / span 4; }
+}
+@media (max-width: 639px) { #paquetes .panel { --p-h: 180px; } #paquetes .card:not(.card--phone) > .panel { display: none; } }
+.tp-menu { width: 100%; }
+.tp-menu ul { list-style: none; margin: 0; padding: 4px 14px 10px; display: grid; }
+.tp-menu li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--u-line); font-size: 13px; }
+.tp-menu li b { font-weight: 500; font-variant-numeric: tabular-nums; }
+.tp-menu .ui-btn { margin: 4px 14px 14px; width: calc(100% - 28px); justify-content: center; }
+
+/* ---- cómo trabajamos: the statement, then four steps */
+.statement-text { font: var(--display-weight) clamp(28px, 1.9vw + 14px, 44px)/1.18 var(--font-display); letter-spacing: var(--display-tracking); max-width: 30ch; margin: 0; }
+.steps4 { list-style: none; padding: 0; margin-bottom: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-5); margin-top: var(--s-8); }
+.steps4 > li { display: grid; align-content: start; gap: 8px; padding-top: var(--s-4); border-top: 1px solid var(--line); }
+.steps4 strong { font: 500 var(--t-card)/1.3 var(--font-text); margin-top: 4px; }
+.steps4 p { margin: 0; }
+.step-num { width: 28px; height: 28px; color: var(--accent); border-color: color-mix(in oklab, var(--accent) 40%, transparent); }
+.steps__more { margin-top: var(--s-5); }
+@media (max-width: 1023px) { .steps4 { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: var(--s-6); } }
+@media (max-width: 639px) { .steps4 { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); } }
+
+/* ---- equipos: three facts beside the hub */
+.facts { list-style: none; margin: var(--s-6) 0 var(--s-5); padding: 0; display: grid; }
+.facts li { padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 17px; line-height: 1.55; }
+.facts li:first-child { padding-top: 0; }
+#equipos .frame { align-self: stretch; min-height: 460px; padding: 0; background: var(--p-surface); }
+#equipos .dg { width: 100%; height: 100%; }
+@media (max-width: 639px) { #equipos .frame { min-height: 0; height: 264px; flex: none; } #equipos .facts { margin-top: var(--s-5); } #equipos .facts li { font-size: 16px; padding: 10px 0; } }
+
+/* ---- propuesta: the form on the surface, beside its words */
+.ask-frame { align-self: stretch; align-items: flex-start; padding: 40px; }
+.ask { width: 100%; max-width: 560px; padding: 28px; display: grid; gap: var(--s-4); color: var(--u-ink); font-family: var(--font-text); }
+.ask label { font-size: 15px; font-weight: 500; }
+.ask textarea { width: 100%; min-height: 200px; resize: vertical; padding: 14px 16px; border-radius: 6px; border: 1px solid var(--u-line-2); background: var(--u-fill); color: var(--u-ink); font: 400 17px/1.5 var(--font-text); }
+.ask textarea::placeholder { color: var(--u-muted); }
+.ask textarea:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
+.ask textarea[aria-invalid="true"] { border-color: #ff9b8a; }
+.ask__err { margin: 0; color: #ffb4a8; font-size: 15px; }
+.ask__note { margin: 0; min-height: 24px; font-size: 16px; color: var(--accent); }
+.ask__mail { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; color: var(--u-ink); font-size: 16px; padding-top: var(--s-4); border-top: 1px solid var(--u-line); }
+.ask__mail span[data-correo] { font-weight: 500; user-select: all; -webkit-user-select: all; }
+.ask__copy { height: 44px; padding: 0 16px; border-radius: 6px; border: 1px solid var(--u-line-2); background: transparent; color: var(--u-ink); font: 500 15px/1 var(--font-text); cursor: pointer; transition: background-color 150ms var(--ease), border-color 150ms var(--ease); }
+/* Copiar: the kit's button timings (150ms in, 90ms press), hover only for a fine pointer, a press that sinks 1px */
+.ask__copy { transition: background-color var(--m-in, 150ms) var(--ease), border-color var(--m-in, 150ms) var(--ease), transform var(--m-press, 90ms) var(--ease); }
+@media (hover: hover) and (pointer: fine) { .ask__copy:hover { background: color-mix(in oklab, var(--u-ink) 8%, transparent); border-color: var(--u-ink); } }
+.ask__copy:active { transform: translateY(1px) scale(.985); }
+@media (prefers-reduced-motion: reduce) { .ask__copy:active { transform: none; background: color-mix(in oklab, var(--u-ink) 14%, transparent); } }
+@media (max-width: 639px) { .ask-frame { padding: 16px; } .ask { padding: var(--s-5); } }
+
+@media (max-width: 639px) {
+  main > :is(section, .section) > .wrap > .fill { flex: 1 0 auto; }
+}
+@media (max-width: 380px) { .nav__logo img { width: 26px; height: 26px; object-fit: cover; object-position: 0 50%; } }
+
+/* ---- footer: the client's lines in Spanish */
+.credits > summary::after { content: "Ver la lista"; }
+.credits[open] > summary::after { content: "Ocultar"; }
+.footer__demo { font-size: 15px; color: var(--muted); margin: 0; }
+.close__word { line-height: 1.04; }
+.close__word { font-size: calc(min(100vw - 2 * var(--gut), 1280px) / 4.9); }
+@media (min-width: 640px) { .footer__legal { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s-5); row-gap: var(--s-3); align-items: baseline; } .footer__legal .credits { grid-column: auto; } }
+.footer__col p { margin: 0 0 6px; color: var(--muted); font-size: 15px; }
+.footer__col address { font-style: normal; color: var(--ink); margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<!-- type: software (site-kind software): alphateklab sells custom software and AI for small businesses in Panamá,
+     connected to the equipment in the business. Main action: Pedir mi propuesta.
+     deal: hero centred (assets/layout/hero-centred.html), palette soot-pale-lime (dark: a soot ground and one pale lime,
+       the colour of a status light that says "todo en orden"), type outfit (Outfit + DM Mono), radius soft capped at 8px,
+       nav nav-centre, footer footer-columns, close close-word, rhythm surface-pairs (servicios + paquetes on the surface),
+       buttons arrow, mark: the client's logo-oscuro.svg, lit ground sand, effect grain-gradient (the hero frame, held still),
+       card ground: none left in its family (dropped, the lit ground plain).
+     moment: word-highlight in #como-trabajamos (the promise that the proposal comes first, lit word by word).
+     screens at 1440x900: hero 1, negocios 1, demos 1, soluciones 2, servicios 1, paquetes 2, como-trabajamos 1,
+       equipos 1, propuesta 1, footer.closing 1. -->
+<header class="nav nav--centre">
+  <div class="wrap nav__bar">
+    <a class="skip-link" href="#top">Saltar al contenido</a>
+    <a class="nav__logo" href="#top" aria-label="alphateklab, inicio"><img src="assets/marca/logo-oscuro.svg" alt="alphateklab" width="116" height="26"></a>
+    <nav class="nav__links" aria-label="Principal">
+      <div class="nav__item"><a class="nav__link" href="#demos">Demos</a></div>
+      <div class="nav__item">
+        <a class="nav__link" href="#soluciones">Soluciones <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div class="nav__menu">
+          <div class="wrap grid">
+            <div class="menu-col span-3">
+              <p class="t-label">Comercio y comida</p>
+              <a href="https://alphateklab.com/negocio-restaurantes.html">Restaurantes y cafés<span>Menos espera en las mesas</span></a>
+              <a href="https://alphateklab.com/negocio-tiendas.html">Tiendas, minisúper y comercio<span>Que la caja cuadre</span></a>
+              <a href="https://alphateklab.com/negocio-hospedaje.html">Hospedaje y turismo<span>Reservas directas sin comisión</span></a>
+            </div>
+            <div class="menu-col span-3">
+              <p class="t-label">Servicios y oficinas</p>
+              <a href="https://alphateklab.com/negocio-clinicas.html">Clínicas y consultorios<span>Pacientes que llegan a su cita</span></a>
+              <a href="https://alphateklab.com/negocio-bienes-raices.html">Bienes raíces<span>Recorrer el apartamento antes</span></a>
+              <a href="https://alphateklab.com/negocio-escuelas.html">Escuelas y academias<span>Mensualidades a tiempo</span></a>
+            </div>
+            <div class="menu-col span-3">
+              <p class="t-label">Taller y planta</p>
+              <a href="https://alphateklab.com/negocio-industria-y-oficinas.html">Bodegas, oficinas e industria<span>Saber antes de que pare</span></a>
+              <a href="https://alphateklab.com/negocio-talleres-y-salones.html">Talleres, autolavados y salones<span>Citas que no se cruzan</span></a>
+              <a href="https://alphateklab.com/negocio-cualquier-negocio.html">Cualquier negocio<span>Que te encuentren en Google</span></a>
+            </div>
+            <div class="menu-col span-3">
+              <p class="t-label">Los nueve</p>
+              <a href="https://alphateklab.com/soluciones.html">Ver todos los negocios<span>Con sus servicios y por dónde empezar</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="nav__item">
+        <a class="nav__link" href="#servicios">Servicios <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div class="nav__menu">
+          <div class="wrap grid">
+            <div class="menu-col span-3">
+              <p class="t-label">Programas</p>
+              <a href="https://alphateklab.com/tipo-software.html">Software a medida<span>37 servicios</span></a>
+              <a href="https://alphateklab.com/tipo-web.html">Web y apps<span>20 servicios</span></a>
+              <a href="https://alphateklab.com/tipo-ia.html">Inteligencia artificial<span>11 servicios</span></a>
+            </div>
+            <div class="menu-col span-3">
+              <p class="t-label">Equipos</p>
+              <a href="https://alphateklab.com/tipo-vision.html">Cámaras que cuentan y avisan<span>9 servicios</span></a>
+              <a href="https://alphateklab.com/tipo-iot.html">Sensores que avisan<span>14 servicios</span></a>
+              <a href="https://alphateklab.com/tipo-pantallas.html">Pantallas y kioscos<span>8 servicios</span></a>
+            </div>
+            <div class="menu-col span-3">
+              <p class="t-label">Espacios y cobros</p>
+              <a href="https://alphateklab.com/tipo-tresd.html">Recorridos 3D, planos y dron<span>6 servicios</span></a>
+              <a href="https://alphateklab.com/tipo-pagos.html">Cobros y facturación<span>11 servicios</span></a>
+            </div>
+            <div class="menu-col span-3">
+              <p class="t-label">Todo el catálogo</p>
+              <a href="https://alphateklab.com/servicios.html">Ver los 79 servicios<span>Cada uno con su página</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="nav__item"><a class="nav__link" href="#paquetes">Paquetes</a></div>
+      <div class="nav__item"><a class="nav__link" href="#equipos">Equipos</a></div>
+    </nav>
+    <div class="nav__actions">
+      <a class="btn btn--primary" href="#propuesta">Pedir mi propuesta</a>
+    </div>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-label="Menú">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO: centred (assets/layout/hero-centred.html). The window is the client's own "Tu panel": an aviso arrives
+       from a device and the system says, in words, what it did. Simulated data, inside the mock only. -->
+  <section class="hero hero--centred" data-enter aria-labelledby="hero-h">
+    <div class="wrap"><div class="hero-text">
+      <div class="hero__c">
+        <a class="pill" href="#servicios"><span>79 servicios en ocho tipos</span><span class="muted">Busca el tuyo</span></a>
+        <h1 id="hero-h">Software a la medida para tu negocio</h1>
+        <p class="hero__lead">Creamos el software de tu negocio y lo conectamos con los equipos de tu local: placas QR, pantallas, cámaras, sensores, cerraduras y GPS.</p>
+        <div class="btn-row"><a class="btn btn--primary" href="#propuesta">Pedir mi propuesta</a><a class="btn btn--secondary" href="#demos">Ver las demos</a></div>
+      </div>
+      <div class="hero__window" data-fx="grain-gradient" data-fx-seed="11" data-fx-palette='{"bg":"#d9ccb7","surface":"#e9e0d2","ink":"#2a2622","accent":"#a8794a"}' data-fx-params='{"speed":0,"grainMotion":0,"calm":0.3}' role="img" aria-label="Tu panel de una fonda: el sensor de la nevera 2 avisa que subió a 8.9 °C y el sistema responde que mandó el aviso por WhatsApp y a la pantalla de la cocina">
+        <div class="ly-piece tp" aria-hidden="true">
+          <div class="tp__bar"><span class="tp__dots"><i></i><i></i><i></i></span><span class="tp__crumb"><span class="tp__sym"></span><b>Tu panel</b> / Fonda Pixbae</span><span class="tp__sp"></span><span class="tp__when">Hoy, 15:02</span></div>
+          <div class="tp__body">
+            <div class="tp__side">
+              <div class="tp__head">Equipos instalados</div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2M20 14v6h-6M17 20v0"/></svg><b>QR en las mesas</b><span>41 pedidos hoy</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><b>Pantalla de cocina</b><span>3 órdenes en curso</span></div>
+              <div class="tp__dev is-alert"><svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0Z"/></svg><b>Sensor de la nevera 2</b><span>8.9 °C</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><path d="M3 8l13-4 2 6-13 4z"/><path d="M6 14l1 5h4M18 9l3-1"/></svg><b>Cámara de la puerta</b><span>63 personas hoy</span></div>
+            </div>
+            <div class="tp__feed" data-ly-steps="900">
+              <div class="tp__msg tp__msg--alert"><svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0Z"/></svg><span class="tp__who"><b>Sensor de la nevera 2</b> · 15:02</span><p class="tp__txt">Subió a 8.9 °C. La puerta lleva 6 minutos abierta.</p></div>
+              <div class="tp__tool" data-step>Revisando la puerta y la última hora de lecturas</div>
+              <div class="tp__msg" data-step><i></i><span class="tp__who"><b>alphateklab</b> · 15:02</span><p class="tp__txt">Mandé el aviso a tu <span class="tp__wa"><img data-icon="whatsapp" src="assets/icons/whatsapp.svg" alt="" width="16" height="16">WhatsApp</span> y a la pantalla de la cocina. Te escribo cuando la nevera vuelva a 4 °C.</p></div>
+              <div class="tp__acts" data-step><span class="tp-chip">Ver la nevera 2</span><span class="tp-chip">Marcar como revisado</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- NEGOCIOS: app-frame with tabs (tabs-tour, click only): the same panel in five kinds of business.
+       Data from the client's own demo (assets/sistema.js), simulated. -->
+  <section class="section" id="negocios" aria-labelledby="negocios-h">
+    <div class="wrap">
+      <div class="grid grid--top">
+        <div class="section-head span-6"><h2 id="negocios-h">Míralo funcionando en tu tipo de negocio.</h2></div>
+        <p class="t-lead span-6 start-7">Cada equipo del local manda sus datos al mismo panel. El panel te escribe cuando algo se sale de lo normal y, al cerrar, te manda el resumen del día.</p>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Tipo de negocio">
+        <button class="tab" type="button" role="tab" id="tab-rest" aria-selected="true" aria-controls="win-rest">Restaurante</button>
+        <button class="tab" type="button" role="tab" id="tab-tienda" aria-selected="false" aria-controls="win-tienda">Tienda</button>
+        <button class="tab" type="button" role="tab" id="tab-clinica" aria-selected="false" aria-controls="win-clinica">Clínica</button>
+        <button class="tab" type="button" role="tab" id="tab-hotel" aria-selected="false" aria-controls="win-hotel">Hotel y cabañas</button>
+        <button class="tab" type="button" role="tab" id="tab-bodega" aria-selected="false" aria-controls="win-bodega">Bodega</button>
+      </div>
+      <div class="frame frame--lit tp-frame fill"><div class="tp-app ui ui-shell app-frame" data-ui-pause-host>
+        <div class="tp" role="tabpanel" id="win-rest" aria-labelledby="tab-rest">
+          <div class="tp__bar"><span class="tp__dots"><i></i><i></i><i></i></span><span class="tp__crumb"><span class="tp__sym"></span><b>Tu panel</b> / Fonda Pixbae</span><span class="tp__sp"></span><span class="tp__when">Hoy</span></div>
+          <div class="tp__body">
+            <div class="tp__side">
+              <div class="tp__head">Equipos instalados</div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2M20 14v6h-6"/></svg><b>QR en las mesas</b><span>41 pedidos hoy</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><b>Pantalla de cocina</b><span>3 órdenes en curso</span></div>
+              <div class="tp__dev is-alert"><svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0Z"/></svg><b>Sensor de la nevera</b><span>8.9 °C, revisando</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><path d="M3 8l13-4 2 6-13 4z"/><path d="M6 14l1 5h4M18 9l3-1"/></svg><b>Cámara de la puerta</b><span>63 personas hoy</span></div>
+              <div class="tp__stat"><strong>B/. 612.40</strong><span>ventas de hoy</span></div>
+            </div>
+            <div class="tp__feed" data-ly-steps="900">
+              <div class="tp__head">Lo que te llega</div>
+              <div class="tp__msg"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2M20 14v6h-6"/></svg><span class="tp__who"><b>QR de la mesa 4</b> · <span class="tp__time">12:41</span></span><p class="tp__txt">Mesa 4 pidió 2 patacones con ceviche y 1 chicha de piña. B/. 9.50</p></div>
+              <div class="tp__msg"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><span class="tp__who"><b>Pantalla de cocina</b> · <span class="tp__time">12:53</span></span><p class="tp__txt">La orden de la mesa 4 está lista.</p></div>
+              <div class="tp__msg" data-step><i></i><span class="tp__who"><b>alphateklab</b> · <span class="tp__time">13:20</span></span><p class="tp__txt">Mesa 4 pagó B/. 10.17 con Yappy, ITBMS incluido, y dejó B/. 1.00 de propina.</p></div>
+              <div class="tp__msg tp__msg--alert" data-step><svg viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0Z"/></svg><span class="tp__who"><b>Sensor de la nevera</b> · <span class="tp__time">15:02</span></span><p class="tp__txt">Aviso: la nevera 2 subió a 8.9 °C. La puerta lleva 6 minutos abierta.</p></div>
+              <div class="tp__msg" data-step><i></i><span class="tp__who"><b>alphateklab</b> · <span class="tp__time">22:00</span></span><p class="tp__txt">Resumen de hoy: 63 personas entraron, 41 pedidos por QR y B/. 612.40 en ventas. 1 aviso de la nevera, resuelto.</p></div>
+            </div>
+          </div>
+        </div>
+        <div class="tp" role="tabpanel" id="win-tienda" aria-labelledby="tab-tienda" hidden>
+          <div class="tp__bar"><span class="tp__dots"><i></i><i></i><i></i></span><span class="tp__crumb"><span class="tp__sym"></span><b>Tu panel</b> / Minisúper</span><span class="tp__sp"></span><span class="tp__when">Hoy</span></div>
+          <div class="tp__body">
+            <div class="tp__side">
+              <div class="tp__head">Equipos instalados</div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><path d="M3 8l13-4 2 6-13 4z"/><path d="M6 14l1 5h4M18 9l3-1"/></svg><b>Cámara que cuenta</b><span>214 visitas hoy</span></div>
+              <div class="tp__dev is-alert"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg><b>Caja y cobro</b><span>96 ventas, caja 1 por revisar</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><b>Inventario</b><span>3 productos por pedir</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><b>Consumo eléctrico</b><span>41 kWh hoy</span></div>
+              <div class="tp__stat"><strong>B/. 1,840.50</strong><span>ventas de hoy</span></div>
+            </div>
+            <div class="tp__feed" data-ly-steps="900">
+              <div class="tp__head">Lo que te llega</div>
+              <div class="tp__msg"><svg viewBox="0 0 24 24"><path d="M3 8l13-4 2 6-13 4z"/><path d="M6 14l1 5h4M18 9l3-1"/></svg><span class="tp__who"><b>Cámara que cuenta</b> · <span class="tp__time">11:00</span></span><p class="tp__txt">Entraron 96 personas en la mañana. La hora pico de ayer fue de 5 a 7 p. m.</p></div>
+              <div class="tp__msg"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg><span class="tp__who"><b>Caja y cobro</b> · <span class="tp__time">13:14</span></span><p class="tp__txt">Venta 0458: B/. 23.75 con tarjeta. Factura electrónica enviada.</p></div>
+              <div class="tp__msg" data-step><svg viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span class="tp__who"><b>Inventario</b> · <span class="tp__time">16:30</span></span><p class="tp__txt">Arroz de 5 lb: quedan 6. Al ritmo de hoy se acaba el jueves.</p></div>
+              <div class="tp__msg tp__msg--alert" data-step><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg><span class="tp__who"><b>Caja y cobro</b> · <span class="tp__time">21:05</span></span><p class="tp__txt">Aviso: la caja 1 cerró con B/. 12.00 menos de lo vendido.</p></div>
+              <div class="tp__msg" data-step><i></i><span class="tp__who"><b>alphateklab</b> · <span class="tp__time">21:30</span></span><p class="tp__txt">Resumen de hoy: 214 personas entraron, 96 ventas y B/. 1,840.50 vendidos. 3 productos por pedir.</p></div>
+            </div>
+          </div>
+        </div>
+        <div class="tp" role="tabpanel" id="win-clinica" aria-labelledby="tab-clinica" hidden>
+          <div class="tp__bar"><span class="tp__dots"><i></i><i></i><i></i></span><span class="tp__crumb"><span class="tp__sym"></span><b>Tu panel</b> / Clínica</span><span class="tp__sp"></span><span class="tp__when">Hoy</span></div>
+          <div class="tp__body">
+            <div class="tp__side">
+              <div class="tp__head">Equipos instalados</div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4m-7 8 2 2 4-4"/></svg><b>Agenda en línea</b><span>18 citas hoy</span></div>
+              <div class="tp__dev is-alert"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12Z"/></svg><b>Recordatorios</b><span>16 confirmadas, 2 sin respuesta</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><b>Pantalla de turnos</b><span>Turno 12</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M9 13v1M15 13v1M2 14h2M20 14h2"/></svg><b>Asistente con IA</b><span>9 chats atendidos</span></div>
+              <div class="tp__stat"><strong>4 %</strong><span>inasistencias del mes</span></div>
+            </div>
+            <div class="tp__feed" data-ly-steps="900">
+              <div class="tp__head">Lo que te llega</div>
+              <div class="tp__msg"><svg viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M9 13v1M15 13v1M2 14h2M20 14h2"/></svg><span class="tp__who"><b>Asistente con IA</b> · <span class="tp__time">22:47</span></span><p class="tp__txt">Nueva cita agendada: martes 10:30 a. m., consulta de control. La clínica estaba cerrada.</p></div>
+              <div class="tp__msg"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12Z"/></svg><span class="tp__who"><b>Recordatorios</b> · <span class="tp__time">08:00</span></span><p class="tp__txt">Recordatorio enviado a los 18 pacientes de mañana.</p></div>
+              <div class="tp__msg" data-step><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4m-7 8 2 2 4-4"/></svg><span class="tp__who"><b>Agenda en línea</b> · <span class="tp__time">10:15</span></span><p class="tp__txt">16 confirmaron. 1 canceló y su hora ya se ofreció a la lista de espera.</p></div>
+              <div class="tp__msg tp__msg--alert" data-step><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12Z"/></svg><span class="tp__who"><b>Recordatorios</b> · <span class="tp__time">17:00</span></span><p class="tp__txt">Aviso: 2 pacientes de mañana no han confirmado su cita.</p></div>
+              <div class="tp__msg" data-step><i></i><span class="tp__who"><b>alphateklab</b> · <span class="tp__time">18:30</span></span><p class="tp__txt">Resumen de hoy: 18 citas, 17 atendidas y 1 reprogramada. Inasistencias del mes: 4 %.</p></div>
+            </div>
+          </div>
+        </div>
+        <div class="tp" role="tabpanel" id="win-hotel" aria-labelledby="tab-hotel" hidden>
+          <div class="tp__bar"><span class="tp__dots"><i></i><i></i><i></i></span><span class="tp__crumb"><span class="tp__sym"></span><b>Tu panel</b> / Cabañas</span><span class="tp__sp"></span><span class="tp__when">Esta semana</span></div>
+          <div class="tp__body">
+            <div class="tp__side">
+              <div class="tp__head">Equipos instalados</div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3M12 15v2"/></svg><b>Cerraduras con código</b><span>4 cabañas</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4m-7 8 2 2 4-4"/></svg><b>Reservas directas</b><span>3 esta semana</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><b>Booking y Airbnb</b><span>Calendario al día</span></div>
+              <div class="tp__dev is-alert"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/></svg><b>Tanque de agua</b><span>20 %</span></div>
+              <div class="tp__stat"><strong>B/. 72</strong><span>ahorrados en comisiones</span></div>
+            </div>
+            <div class="tp__feed" data-ly-steps="900">
+              <div class="tp__head">Lo que te llega</div>
+              <div class="tp__msg"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4m-7 8 2 2 4-4"/></svg><span class="tp__who"><b>Reservas directas</b> · <span class="tp__time">09:12</span></span><p class="tp__txt">Cabaña 2, del 21 al 23. B/. 240 pagados con Yappy.</p></div>
+              <div class="tp__msg"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><span class="tp__who"><b>Booking y Airbnb</b> · <span class="tp__time">09:13</span></span><p class="tp__txt">Calendario al día: las fechas quedaron bloqueadas en Booking y Airbnb.</p></div>
+              <div class="tp__msg" data-step><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3M12 15v2"/></svg><span class="tp__who"><b>Cerradura de la cabaña 2</b> · <span class="tp__time">15:12</span></span><p class="tp__txt">Código enviado al huésped. Abrió a las 3:12 p. m.</p></div>
+              <div class="tp__msg tp__msg--alert" data-step><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/></svg><span class="tp__who"><b>Tanque de agua</b> · <span class="tp__time">19:40</span></span><p class="tp__txt">Aviso: el tanque de agua bajó al 20 %.</p></div>
+              <div class="tp__msg" data-step><i></i><span class="tp__who"><b>alphateklab</b> · <span class="tp__time">Lun</span></span><p class="tp__txt">Resumen de la semana: 3 reservas directas y B/. 72 ahorrados en comisiones. Fin de semana al 90 %.</p></div>
+            </div>
+          </div>
+        </div>
+        <div class="tp" role="tabpanel" id="win-bodega" aria-labelledby="tab-bodega" hidden>
+          <div class="tp__bar"><span class="tp__dots"><i></i><i></i><i></i></span><span class="tp__crumb"><span class="tp__sym"></span><b>Tu panel</b> / Bodega</span><span class="tp__sp"></span><span class="tp__when">Hoy</span></div>
+          <div class="tp__body">
+            <div class="tp__side">
+              <div class="tp__head">Equipos instalados</div>
+              <div class="tp__dev is-alert"><svg viewBox="0 0 24 24"><path d="M2 12h3l3-7 4 14 3-7h7"/></svg><b>Sensor del motor 3</b><span>Vibración alta</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/></svg><b>Nivel del tanque 1</b><span>62 %</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><b>GPS de la flota</b><span>4 camiones en ruta</span></div>
+              <div class="tp__dev"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg><b>Control de acceso</b><span>12 entradas</span></div>
+              <div class="tp__stat"><strong>0</strong><span>paradas imprevistas este mes</span></div>
+            </div>
+            <div class="tp__feed" data-ly-steps="900">
+              <div class="tp__head">Lo que te llega</div>
+              <div class="tp__msg"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/></svg><span class="tp__who"><b>Nivel del tanque 1</b> · <span class="tp__time">07:00</span></span><p class="tp__txt">Tanque 1 al 62 %. Motor 3: vibración normal.</p></div>
+              <div class="tp__msg"><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg><span class="tp__who"><b>GPS de la flota</b> · <span class="tp__time">07:10</span></span><p class="tp__txt">El camión 2 salió rumbo a David con el pedido 2220.</p></div>
+              <div class="tp__msg" data-step><svg viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg><span class="tp__who"><b>Control de acceso</b> · <span class="tp__time">07:58</span></span><p class="tp__txt">13 personas entraron antes de las 8 a. m.</p></div>
+              <div class="tp__msg tp__msg--alert" data-step><svg viewBox="0 0 24 24"><path d="M2 12h3l3-7 4 14 3-7h7"/></svg><span class="tp__who"><b>Sensor del motor 3</b> · <span class="tp__time">14:25</span></span><p class="tp__txt">Aviso: el motor 3 vibra fuera de lo normal. Conviene revisarlo hoy.</p></div>
+              <div class="tp__msg" data-step><i></i><span class="tp__who"><b>alphateklab</b> · <span class="tp__time">18:00</span></span><p class="tp__txt">Resumen de hoy: 4 entregas hechas y 0 paradas imprevistas. Tanque 1 al 58 %.</p></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- DEMOS: peek-list (the five demos beside the client's own screens; the screen changes with the row in view) -->
+  <section class="section" id="demos" aria-labelledby="demos-h">
+    <div class="wrap">
+      <div class="section-head"><h2 id="demos-h">Cinco demos de software que puedes encender. <span class="muted">Corren de verdad.</span></h2></div>
+      <div class="grid grid--top fill" data-peek>
+        <div class="span-5">
+          <p class="t-label muted demos__pick">Toca una para encenderla.</p>
+          <ul class="rows">
+            <li data-peek-to="reservas"><a class="rows__name" href="https://alphatend.github.io/alphateklab-reservas/" target="_blank" rel="noopener">Citas y reservas<span class="ext" aria-hidden="true">&nbsp;&#8599;</span></a><p>La agenda de un consultorio que insiste hasta que el paciente responde.</p></li>
+            <li data-peek-to="mesa"><a class="rows__name" href="https://alphatend.github.io/alphateklab-mesa/" target="_blank" rel="noopener">Pedir y pagar desde la mesa<span class="ext" aria-hidden="true">&nbsp;&#8599;</span></a><p>Un QR por mesa: pides, la comanda llega a la cocina y la cuenta se divide.</p></li>
+            <li data-peek-to="camara"><a class="rows__name" href="https://dev.alphateklab.com/laboratorio/camara/" target="_blank" rel="noopener">Contador de personas<span class="ext" aria-hidden="true">&nbsp;&#8599;</span></a><p>La cámara cuenta quién cruza la puerta. El video no sale de tu equipo.</p></li>
+            <li data-peek-to="sensores"><a class="rows__name" href="https://dev.alphateklab.com/laboratorio/sensores/" target="_blank" rel="noopener">Tablero de sensores<span class="ext" aria-hidden="true">&nbsp;&#8599;</span></a><p>Neveras, luz, tanque y puertas, con avisos cuando algo se sale de lo normal.</p></li>
+            <li data-peek-to="recorrido"><a class="rows__name" href="https://dev.alphateklab.com/laboratorio/recorrido-360/" target="_blank" rel="noopener">Recorrido 360<span class="ext" aria-hidden="true">&nbsp;&#8599;</span></a><p>Miras alrededor y pasas de un ambiente a otro.</p></li>
+          </ul>
+          <p class="demos__all"><a class="link" href="https://alphateklab.com/demos.html">Ver las cinco demos</a></p>
+        </div>
+        <div class="frame frame--photo span-6 start-7">
+          <img class="frame__img" data-peek-for="reservas" src="assets/demos/demo-reservas.webp" srcset="assets/demos/demo-reservas-560.webp 560w, assets/demos/demo-reservas.webp 1120w" sizes="(max-width: 1023px) 100vw, 628px" width="1120" height="700" loading="lazy" decoding="async" alt="La agenda del día de un consultorio, con citas confirmadas y pendientes por profesional" data-source="client" data-subject="demo">
+          <img class="frame__img" data-peek-for="mesa" src="assets/demos/demo-mesa.webp" srcset="assets/demos/demo-mesa-560.webp 560w, assets/demos/demo-mesa.webp 1120w" sizes="(max-width: 1023px) 100vw, 628px" width="1120" height="700" loading="lazy" decoding="async" alt="La carta de la mesa 7 de una cocina panameña, con carimañolas y patacones con ceviche" data-source="client" data-subject="demo" hidden>
+          <img class="frame__img" data-peek-for="camara" src="assets/demos/demo-camara.webp" srcset="assets/demos/demo-camara-560.webp 560w, assets/demos/demo-camara.webp 1120w" sizes="(max-width: 1023px) 100vw, 628px" width="1120" height="700" loading="lazy" decoding="async" alt="La cámara de una entrada contando personas, con las caras pixeladas y una zona de fila marcada" data-source="client" data-subject="demo" hidden>
+          <img class="frame__img" data-peek-for="sensores" src="assets/demos/demo-sensores.webp" srcset="assets/demos/demo-sensores-560.webp 560w, assets/demos/demo-sensores.webp 1120w" sizes="(max-width: 1023px) 100vw, 628px" width="1120" height="700" loading="lazy" decoding="async" alt="El tablero de sensores con un aviso activo por la puerta de la nevera y la curva de temperatura" data-source="client" data-subject="demo" hidden>
+          <img class="frame__img" data-peek-for="recorrido" src="assets/demos/demo-recorrido-360.webp" srcset="assets/demos/demo-recorrido-360-560.webp 560w, assets/demos/demo-recorrido-360.webp 1120w" sizes="(max-width: 1023px) 100vw, 628px" width="1120" height="700" loading="lazy" decoding="async" alt="Un recorrido 360 de una casa vacía, con la puerta abierta hacia el patio" data-source="client" data-subject="demo" hidden>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOLUCIONES: two screens; row 1 the head and four photographs of businesses (stand-ins), row 2 the nine kinds -->
+  <section class="section g2" id="soluciones" aria-labelledby="soluciones-h">
+    <div class="wrap">
+      <div class="group">
+        <div class="section-head"><h2 id="soluciones-h">Soluciones para nueve tipos de negocio. <span class="muted">Entra al tuyo.</span></h2></div>
+        <div class="strip">
+          <img src="assets/img/photo-f4738461-960.jpg" srcset="assets/img/photo-f4738461-500.jpg 500w, assets/img/photo-f4738461-960.jpg 960w" sizes="(max-width: 639px) 250px, 570px" width="960" height="722" alt="Un plato de patacones con queso blanco" loading="lazy" decoding="async" data-source="stand-in" data-subject="restaurante">
+          <img src="assets/img/photo-f23311170-960.jpg" srcset="assets/img/photo-f23311170-500.jpg 500w, assets/img/photo-f23311170-960.jpg 960w" sizes="(max-width: 639px) 250px, 570px" width="960" height="640" alt="Puestos de frutas y verduras bajo el techo de un mercado de pueblo en Panamá" loading="lazy" decoding="async" data-source="stand-in" data-subject="comercio">
+          <img src="assets/img/photo-f19372836-960.jpg" srcset="assets/img/photo-f19372836-500.jpg 500w, assets/img/photo-f19372836-960.jpg 960w, assets/img/photo-f19372836.jpg 1280w" sizes="(max-width: 639px) 250px, 570px" width="960" height="640" alt="Cabañas con techo de paja sobre el agua al atardecer, en Guna Yala" loading="lazy" decoding="async" data-source="stand-in" data-subject="hospedaje">
+          <img src="assets/img/photo-f195963620-500.jpg" width="500" height="746" alt="Estantes con cajas y carritos en una bodega" loading="lazy" decoding="async" data-source="stand-in" data-subject="bodega">
+        </div>
+      </div>
+      <div class="group">
+      <div class="biz">
+        <a href="https://alphateklab.com/negocio-restaurantes.html"><span class="biz__ic" style="--ic: url('assets/icons/ui-utensils.svg')" aria-hidden="true"></span><b class="biz__name">Restaurantes y cafés</b><p>Los clientes esperan para pedir, para otra ronda y para pagar.</p><span>20 servicios</span></a>
+        <a href="https://alphateklab.com/negocio-tiendas.html"><span class="biz__ic" style="--ic: url('assets/icons/ui-store.svg')" aria-hidden="true"></span><b class="biz__name">Tiendas, minisúper y comercio</b><p>Mercancía que falta o una caja que no cuadra.</p><span>20 servicios</span></a>
+        <a href="https://alphateklab.com/negocio-clinicas.html"><span class="biz__ic" style="--ic: url('assets/icons/ui-stethoscope.svg')" aria-hidden="true"></span><b class="biz__name">Clínicas y consultorios</b><p>Los pacientes no llegan y el hueco se pierde.</p><span>7 servicios</span></a>
+        <a href="https://alphateklab.com/negocio-hospedaje.html"><span class="biz__ic" style="--ic: url('assets/icons/ui-bed-double.svg')" aria-hidden="true"></span><b class="biz__name">Hospedaje y turismo</b><p>Pagas comisión por reservas que podrían ser directas.</p><span>16 servicios</span></a>
+        <a href="https://alphateklab.com/negocio-bienes-raices.html"><span class="biz__ic" style="--ic: url('assets/icons/ui-building-2.svg')" aria-hidden="true"></span><b class="biz__name">Bienes raíces</b><p>Las fotos no transmiten cómo es el espacio.</p><span>7 servicios</span></a>
+        <a href="https://alphateklab.com/negocio-industria-y-oficinas.html"><span class="biz__ic" style="--ic: url('assets/icons/ui-factory.svg')" aria-hidden="true"></span><b class="biz__name">Bodegas, oficinas e industria</b><p>Un motor o una bomba se daña sin aviso y para todo.</p><span>19 servicios</span></a>
+        <a href="https://alphateklab.com/negocio-escuelas.html"><span class="biz__ic" style="--ic: url('assets/icons/ui-graduation-cap.svg')" aria-hidden="true"></span><b class="biz__name">Escuelas y academias</b><p>Cobrar mensualidades es perseguir pagos.</p><span>3 servicios</span></a>
+        <a href="https://alphateklab.com/negocio-talleres-y-salones.html"><span class="biz__ic" style="--ic: url('assets/icons/ui-car.svg')" aria-hidden="true"></span><b class="biz__name">Talleres, autolavados y salones</b><p>El cliente espera sin saber cuánto le falta.</p><span>3 servicios</span></a>
+        <a href="https://alphateklab.com/negocio-cualquier-negocio.html"><span class="biz__ic" style="--ic: url('assets/icons/ui-briefcase.svg')" aria-hidden="true"></span><b class="biz__name">Cualquier negocio</b><p>El negocio no aparece cuando lo buscan.</p><span>24 servicios</span></a>
+      </div>
+      <p class="biz__all"><a class="link" href="https://alphateklab.com/soluciones.html">Ver todos los negocios</a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICIOS: the eight types with their counts beside the search, "¿Qué necesitas?": a working panel on the lit
+       ground that finds any of the 79 services by its words (the client's catalogue, servicios.html) -->
+  <section class="section ground-surface" id="servicios" style="--hm: 2" aria-labelledby="servicios-h">
+    <div class="wrap">
+      <div class="grid grid--top fill">
+        <div class="span-5">
+          <div class="section-head"><h2 id="servicios-h">79 servicios en ocho tipos. <span class="muted">Cada uno tiene su página.</span></h2></div>
+          <ul class="types">
+            <li><a href="https://alphateklab.com/tipo-software.html"><b>Software a medida</b><small>37 servicios</small></a></li>
+            <li><a href="https://alphateklab.com/tipo-web.html"><b>Web y apps</b><small>20 servicios</small></a></li>
+            <li><a href="https://alphateklab.com/tipo-ia.html"><b>Inteligencia artificial</b><small>11 servicios</small></a></li>
+            <li><a href="https://alphateklab.com/tipo-vision.html"><b>Cámaras que cuentan y avisan</b><small>9 servicios</small></a></li>
+            <li><a href="https://alphateklab.com/tipo-iot.html"><b>Sensores que avisan</b><small>14 servicios</small></a></li>
+            <li><a href="https://alphateklab.com/tipo-pantallas.html"><b>Pantallas y kioscos</b><small>8 servicios</small></a></li>
+            <li><a href="https://alphateklab.com/tipo-tresd.html"><b>Recorridos 3D, planos y dron</b><small>6 servicios</small></a></li>
+            <li><a href="https://alphateklab.com/tipo-pagos.html"><b>Cobros y facturación</b><small>11 servicios</small></a></li>
+          </ul>
+        </div>
+        <div class="frame frame--split frame--lit span-6 start-7 finder-frame">
+          <div class="ui ui-panel ui-finder finder">
+            <form class="finder__form" role="search" action="https://alphateklab.com/servicios.html" data-finder>
+              <label class="finder__label" for="q">Busca entre los 79 servicios</label>
+              <div class="finder__field">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+                <input id="q" name="q" type="search" placeholder="¿Qué necesitas? Ej.: un menú QR" autocomplete="off" aria-controls="resultados">
+              </div>
+            </form>
+            <p class="finder__note" data-finder-note aria-live="polite">Lo que más piden</p>
+            <ul class="finder__list" id="resultados" data-finder-list>
+              <li><a href="https://alphateklab.com/servicio-menu-qr.html"><b>Menú QR a la medida</b><small>Web y apps</small></a></li>
+              <li><a href="https://alphateklab.com/servicio-agente-de-citas.html"><b>Agente de citas con recordatorios</b><small>Software a medida</small></a></li>
+              <li><a href="https://alphateklab.com/servicio-temperatura-de-neveras.html"><b>Sensores de temperatura en neveras y cuartos fríos</b><small>Sensores que avisan</small></a></li>
+              <li><a href="https://alphateklab.com/servicio-contador-de-personas.html"><b>Contador de personas en la entrada</b><small>Cámaras que cuentan y avisan</small></a></li>
+              <li><a href="https://alphateklab.com/servicio-motor-de-reservas.html"><b>Motor de reservas en tu propia página</b><small>Web y apps</small></a></li>
+              <li><a href="https://alphateklab.com/servicio-negocio-en-google.html"><b>Tu negocio en Google Maps y reseñas</b><small>Web y apps</small></a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAQUETES: two screens of three cards each; the lit ground plain in every panel (the card-ground deal found
+       nothing in the effect's family), one fragment each; the reminders card is the group's one loop -->
+  <section class="section g2 ground-surface" id="paquetes" aria-labelledby="paquetes-h">
+    <div class="wrap">
+      <div class="group">
+        <div class="section-head"><h2 id="paquetes-h">Seis paquetes con el equipo incluido. <span class="muted">También el programa, la puesta en marcha y el soporte.</span></h2></div>
+        <div class="grid">
+          <article class="card card--row span-4 m-nolift">
+            <h3>Menú QR</h3>
+            <p>La carta en el teléfono del cliente, con un QR por mesa. La cambias tú cuando quieras.</p>
+            <div class="panel panel--flush">
+              <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:340px;--ax:max(24px, 50% - 170px);--ay:36px;--ay-sm:24px">
+                <div class="ui ui-panel tp-menu" role="img" aria-label="La carta de la mesa 4 en el teléfono: patacones con ceviche, carimañolas, tamal de olla y chicha de piña">
+                  <div class="ui-head"><div class="ui-title">Fonda Pixbae · Mesa 4</div><span class="ui-spacer"></span><div class="ui-meta">Carta</div></div>
+                  <ul aria-hidden="true">
+                    <li><span>Patacones con ceviche</span><b>B/. 8.50</b></li>
+                    <li><span>Carimañolas (3)</span><b>B/. 4.50</b></li>
+                    <li><span>Tamal de olla</span><b>B/. 6.00</b></li>
+                    <li><span>Chicha de piña</span><b>B/. 1.50</b></li>
+                  </ul>
+                  <span class="ui-btn" aria-hidden="true">Pedir 3 platos · B/. 14.50</span>
+                </div>
+              </div></div>
+            </div>
+          </article>
+          <article class="card card--row span-4 m-nolift card--phone">
+            <h3>Citas que sí llegan</h3>
+            <p>Agenda en línea y recordatorio 2 días y 1 día antes. El paciente confirma con un toque.</p>
+            <div class="panel panel--flush">
+              <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:380px;--ax:max(24px, 50% - 190px);--ay:40px;--ay-sm:24px" data-ui-loop>
+                <div class="ui ui-notify" data-ui="notify" role="img" aria-label="Avisos de la agenda: recordatorio enviado a 18 pacientes, 16 confirmaron y una hora pasó a la lista de espera">
+                  <ul class="ui-notify__list" data-notify-list aria-hidden="true">
+                    <li class="ui-note"><span class="ui-agent ui-note__av" aria-hidden="true"></span><span class="ui-note__text"><span class="ui-note__title">Carmen Batista confirmó<time>ahora</time></span><span class="ui-note__body">Martes 8:40 a. m., consulta de control</span></span><span class="ui-btn ui-btn--sm ui-note__btn">Ver</span></li>
+                    <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg></span><span class="ui-note__text"><span class="ui-note__title">16 confirmaron<time>10:15</time></span><span class="ui-note__body">1 canceló; su hora pasó a la lista de espera</span></span></li>
+                    <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M4 6.5a4 4 0 0 1 8 0c0 3.5 1.5 4.5 1.5 4.5h-11S4 10 4 6.5Z"/><path d="M6.8 13.5a1.3 1.3 0 0 0 2.4 0"/></svg></span><span class="ui-note__text"><span class="ui-note__title">Recordatorio enviado<time>08:00</time></span><span class="ui-note__body">A los 18 pacientes de mañana</span></span></li>
+                  </ul>
+                </div>
+              </div></div>
+            </div>
+          </article>
+          <article class="card card--row span-4 m-nolift">
+            <h3>Sensores que avisan</h3>
+            <p>Neveras, tanques, motores o puertas: si algo se sale de lo normal, te llega un aviso al teléfono.</p>
+            <div class="panel panel--flush">
+              <div class="stage stage--fade-b"><div class="at-right to-edge" style="--ax:24px;--ay:36px">
+                <div class="ui ui-panel ui-toggles" data-ui="toggles" role="img" aria-label="Reglas de aviso: nevera arriba de 7 °C, puerta abierta más de 5 minutos, tanque bajo 20 % y luz cortada, activas; motor con vibración alta, apagada">
+                  <div class="ui-head" aria-hidden="true">
+                    <svg class="ui-icon ui-toggles__ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8 13 4v3.6c0 3-2.1 5.4-5 6.6-2.9-1.2-5-3.6-5-6.6V4z"/><path d="m5.8 8 1.6 1.6 3-3.2"/></svg>
+                    <div class="ui-title">Avisos al teléfono</div>
+                    <span class="ui-spacer"></span>
+                    <div class="ui-meta" data-tg-count>4 de 5 activos</div>
+                  </div>
+                  <ul class="ui-toggles__list" aria-hidden="true">
+                    <li class="ui-tg"><span class="ui-tg__text"><span class="ui-tg__label">Nevera arriba de 7 °C</span><span class="ui-tg__sub">Te avisa al minuto</span></span><span class="ui-switch is-on"><i></i></span></li>
+                    <li class="ui-tg"><span class="ui-tg__text"><span class="ui-tg__label">Puerta abierta más de 5 min</span><span class="ui-tg__sub">Neveras y cuarto frío</span></span><span class="ui-switch is-on"><i></i></span></li>
+                    <li class="ui-tg"><span class="ui-tg__text"><span class="ui-tg__label">Tanque de agua bajo 20 %</span><span class="ui-tg__sub">Con el nivel exacto</span></span><span class="ui-switch is-on"><i></i></span></li>
+                    <li class="ui-tg"><span class="ui-tg__text"><span class="ui-tg__label">Motor con vibración alta</span><span class="ui-tg__sub">Antes de que se dañe</span></span><span class="ui-switch"><i></i></span></li>
+                    <li class="ui-tg"><span class="ui-tg__text"><span class="ui-tg__label">Luz cortada en el local</span><span class="ui-tg__sub">Y cuando vuelve</span></span><span class="ui-switch is-on"><i></i></span></li>
+                  </ul>
+                </div>
+              </div></div>
+            </div>
+          </article>
+        </div>
+      </div>
+      <div class="grid">
+        <article class="card card--row span-4 m-nolift">
+          <h3>Puerta que cuenta</h3>
+          <p>Una cámara sobre la entrada cuenta quién entra y a qué hora llega más gente.</p>
+          <div class="panel panel--flush">
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:362px;--ax:max(24px, 50% - 181px);--ay:36px;--ay-sm:24px">
+              <div class="ui ui-panel ui-stat" data-ui="stat" data-from="198" data-to="214" data-suffix="" data-values="4,9,14,18,12,10,13,16,15,19,27,31,24,2" role="img" aria-label="214 personas entraron hoy, 16 más que ayer, con la hora pico de 5 a 7 de la tarde">
+                <div class="ui-stat__head" aria-hidden="true">
+                  <div class="ui-stat__top"><span class="ui-stat__label">Personas que entraron</span><span class="ui-stat__range">Hoy</span></div>
+                  <div class="ui-stat__line"><span class="ui-stat__num" data-stat-num>214</span><span class="ui-chip ui-chip--plain ui-stat__delta"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 9.5v-7M3 5.5l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>16</span><span class="ui-stat__sub">más que ayer</span></div>
+                </div>
+                <div class="ui-stat__chart" aria-hidden="true">
+                  <svg class="ui-stat__svg" viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true">
+                    <path class="ui-stat__grid" d="M0 30.5H400M0 60.5H400M0 90.5H400"/>
+                    <path class="ui-stat__cover" fill-rule="evenodd" d=""/>
+                    <g class="ui-stat__bars"><rect rx="3" x="0.00" y="104.5" width="21.14" height="15.5"/><rect rx="3" x="29.14" y="85.2" width="21.14" height="34.8"/><rect rx="3" x="58.29" y="65.8" width="21.14" height="54.2"/><rect rx="3" x="87.43" y="50.3" width="21.14" height="69.7"/><rect rx="3" x="116.57" y="73.5" width="21.14" height="46.5"/><rect rx="3" x="145.71" y="81.3" width="21.14" height="38.7"/><rect rx="3" x="174.86" y="69.7" width="21.14" height="50.3"/><rect rx="3" x="204.00" y="58.1" width="21.14" height="61.9"/><rect rx="3" x="233.14" y="61.9" width="21.14" height="58.1"/><rect rx="3" x="262.29" y="46.5" width="21.14" height="73.5"/><rect rx="3" x="291.43" y="15.5" width="21.14" height="104.5"/><rect rx="3" x="320.57" y="0.0" width="21.14" height="120.0"/><rect rx="3" x="349.71" y="27.1" width="21.14" height="92.9"/><rect rx="3" x="378.86" y="112.3" width="21.14" height="7.7"/></g>
+                  </svg>
+                  <div class="ui-stat__axis"><span>8 a. m.</span><span>2 p. m.</span><span>9 p. m.</span></div>
+                </div>
+              </div>
+            </div></div>
+          </div>
+        </article>
+        <article class="card card--row span-4 m-nolift card--phone">
+          <h3>Reservas sin comisión</h3>
+          <p>Tu página de reservas con pago en línea, calendario cruzado con Booking y Airbnb, y cerradura con código.</p>
+          <div class="panel panel--flush">
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:380px;--ax:max(24px, 50% - 190px);--ay:36px;--ay-sm:24px">
+              <div class="ui ui-panel ui-apps" data-ui="integrations" role="img" aria-label="Calendarios conectados: Booking.com, Airbnb y Expedia cierran las fechas que ya vendiste">
+                <div class="ui-head" aria-hidden="true"><div class="ui-title">Calendarios conectados</div><span class="ui-spacer"></span><div class="ui-meta" data-apps-count>2 conectados</div></div>
+                <ul class="ui-apps__list" aria-hidden="true">
+                  <li class="ui-app is-on">
+                    <span class="ui-logo ui-logo--sm"><img data-icon="si:bookingdotcom" src="assets/icons/bookingdotcom.svg" alt="" width="24" height="24" loading="lazy" decoding="async"></span>
+                    <span class="ui-app__text"><span class="ui-app__name">Booking.com</span><span class="ui-app__sub">Cierra las fechas que vendiste</span></span>
+                    <span class="ui-app__state"><span class="ui-chip ui-app__on">Conectado</span><span class="ui-btn ui-btn--ghost ui-btn--sm ui-app__connect"><span class="ui-spin ui-app__spin" aria-hidden="true"></span><span>Conectar</span></span></span>
+                  </li>
+                  <li class="ui-app is-on">
+                    <span class="ui-logo ui-logo--sm"><img data-icon="airbnb" src="assets/icons/airbnb.svg" alt="" width="24" height="24" loading="lazy" decoding="async"></span>
+                    <span class="ui-app__text"><span class="ui-app__name">Airbnb</span><span class="ui-app__sub">Cierra las fechas que vendiste</span></span>
+                    <span class="ui-app__state"><span class="ui-chip ui-app__on">Conectado</span><span class="ui-btn ui-btn--ghost ui-btn--sm ui-app__connect"><span class="ui-spin ui-app__spin" aria-hidden="true"></span><span>Conectar</span></span></span>
+                  </li>
+                  <li class="ui-app" data-apps-target>
+                    <span class="ui-logo ui-logo--sm"><img data-icon="si:expedia" src="assets/icons/expedia.svg" alt="" width="24" height="24" loading="lazy" decoding="async"></span>
+                    <span class="ui-app__text"><span class="ui-app__name">Expedia</span><span class="ui-app__sub">Cierra las fechas que vendiste</span></span>
+                    <span class="ui-app__state"><span class="ui-chip ui-app__on">Conectado</span><span class="ui-btn ui-btn--ghost ui-btn--sm ui-app__connect"><span class="ui-spin ui-app__spin" aria-hidden="true"></span><span>Conectar</span></span></span>
+                  </li>
+                </ul>
+              </div>
+            </div></div>
+          </div>
+        </article>
+        <article class="card card--row span-4 m-nolift">
+          <h3>Página que aparece</h3>
+          <p>Tu página con dominio a tu nombre, que aparece en Google Maps y te trae clientes.</p>
+          <div class="panel panel--flush">
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:380px;--ax:max(24px, 50% - 190px);--ay:36px;--ay-sm:24px">
+              <div class="ui ui-panel ui-search" data-ui="search" role="img" aria-label="Una búsqueda de fonda cerca de mí que muestra la fonda en Google Maps, su carta y su horario">
+                <div class="ui-search__field" aria-hidden="true">
+                  <svg class="ui-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+                  <span class="ui-search__q"><span data-search-q>fonda cerca de mí</span><i class="ui-search__caret"></i></span>
+                </div>
+                <div class="ui-search__group" aria-hidden="true">Resultados</div>
+                <ul class="ui-search__list" data-search-list aria-hidden="true">
+                  <li class="ui-search__row is-sel"><span class="ui-search__ico"><img data-icon="google-maps" src="assets/icons/google-maps.svg" alt="" width="24" height="24" loading="lazy" decoding="async"></span><span class="ui-search__t"><b>Fonda</b> Pixbae, cocina panameña</span><span class="ui-search__m">Maps</span></li>
+                  <li class="ui-search__row"><span class="ui-search__ico"><svg class="ui-icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h11M8 2.5c1.6 1.6 2.4 3.4 2.4 5.5S9.6 11.9 8 13.5C6.4 11.9 5.6 10.1 5.6 8S6.4 4.1 8 2.5Z"/></svg></span><span class="ui-search__t">La carta de la <b>fonda</b>, con precios</span><span class="ui-search__m">Web</span></li>
+                  <li class="ui-search__row"><span class="ui-search__ico"><svg class="ui-icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1.5"/></svg></span><span class="ui-search__t">Abierto hoy hasta las 10 p. m.</span><span class="ui-search__m">Horario</span></li>
+                </ul>
+                <div class="ui-search__foot" aria-hidden="true"><span><kbd>&uarr;</kbd><kbd>&darr;</kbd> para moverte</span><span><kbd>Enter</kbd> para abrir</span></div>
+              </div>
+            </div></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- CÓMO TRABAJAMOS: the dealt moment, word-highlight, on the statement; then the four steps -->
+  <section class="section statement" id="como-trabajamos" style="--hm: 2" data-moment="word-highlight" aria-labelledby="como-h">
+    <div class="wrap">
+      <div class="section-head"><h2 id="como-h">Primero la propuesta por escrito. <span class="muted">Después, el equipo.</span></h2></div>
+      <p class="statement-text mo-wh__text">Te mandamos por escrito qué haríamos, con qué equipo y en cuánto tiempo queda. No compramos nada hasta que la <strong>apruebas</strong>.</p>
+      <ol class="steps4">
+        <li><span class="step-num" aria-hidden="true">1</span><strong>Nos cuentas</strong><p>Qué te quita tiempo, qué equipo ya tienes y cuánto quieres invertir.</p></li>
+        <li><span class="step-num" aria-hidden="true">2</span><strong>Te mandamos la propuesta</strong><p>Los servicios en orden, el equipo y el plazo de cada etapa.</p></li>
+        <li><span class="step-num" aria-hidden="true">3</span><strong>Lo hacemos</strong><p>Lo dejamos conectado y lo pruebas antes de usarlo con clientes.</p></li>
+        <li><span class="step-num" aria-hidden="true">4</span><strong>Lo usas</strong><p>Le enseñamos a tu equipo y quedamos de soporte según la propuesta.</p></li>
+      </ol>
+      <p class="steps__more"><a class="link" href="https://alphateklab.com/como-trabajamos.html">Ver cómo trabajamos</a></p>
+    </div>
+  </section>
+
+  <!-- EQUIPOS: three facts beside a hub diagram (the panel and the equipment it connects), pulsing -->
+  <section class="section" id="equipos" aria-labelledby="equipos-h">
+    <div class="wrap">
+      <div class="grid grid--top fill">
+        <div class="span-5">
+          <div class="section-head"><h2 id="equipos-h">Equipos que conectamos. <span class="muted">Además del software, nos encargamos del equipo.</span></h2></div>
+          <ul class="facts">
+            <li>Compramos el equipo después de que apruebas la propuesta, no antes.</li>
+            <li>Si ya tienes equipo que sirve, como cámaras, una tableta o un televisor, lo usamos.</li>
+            <li>El dominio y los QR quedan a nombre de tu negocio.</li>
+          </ul>
+          <a class="link" href="https://alphateklab.com/equipos.html">Ver los equipos</a>
+        </div>
+        <div class="frame frame--split span-6 start-7">
+          <div class="dg" data-diagram data-dg-still><script type="application/json">{"layout":"hub","alt":"Tu panel conectado con placas QR, pantallas, kioscos, cámaras, sensores, cerraduras, lectores de acceso y GPS.","center":{"label":"Tu panel","icon":"ui:layout-dashboard"},"spokes":[{"label":"Placa QR y NFC","icon":"ui:qr-code"},{"label":"Pantalla de cocina","icon":"ui:monitor"},{"label":"Kiosco de pedidos","icon":"ui:tablet-smartphone"},{"label":"Cámara que cuenta","icon":"ui:cctv"},{"label":"Sensor de nevera","icon":"ui:thermometer"},{"label":"Cerradura con código","icon":"ui:lock-keyhole"},{"label":"Lector de acceso","icon":"ui:scan-line"},{"label":"GPS de flota","icon":"ui:map-pin"}]}</script></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROPUESTA: the one form, "Qué necesitas". On submit the note says where the message goes (BRIEF.md). -->
+  <section class="section section--cta" id="propuesta" style="--hm: 2" aria-labelledby="propuesta-h">
+    <div class="wrap">
+      <div class="grid grid--top fill">
+        <div class="span-5">
+          <div class="section-head"><h2 id="propuesta-h">Una propuesta por escrito para tu negocio</h2><p>¿No encontraste lo que buscas? La lista es lo que ya tenemos descrito, no todo lo que podemos hacer. Cuéntanos qué necesitas y te decimos si lo podemos hacer.</p></div>
+          <ul class="facts facts--ask"><li>Sin compromiso: la propuesta llega antes de cualquier compra.</li><li>Lo que guarda datos de personas cumple la Ley 81 de 2019.</li></ul>
+        </div>
+        <div class="frame frame--split frame--lit span-6 start-7 ask-frame">
+        <form class="ui ui-panel ui-ask ask" action="mailto:info@alphateklab.com" method="post" enctype="text/plain" novalidate data-pregunta>
+          <label for="pregunta-texto">Qué necesitas</label>
+          <textarea id="pregunta-texto" name="mensaje" rows="5" maxlength="600" placeholder="Ej.: quiero que mis vendedores vean el inventario desde el teléfono" required aria-describedby="pregunta-err"></textarea>
+          <p class="ask__err" id="pregunta-err" hidden>Escribe qué necesitas, aunque sea en una línea.</p>
+          <div class="btn-row"><button class="btn btn--primary" type="submit">Pedir mi propuesta</button></div>
+          <p class="ask__note" role="status" data-pregunta-nota></p>
+          <p class="ask__mail">O escríbenos a <span data-correo>info@alphateklab.com</span> <button class="ask__copy" type="button" data-copiar>Copiar</button></p>
+        </form>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer closing" id="contact" style="--hm: 2" aria-labelledby="close-h">
+  <div class="wrap">
+    <div class="closing__cta close--word">
+      <div class="section-head--split">
+        <div><h2 id="close-h">Tu negocio, conectado.</h2><p class="t-lead">La propuesta llega por escrito, antes de comprar cualquier equipo.</p></div>
+        <a class="btn btn--primary" href="#propuesta">Pedir mi propuesta</a>
+      </div>
+      <p class="close__word" aria-hidden="true">alphateklab</p>
+    </div>
+    <div class="closing__links">
+      <div class="grid">
+        <div class="span-4 stack-4">
+          <a class="footer__mark" href="#top" aria-label="alphateklab, inicio"><img src="assets/marca/logo-oscuro.svg" alt="alphateklab" width="116" height="26" loading="lazy" decoding="async"></a>
+          <p class="footer__lede">Software e IA a la medida, desde Panamá.</p>
+        </div>
+        <div class="span-2 footer__col"><h3>Soluciones</h3><ul><li><a href="https://alphateklab.com/negocio-restaurantes.html">Restaurantes</a></li><li><a href="https://alphateklab.com/negocio-tiendas.html">Tiendas y minisúper</a></li><li><a href="https://alphateklab.com/negocio-clinicas.html">Clínicas</a></li><li><a href="https://alphateklab.com/negocio-hospedaje.html">Hospedaje</a></li><li><a href="https://alphateklab.com/soluciones.html">Todas</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Servicios</h3><ul><li><a href="https://alphateklab.com/tipo-software.html">Software a medida</a></li><li><a href="https://alphateklab.com/tipo-web.html">Web y apps</a></li><li><a href="https://alphateklab.com/tipo-ia.html">Inteligencia artificial</a></li><li><a href="https://alphateklab.com/tipo-iot.html">Sensores</a></li><li><a href="https://alphateklab.com/servicios.html">Todos</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>alphateklab</h3><ul><li><a href="https://alphateklab.com/como-trabajamos.html">Cómo trabajamos</a></li><li><a href="https://alphateklab.com/como-trabajamos.html#preguntas">Preguntas frecuentes</a></li><li><a href="https://dev.alphateklab.com/guias/">Guías</a></li><li><a href="https://dev.alphateklab.com/privacidad/">Privacidad</a></li><li><a href="https://dev.alphateklab.com/creditos/">Créditos</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Empresa panameña</h3><p>Dónde estamos</p><address>Panamá, trabajamos a distancia</address><p>Correo</p><ul><li><a href="mailto:info@alphateklab.com">info@alphateklab.com</a></li></ul></div>
+      </div>
+      <div class="footer__legal">
+        <span>&copy; 2026 alphateklab</span>
+        <p class="footer__demo">Las demos usan negocios de ejemplo: sus nombres, platos, pacientes y reservas son ficticios.</p>
+        <a class="credits" href="creditos-fotos.html">Fotografías vía Wikimedia Commons</a>
+        <p class="footer__demo">Los nombres y logos de productos son marcas de sus dueños.</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="assets/system.js"></script>
+<script type="module" src="assets/motion/motion.js"></script>
+<script type="module" src="assets/layout/layout.js"></script>
+<script type="module" src="assets/diagrams/mount.js"></script>
+<script type="application/json" id="servicios-data">[["Mapa de mesas y cuentas por mesa","mapa-de-mesas-y-cuentas","software"],["Pantalla de cocina","pantalla-de-cocina","software"],["Reservas de mesa en línea","reservas-de-mesa","software"],["Inventario por escaneo","inventario-por-escaneo","software"],["Programa de clientes frecuentes","programa-de-lealtad","software"],["Agente de citas con recordatorios","agente-de-citas","software"],["Pantalla de turnos en sala de espera","turnos-en-sala-de-espera","software"],["Encuesta después de la visita","encuesta-despues-de-la-cita","software"],["Calendario sincronizado con Booking, Airbnb y Expedia, con vigilante","sincronizacion-con-booking-y-airbnb","software"],["Tablero de sensores del negocio","tablero-de-sensores","software"],["Control de acceso con QR o tarjeta","control-de-acceso","software"],["Software a medida","software-a-medida","software"],["Automatizaciones","automatizaciones","software"],["Cotizador con tu inventario","cotizador","software"],["Conexión con la factura electrónica","factura-electronica","software"],["Tablero de ventas y operación","tablero-de-ventas","software"],["Punto de venta para restaurante o tienda","punto-de-venta","software"],["Básculas y medidores conectados","basculas-conectadas","software"],["Red e internet del negocio","red-y-wifi-del-negocio","software"],["Matrícula y cobro de mensualidades en línea","matricula-y-mensualidades","software"],["Asistencia con QR o tarjeta","asistencia-con-qr","software"],["Avisos a padres por WhatsApp","avisos-a-padres","software"],["Turnos en línea y aviso cuando está listo","turnos-y-aviso-de-listo","software"],["Órdenes de trabajo del taller","ordenes-de-trabajo","software"],["Agenda para barberías y salones","agenda-para-salones","software"],["Videoconsulta con cobro previo","videoconsulta","software"],["Expediente digital del paciente","expediente-del-paciente","software"],["Sistema de inventario y compras","inventario-y-compras","software"],["Seguimiento de clientes y ventas","seguimiento-de-clientes","software"],["Portal para tus clientes","portal-de-clientes","software"],["Firma de documentos en línea","firma-de-documentos","software"],["Respaldo de datos y seguridad informática","respaldo-y-seguridad","software"],["Soporte técnico para tu oficina","soporte-tecnico","software"],["Conexión entre sistemas","conexion-entre-sistemas","software"],["Lectura de facturas y documentos con IA","lectura-de-documentos-con-ia","software"],["App de delivery propia, para tu restaurante o tu grupo","app-de-delivery-propia","software"],["Pedidos por WhatsApp automáticos, con la comanda directo a la cocina","pedidos-por-whatsapp-automaticos","software"],["Menú QR a la medida","menu-qr","web"],["Pedir, llamar al mesero y pagar desde la mesa","pedir-y-pagar-desde-la-mesa","web"],["Pedidos a domicilio y para llevar sin comisión por pedido","pedidos-para-llevar","web"],["Tienda en línea","tienda-en-linea","web"],["Wi-Fi para clientes que registra su contacto","wifi-para-clientes","web"],["Motor de reservas en tu propia página","motor-de-reservas","web"],["Registro de huéspedes en línea","check-in-en-linea","web"],["Recorrido 360 y 3D de la propiedad","recorrido-3d","web"],["Sitio de propiedades con fichas y recorridos","sitio-de-propiedades","web"],["Página web","pagina-web","web"],["Apps para teléfono","apps","web"],["Cobros en línea con tarjeta y Yappy","pagos-en-linea","web"],["Productos en 3D y realidad aumentada","productos-en-3d","web"],["Catálogo y pedidos por WhatsApp","catalogo-por-whatsapp","web"],["Correo y dominio con el nombre de tu negocio","correo-y-dominio","web"],["Tu negocio en Google Maps y reseñas","negocio-en-google","web"],["Cámaras con IA para pérdidas en caja y bodega","camaras-con-ia-en-caja","ia"],["Agente de WhatsApp para prospectos de bienes raíces","agente-de-whatsapp-para-inmobiliarias","ia"],["Detección de casco y chaleco","deteccion-de-equipo-de-seguridad","ia"],["Asistente de WhatsApp y del sitio con IA","chatbot-de-whatsapp","ia"],["Capacitación en IA para tu equipo","capacitacion-en-ia","ia"],["Contador de personas en la entrada","contador-de-personas","vision"],["Mapa de calor del local","mapa-de-calor","vision"],["Aviso de filas en caja","alerta-de-filas","vision"],["Lectura de placas en estacionamientos","lectura-de-placas","vision"],["Contador de producción en línea","contador-de-produccion","vision"],["Cámaras de seguridad con acceso desde el teléfono","camaras-de-seguridad","vision"],["Sensores de temperatura en neveras y cuartos fríos","temperatura-de-neveras","iot"],["Cerraduras con código por reserva","cerraduras-con-codigo","iot"],["Consumo de luz y agua por cabaña","consumo-por-cabana","iot"],["GPS de vehículos y rutas","gps-de-flota","iot"],["Sensores de vibración y temperatura en motores","sensores-en-motores","iot"],["Luces, aire y cerraduras desde el teléfono","domotica-para-alquileres","iot"],["Medición de energía solar y consumo","energia-solar-y-consumo","iot"],["Etiqueta NFC en cada mesa","nfc-en-la-mesa","pantallas"],["Pantalla táctil de autopedido","pantalla-tactil-de-pedidos","pantallas"],["Menú en pantallas del local","menu-en-pantallas","pantallas"],["Etiquetas de precio electrónicas","etiquetas-de-precio-electronicas","pantallas"],["Fotos profesionales de la propiedad","fotos-de-la-propiedad","tresd"],["Plano con medidas a partir del escaneo","planos-desde-el-escaneo","tresd"],["Tomas aéreas con dron","tomas-con-dron","tresd"],["Inspección con dron de techos, obras y terrenos","inspeccion-con-dron","tresd"]]</script>
+<script>
+(() => {
+  /* the search, "¿Qué necesitas?": filters the 79 services as you type; empty, it shows what is asked most */
+  const form = document.querySelector('[data-finder]');
+  const input = form && form.querySelector('input');
+  const list = document.querySelector('[data-finder-list]');
+  const note = document.querySelector('[data-finder-note]');
+  if (form && input && list) {
+    const TIPOS = { software: 'Software a medida', web: 'Web y apps', ia: 'Inteligencia artificial', vision: 'Cámaras que cuentan y avisan', iot: 'Sensores que avisan', pantallas: 'Pantallas y kioscos', tresd: 'Recorridos 3D, planos y dron', pagos: 'Cobros y facturación' };
+    let data = [];
+    try { data = JSON.parse(document.getElementById('servicios-data').textContent); } catch (e) { data = []; }
+    const plain = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const first = list.innerHTML;
+    const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const show = () => {
+      const q = plain(input.value.trim());
+      if (!q) { list.innerHTML = first; note.textContent = 'Lo que más piden'; return; }
+      const words = q.split(/\s+/).filter((w) => w.length > 1);
+      const hits = words.length ? data.filter(([n, , t]) => { const s = plain(n + ' ' + TIPOS[t]); return words.every((w) => s.includes(w)); }) : [];
+      if (!hits.length) {
+        note.textContent = 'Ningún servicio con esas palabras';
+        list.innerHTML = '<li><p class="finder__empty">Puede que no esté descrito todavía. <a href="#propuesta">Escríbelo en tu propuesta</a> y te decimos si lo podemos hacer.</p></li>';
+        return;
+      }
+      note.textContent = hits.length === 1 ? '1 servicio' : (hits.length > 6 ? '6 de ' + hits.length + ' servicios' : hits.length + ' servicios');
+      list.innerHTML = hits.slice(0, 6).map(([n, s, t]) => '<li><a href="https://alphateklab.com/servicio-' + s + '.html"><b>' + esc(n) + '</b><small>' + esc(TIPOS[t]) + '</small></a></li>').join('');
+    };
+    input.addEventListener('input', show);
+    form.addEventListener('submit', (e) => { e.preventDefault(); const a = list.querySelector('a[href^="https"]'); if (a && input.value.trim()) a.focus(); });
+  }
+
+  /* the proposal form: the brief's note on submit, and the email with Copiar (from assets/v2.js, about lines 110-140) */
+  const ask = document.querySelector('[data-pregunta]');
+  const texto = ask && ask.querySelector('textarea');
+  const nota = ask && ask.querySelector('[data-pregunta-nota]');
+  const err = ask && ask.querySelector('.ask__err');
+  ask && ask.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!texto.value.trim()) {
+      texto.setAttribute('aria-invalid', 'true'); err.hidden = false; nota.textContent = ''; texto.focus();
+      return;
+    }
+    texto.removeAttribute('aria-invalid'); err.hidden = true;
+    nota.textContent = 'Tu mensaje nos llega a info@alphateklab.com y te respondemos por escrito.';
+  });
+  document.querySelectorAll('[data-copiar]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const correo = b.parentElement.querySelector('[data-correo]');
+      const listo = () => {
+        b.textContent = 'Copiado';
+        setTimeout(() => (b.textContent = 'Copiar'), 1800);
+      };
+      const elegir = () => {
+        const r = document.createRange();
+        r.selectNodeContents(correo);
+        const sel = getSelection();
+        sel.removeAllRanges();
+        sel.addRange(r);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(correo.textContent.trim()).then(listo, elegir);
+      else elegir();
+    }),
+  );
+})();
+</script>
+</body>
+</html>

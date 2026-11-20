@@ -1,0 +1,362 @@
+<!doctype html>
+<!-- p12 · navy con degradado. Kind: software (alphateklab builds and connects software for small businesses).
+     Built on the tasteskill kit (assets/system.css, ui, motion, layout, moments: unchanged copies) plus
+     assets/p12.css and assets/p12.js. Palette from start.mjs brand (Edwin's colours), Geist (BRIEF-3). -->
+<html lang="es" data-type="software" data-radius="sharp" data-buttons="solid" data-motion data-page="inner">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Soluciones por negocio: restaurantes, tiendas, clínicas y más | alphateklab</title>
+<meta name="description" content="Nueve tipos de negocio, con sus problemas de siempre, cómo los resolvemos y qué servicios usar. Míralo funcionando en un negocio de ejemplo.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Soluciones por negocio: restaurantes, tiendas, clínicas y más | alphateklab">
+<meta property="og:description" content="Nueve tipos de negocio, con sus problemas de siempre, cómo los resolvemos y qué servicios usar. Míralo funcionando en un negocio de ejemplo.">
+<meta property="og:image" content="share.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/marca/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/marca/favicon-180.png">
+<meta name="theme-color" content="#0b1f3a">
+<!-- <link rel="canonical" href="https://alphateklab.com/negocios.html"> (when this proposal goes live) -->
+<meta name="site-kind" content="software">
+<meta name="page-type" content="software">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/system.css">
+<link rel="stylesheet" href="assets/ui/cards.css">
+<link rel="stylesheet" href="assets/motion/motion.css">
+<link rel="stylesheet" href="assets/layout/layout.css">
+<style>
+:root {
+  --p-bg: #ffffff; --p-surface: #f5f7fa; --p-ink: #0e1a2b; --p-muted: #55627a;
+  --p-accent: #0e9f6e; --p-accent-ink: #111111; --p-action: #0e9f6e; --p-action-ink: #111111;
+  --p-inv-bg: #0e1a2b; --p-inv-surface: #1c2738; --p-inv-ink: #ffffff; --p-inv-muted: #99a0a8;
+  --p-inv-accent: #0e9f6e; --p-inv-accent-ink: #111111; --p-inv-action: #0e9f6e; --p-inv-action-ink: #111111;
+  --font-display: "Geist", system-ui, sans-serif;
+  --font-text: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 500;
+  --display-tracking: -0.035em;
+  --display-tracking-xl: -0.045em;
+}
+</style>
+<link rel="stylesheet" href="assets/p12.css">
+<script>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
+<script>document.documentElement.classList.add('p12-js');setTimeout(()=>document.documentElement.classList.add('p12-done'),7000)</script>
+
+</head>
+<body>
+<header class="nav nav--tone">
+  <div class="wrap nav__bar">
+    <a class="skip-link" href="#top">Saltar al contenido</a>
+    <a class="nav__logo" href="index.html"><img src="assets/marca/logo-oscuro.svg" alt="alphateklab" width="116" height="26"></a>
+    <nav class="nav__links" aria-label="Principal">
+      <div class="nav__item"><a class="nav__link" href="servicios.html">Servicios</a></div>
+      <div class="nav__item"><a class="nav__link" href="negocios.html" aria-current="page">Negocios</a></div>
+      <div class="nav__item"><a class="nav__link" href="demos.html">Demos</a></div>
+      <div class="nav__item"><a class="nav__link" href="como-trabajamos.html">Cómo trabajamos</a></div>
+    </nav>
+    <div class="nav__actions">
+      <a class="btn btn--primary" href="#propuesta">Pedir mi propuesta</a>
+    </div>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-label="Abrir el menú"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+  </div>
+</header>
+<main id="top">
+  <section class="page-head band-navy" aria-labelledby="page-h">
+    <div class="wrap">
+      <nav class="crumbs" aria-label="Estás en"><a href="index.html">Inicio</a><span aria-hidden="true">/</span><span aria-current="page">Negocios</span></nav>
+      <div class="page-head__grid">
+        <div><h1 id="page-h">Lo que resolvemos en tu tipo de negocio</h1><p class="lead">Nueve tipos de negocio. En cada uno, sus problemas de siempre, cómo los resolvemos y con qué servicios.</p></div>
+        
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="vivo-h">
+    <div class="wrap">
+      <div class="sec-head"><h2 class="inner-h2" id="vivo-h">Míralo funcionando en tu tipo de negocio</h2><p>Un negocio de ejemplo con datos simulados. Elige el tuyo y mira qué avisos llegan.</p></div>
+      <div class="tabs live-tabs" role="tablist" aria-label="Tipo de negocio">
+        <button class="tab" type="button" role="tab" aria-selected="true" data-rubro="restaurante">Restaurante</button>
+        <button class="tab" type="button" role="tab" aria-selected="false" data-rubro="tienda">Tienda</button>
+        <button class="tab" type="button" role="tab" aria-selected="false" data-rubro="clinica">Clínica</button>
+        <button class="tab" type="button" role="tab" aria-selected="false" data-rubro="hotel">Hotel y cabañas</button>
+        <button class="tab" type="button" role="tab" aria-selected="false" data-rubro="bodega">Bodega</button>
+      </div>
+      <div class="live-wrap"><div class="app ui is-playing" data-panel="live" role="img" aria-label="El panel de un restaurante de ejemplo: llegan el pedido de la mesa 4, una reserva confirmada y el aviso de la nevera 2 a 8.9 °C">
+  <div class="app__bar" aria-hidden="true"><span class="app__dots"><i></i><i></i><i></i></span><span class="app__url"><svg class="i" aria-hidden="true"><use href="#i-lock-key"></use></svg>panel del negocio</span></div>
+  <div class="app__body" aria-hidden="true">
+    <div class="app__side">
+      <div class="app__biz"><span class="app__avatar" data-l="avatar">FP</span><span><b data-l="nombre">Fonda Pixbae</b><small>Panel del negocio</small></span></div>
+      <span class="app__nav is-on"><svg class="i" aria-hidden="true"><use href="#i-bell-ringing"></use></svg>Avisos<span class="count">3</span></span>
+      <span class="app__nav"><svg class="i" aria-hidden="true"><use href="#i-clipboard-text"></use></svg>Pedidos</span>
+      <span class="app__nav"><svg class="i" aria-hidden="true"><use href="#i-calendar-check"></use></svg>Reservas</span>
+      <span class="app__nav"><svg class="i" aria-hidden="true"><use href="#i-broadcast"></use></svg>Equipos</span>
+      <span class="app__nav"><svg class="i" aria-hidden="true"><use href="#i-chart-line-up"></use></svg>Resumen del día</span>
+    </div>
+    <div class="app__main">
+      <div class="app__head"><div><h3 data-l="titulo">Fonda Pixbae</h3><p data-l="tipo">Restaurante de ejemplo en Ciudad de Panamá</p></div><span class="app__live">En vivo</span></div>
+      <div class="app__cols">
+        <div class="app__card"><div class="app__card-head">Avisos de hoy<span data-l="count">3 nuevos</span></div><ul class="feed" data-l="feed"><li class="feed__row feed__row--alert" data-arrive="3" data-flip="[data-eq='2']"><span class="feed__ico"><svg class="i" aria-hidden="true"><use href="#i-thermometer-simple"></use></svg></span><span class="feed__txt"><b>La nevera 2 subió a 8.9 °C.</b><span>La puerta lleva 6 minutos abierta</span></span><span class="feed__meta"><span>15:02</span><span class="tag tag--alert">Aviso</span></span></li><li class="feed__row feed__row--ok" data-arrive="2"><span class="feed__ico"><svg class="i" aria-hidden="true"><use href="#i-calendar-check"></use></svg></span><span class="feed__txt"><b>Reserva confirmada: mesa para 6, el sábado.</b><span>8:00 p. m., desde tu página</span></span><span class="feed__meta"><span>13:05</span><span class="tag tag--blue">Reserva</span></span></li><li class="feed__row feed__row--order" data-arrive="1"><span class="feed__ico"><svg class="i" aria-hidden="true"><use href="#i-fork-knife"></use></svg></span><span class="feed__txt"><b>Mesa 4 pidió 2 patacones y 1 chicha de piña.</b><span>B/. 9.50, desde el QR de la mesa</span></span><span class="feed__meta"><span>12:41</span><span class="tag tag--em">Pedido</span></span></li><li class="feed__row"><span class="feed__ico"><svg class="i" aria-hidden="true"><use href="#i-clipboard-text"></use></svg></span><span class="feed__txt"><b>Mesa 7 pidió la cuenta dividida en 3.</b><span>Desde el QR de la mesa</span></span><span class="feed__meta"><span>12:20</span><span class="tag">Cuenta</span></span></li></ul></div>
+        <div class="app__aside">
+          <div class="kpis" data-l="kpis"><div class="kpi"><small>Ventas de hoy</small><b>B/. 612.40</b></div><div class="kpi"><small>Pedidos por QR</small><b>41</b></div></div>
+          <div class="app__card"><div class="app__card-head">Equipos conectados<span>4</span></div><ul class="eq" data-l="equipos">
+            <li class="eq__row" data-eq="0"><svg class="i" aria-hidden="true"><use href="#i-qr-code"></use></svg><span>QR en las mesas</span><span class="eq__val">41 pedidos</span></li>
+            <li class="eq__row" data-eq="1"><svg class="i" aria-hidden="true"><use href="#i-monitor"></use></svg><span>Pantalla de cocina</span><span class="eq__val">3 órdenes</span></li>
+            <li class="eq__row" data-eq="2" data-to="8.9 °C"><svg class="i" aria-hidden="true"><use href="#i-thermometer-simple"></use></svg><span>Sensor de la nevera</span><span class="eq__val">4.1 °C</span></li>
+          </ul></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+    </div>
+  </section>
+
+  <section class="section ground-soft" aria-labelledby="nueve-h">
+    <div class="wrap">
+      <div class="sec-head"><h2 class="inner-h2" id="nueve-h">Los nueve tipos de negocio</h2><p>Toca el tuyo para bajar a sus problemas y sus servicios.</p></div>
+      <div class="neg-index">
+        <a href="#restaurantes"><img src="assets/fotos/restaurantes-720.webp" width="56" height="56" alt="" loading="lazy"><span><b>Restaurantes y cafés</b><small class="num">20 servicios</small></span></a>
+        <a href="#tiendas"><img src="assets/fotos/comercio-720.webp" width="56" height="56" alt="" loading="lazy"><span><b>Tiendas, minisúper y comercio</b><small class="num">20 servicios</small></span></a>
+        <a href="#clinicas"><img src="assets/fotos/salud-720.webp" width="56" height="56" alt="" loading="lazy"><span><b>Clínicas y consultorios</b><small class="num">7 servicios</small></span></a>
+        <a href="#hospedaje"><img src="assets/fotos/hospedaje-720.webp" width="56" height="56" alt="" loading="lazy"><span><b>Hospedaje y turismo</b><small class="num">16 servicios</small></span></a>
+        <a href="#bienes-raices"><img src="assets/fotos/inmuebles-720.webp" width="56" height="56" alt="" loading="lazy"><span><b>Bienes raíces</b><small class="num">7 servicios</small></span></a>
+        <a href="#bodegas"><img src="assets/img/photo-f32211002-500.jpg" width="56" height="56" alt="" loading="lazy"><span><b>Bodegas, oficinas e industria</b><small class="num">19 servicios</small></span></a>
+        <a href="#escuelas"><img src="assets/fotos/educacion-720.webp" width="56" height="56" alt="" loading="lazy"><span><b>Escuelas y academias</b><small class="num">3 servicios</small></span></a>
+        <a href="#talleres"><img src="assets/fotos/servicios-720.webp" width="56" height="56" alt="" loading="lazy"><span><b>Talleres, autolavados y salones</b><small class="num">3 servicios</small></span></a>
+        <a href="#cualquier-negocio"><img src="assets/fotos/todos-720.webp" width="56" height="56" alt="" loading="lazy"><span><b>Cualquier negocio</b><small class="num">24 servicios</small></span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="n-restaurantes">
+    <div class="wrap"><div class="neg" id="restaurantes">
+      <div class="neg__about">
+        <div class="neg__media"><img src="assets/fotos/restaurantes-720.webp" srcset="assets/fotos/restaurantes-720.webp 720w, assets/fotos/restaurantes-1200.webp 1200w" sizes="(max-width: 1023px) 100vw, 519px" width="720" height="480" alt="Salón de un restaurante a la hora del almuerzo, con una mesera caminando entre las mesas llenas" loading="lazy" decoding="async" data-source="stand-in" data-subject="Salón de un restaurante a la hora del almuerzo, con una mesera caminando entre las mesas llenas"></div>
+        <p class="t-label">Restaurantes y cafés</p>
+        <h2 id="n-restaurantes">Menos espera en las mesas y comandas que no se pierden</h2>
+        <p>Que el cliente pida y pague desde la mesa, que la cocina vea cada comanda a tiempo y que tú veas el salón entero desde la caja.</p>
+        <div class="btn-row"><a class="btn btn--secondary" href="https://alphateklab.com/negocio-restaurantes.html">Ver la página de restaurantes</a><a class="link" href="https://alphatend.github.io/alphateklab-mesa/">Probar la demo</a></div>
+      </div>
+      <div class="neg__probs">
+        <div class="prob"><h3>Los clientes esperan para pedir, para otra ronda y para pagar.</h3><p>Un QR o una etiqueta NFC en cada mesa: piden, llaman al mesero y pagan desde su teléfono, con la propina que ellos eligen.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-pedir-y-pagar-desde-la-mesa.html">Pedir y pagar en la mesa</a><a class="chip" href="https://alphateklab.com/servicio-nfc-en-la-mesa.html">NFC en la mesa</a><a class="chip" href="https://alphateklab.com/servicio-menu-qr.html">Menú QR</a></div></div>
+        <div class="prob"><h3>Las comandas en papel se pierden o se leen mal.</h3><p>Pantalla en la cocina con cada pedido por estación y el tiempo que lleva esperando.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-pantalla-de-cocina.html">Pantalla de cocina</a></div></div>
+        <div class="prob"><h3>No sabes qué mesa lleva cuánto ni cuál pidió la cuenta.</h3><p>El plano del salón en la caja con el estado de cada mesa y su cuenta abierta, lista para cobrar y facturar.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-mapa-de-mesas-y-cuentas.html">Mapa de mesas</a><a class="chip" href="https://alphateklab.com/servicio-punto-de-venta.html">Punto de venta (POS)</a><a class="chip" href="https://alphateklab.com/servicio-factura-electronica.html">Factura electrónica</a></div></div>
+        <div class="prob"><h3>Pagas comisión por cada pedido a domicilio.</h3><p>Tu propia app o página de pedidos, para tu restaurante, tus sucursales o un grupo de restaurantes, con tus motorizados y pago con Yappy o tarjeta.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-app-de-delivery-propia.html">App de delivery propia</a><a class="chip" href="https://alphateklab.com/servicio-pedidos-para-llevar.html">Pedidos para llevar</a><a class="chip" href="https://alphateklab.com/servicio-pagos-en-linea.html">Cobros en línea</a></div></div>
+        <div class="prob"><h3>Pasas el día copiando pedidos de WhatsApp a la cocina.</h3><p>Un asistente toma el pedido por WhatsApp y la comanda sale sola en la cocina.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-pedidos-por-whatsapp-automaticos.html">Pedidos por WhatsApp a cocina</a><a class="chip" href="https://alphateklab.com/servicio-pantalla-de-cocina.html">Pantalla de cocina</a></div></div>
+        <div class="prob"><h3>Se daña la mercancía cuando falla una nevera de noche.</h3><p>Sensores de temperatura que te avisan al WhatsApp antes de perderla.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-temperatura-de-neveras.html">Temperatura de neveras</a></div></div>
+      </div>
+    </div></div>
+  </section>
+  <section class="section ground-soft" aria-labelledby="n-tiendas">
+    <div class="wrap"><div class="neg" id="tiendas">
+      <div class="neg__about">
+        <div class="neg__media"><img src="assets/fotos/comercio-720.webp" srcset="assets/fotos/comercio-720.webp 720w, assets/fotos/comercio-1200.webp 1200w" sizes="(max-width: 1023px) 100vw, 519px" width="720" height="480" alt="Interior de un minisúper pequeño con estantes de golosinas y una nevera de bebidas" loading="lazy" decoding="async" data-source="stand-in" data-subject="Interior de un minisúper pequeño con estantes de golosinas y una nevera de bebidas"></div>
+        <p class="t-label">Tiendas, minisúper y comercio</p>
+        <h2 id="n-tiendas">Que la caja cuadre, el inventario también, y nadie se vaya de la fila</h2>
+        <p>Vender también por internet, saber cuánta gente entra y cuánta compra, y contar la mercancía sin pasar la noche anotando.</p>
+        <div class="btn-row"><a class="btn btn--secondary" href="https://alphateklab.com/negocio-tiendas.html">Ver la página de tiendas</a><a class="link" href="https://dev.alphateklab.com/laboratorio/camara/">Probar la demo</a></div>
+      </div>
+      <div class="neg__probs">
+        <div class="prob"><h3>Hay pérdidas y no sabes dónde: mercancía que falta o la caja que no cuadra.</h3><p>Cámaras que marcan los momentos que vale la pena revisar, sin ver horas de video.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-camaras-con-ia-en-caja.html">Cámaras contra pérdidas</a><a class="chip" href="https://alphateklab.com/servicio-camaras-de-seguridad.html">Cámaras de seguridad</a></div></div>
+        <div class="prob"><h3>No sabes cuántas personas entran ni cuántas terminan comprando.</h3><p>Un contador en la puerta que, junto con tus ventas, te da la tasa de conversión por hora y por día.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-contador-de-personas.html">Contador de personas</a><a class="chip" href="https://alphateklab.com/servicio-mapa-de-calor.html">Mapa de calor</a></div></div>
+        <div class="prob"><h3>Se forman filas en caja y la gente se va.</h3><p>La cámara avisa al encargado cuando la fila pasa de cierto número.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-alerta-de-filas.html">Aviso de filas</a></div></div>
+        <div class="prob"><h3>Contar el inventario toma días y nunca cuadra.</h3><p>Inventario por escaneo con RFID o con la cámara del teléfono, comparado contra tu sistema.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-inventario-por-escaneo.html">Inventario por escaneo</a><a class="chip" href="https://alphateklab.com/servicio-inventario-y-compras.html">Inventario y compras</a></div></div>
+        <div class="prob"><h3>Vendes por WhatsApp a mano, uno por uno.</h3><p>Catálogo y pedidos por WhatsApp, o tu propia tienda en línea con Yappy y tarjeta.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-catalogo-por-whatsapp.html">Pedidos por WhatsApp</a><a class="chip" href="https://alphateklab.com/servicio-tienda-en-linea.html">Tienda en línea</a><a class="chip" href="https://alphateklab.com/servicio-pagos-en-linea.html">Cobros en línea</a></div></div>
+      </div>
+    </div></div>
+  </section>
+  <section class="section" aria-labelledby="n-clinicas">
+    <div class="wrap"><div class="neg" id="clinicas">
+      <div class="neg__about">
+        <div class="neg__media"><img src="assets/fotos/salud-720.webp" srcset="assets/fotos/salud-720.webp 720w, assets/fotos/salud-1200.webp 1200w" sizes="(max-width: 1023px) 100vw, 519px" width="720" height="480" alt="Sala de espera de una clínica, luminosa, con sofás turquesa y el mostrador de recepción" loading="lazy" decoding="async" data-source="stand-in" data-subject="Sala de espera de una clínica, luminosa, con sofás turquesa y el mostrador de recepción"></div>
+        <p class="t-label">Clínicas y consultorios</p>
+        <h2 id="n-clinicas">Pacientes que llegan a su cita y una recepción que no vive pegada al teléfono</h2>
+        <p>Recordatorios por WhatsApp que el paciente confirma con un toque, una agenda sin citas encimadas y la lista de a quién llamar.</p>
+        <div class="btn-row"><a class="btn btn--secondary" href="https://alphateklab.com/negocio-clinicas.html">Ver la página de clínicas</a><a class="link" href="https://alphatend.github.io/alphateklab-reservas/">Probar la demo</a></div>
+      </div>
+      <div class="neg__probs">
+        <div class="prob"><h3>Los pacientes no llegan y el hueco se pierde.</h3><p>Recordatorio por WhatsApp 2 o 1 día antes, con botón para confirmar, y reintentos hasta tener respuesta.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-agente-de-citas.html">Agente de citas</a></div></div>
+        <div class="prob"><h3>La recepción pasa el día al teléfono agendando.</h3><p>Una página donde el paciente pide su cita solo, con los horarios libres de cada profesional.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-agente-de-citas.html">Agente de citas</a><a class="chip" href="https://alphateklab.com/servicio-chatbot-de-whatsapp.html">Asistente con IA</a></div></div>
+        <div class="prob"><h3>La sala de espera es un desorden.</h3><p>Pantalla de turnos que llama al siguiente paciente por su número.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-turnos-en-sala-de-espera.html">Turnos en sala de espera</a></div></div>
+        <div class="prob"><h3>El expediente vive en papel o en hojas sueltas.</h3><p>Expediente digital del paciente, con permisos por persona y el consentimiento que pide la Ley 81.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-expediente-del-paciente.html">Expediente digital</a></div></div>
+        <div class="prob"><h3>Pacientes que viven lejos o solo necesitan un control.</h3><p>Videoconsulta con cobro previo desde la misma agenda.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-videoconsulta.html">Videoconsulta</a></div></div>
+      </div>
+    </div></div>
+  </section>
+  <section class="section ground-soft" aria-labelledby="n-hospedaje">
+    <div class="wrap"><div class="neg" id="hospedaje">
+      <div class="neg__about">
+        <div class="neg__media"><img src="assets/fotos/hospedaje-720.webp" srcset="assets/fotos/hospedaje-720.webp 720w, assets/fotos/hospedaje-1200.webp 1200w" sizes="(max-width: 1023px) 100vw, 519px" width="720" height="480" alt="Cabaña de madera con techo de paja entre palmas, frente a una montaña de bosque tropical" loading="lazy" decoding="async" data-source="stand-in" data-subject="Cabaña de madera con techo de paja entre palmas, frente a una montaña de bosque tropical"></div>
+        <p class="t-label">Hospedaje y turismo</p>
+        <h2 id="n-hospedaje">Reservas directas sin comisión, y un aviso antes de vender dos veces la misma noche</h2>
+        <p>Tu propia página de reservas con Yappy y tarjeta, un vigilante que avisa cuando Booking o Airbnb dejan de sincronizar, y el huésped entrando solo con su código.</p>
+        <div class="btn-row"><a class="btn btn--secondary" href="https://alphateklab.com/negocio-hospedaje.html">Ver la página de hospedaje</a><a class="link" href="https://alphatend.github.io/alphateklab-reservas/">Probar la demo</a></div>
+      </div>
+      <div class="neg__probs">
+        <div class="prob"><h3>Pagas comisión por reservas que podrían ser directas.</h3><p>Motor de reservas en tu página, con depósito en línea y varias unidades en una reserva.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-motor-de-reservas.html">Motor de reservas</a><a class="chip" href="https://alphateklab.com/servicio-pagos-en-linea.html">Cobros en línea</a></div></div>
+        <div class="prob"><h3>Una doble reserva porque un calendario dejó de sincronizar.</h3><p>Calendario sincronizado con los canales y un vigilante que avisa y cierra la venta si uno se cae.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-sincronizacion-con-booking-y-airbnb.html">Aviso de calendario caído</a></div></div>
+        <div class="prob"><h3>Esperar al huésped para entregar llaves.</h3><p>Cerraduras con un código por reserva y registro del huésped en línea antes de llegar.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-cerraduras-con-codigo.html">Cerraduras con código</a><a class="chip" href="https://alphateklab.com/servicio-check-in-en-linea.html">Registro de huéspedes</a></div></div>
+        <div class="prob"><h3>El aire acondicionado prendido en una cabaña vacía.</h3><p>Luces, aire y consumo de cada unidad desde el teléfono.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-domotica-para-alquileres.html">Luces, aire y cerraduras</a><a class="chip" href="https://alphateklab.com/servicio-consumo-por-cabana.html">Consumo por cabaña</a></div></div>
+      </div>
+    </div></div>
+  </section>
+  <section class="section" aria-labelledby="n-bienes-raices">
+    <div class="wrap"><div class="neg" id="bienes-raices">
+      <div class="neg__about">
+        <div class="neg__media"><img src="assets/fotos/inmuebles-720.webp" srcset="assets/fotos/inmuebles-720.webp 720w, assets/fotos/inmuebles-1200.webp 1200w" sizes="(max-width: 1023px) 100vw, 519px" width="720" height="480" alt="Sala de un apartamento en un piso alto, con ventanales hacia el balcón" loading="lazy" decoding="async" data-source="stand-in" data-subject="Sala de un apartamento en un piso alto, con ventanales hacia el balcón"></div>
+        <p class="t-label">Bienes raíces</p>
+        <h2 id="n-bienes-raices">Que el cliente recorra el apartamento antes de ir a verlo</h2>
+        <p>Recorridos 360 y 3D con medidas, fotos profesionales y un agente de WhatsApp que contesta a las 11 de la noche.</p>
+        <div class="btn-row"><a class="btn btn--secondary" href="https://alphateklab.com/negocio-bienes-raices.html">Ver la página de bienes raíces</a><a class="link" href="https://dev.alphateklab.com/laboratorio/recorrido-360/">Probar la demo</a></div>
+      </div>
+      <div class="neg__probs">
+        <div class="prob"><h3>Las fotos no transmiten cómo es el espacio.</h3><p>Recorrido 360 de cada ambiente, o en 3D caminando de un cuarto a otro, con las medidas reales, para enlazar desde tu anuncio.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-recorrido-3d.html">Recorrido 360 y 3D</a><a class="chip" href="https://alphateklab.com/servicio-fotos-de-la-propiedad.html">Fotos profesionales</a></div></div>
+        <div class="prob"><h3>Visitas con gente que no iba en serio.</h3><p>Un agente de WhatsApp que contesta, pregunta presupuesto y fecha, y agenda solo a los interesados.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-agente-de-whatsapp-para-inmobiliarias.html">Bot de prospectos en WhatsApp</a></div></div>
+        <div class="prob"><h3>Tus propiedades dependen de portales de terceros.</h3><p>Tu propio sitio de propiedades, con fichas, planos y recorridos.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-sitio-de-propiedades.html">Sitio de propiedades</a><a class="chip" href="https://alphateklab.com/servicio-planos-desde-el-escaneo.html">Planos con medidas</a></div></div>
+        <div class="prob"><h3>Terrenos y proyectos difíciles de mostrar.</h3><p>Tomas aéreas con dron y mapa del terreno.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-tomas-con-dron.html">Tomas con dron</a></div></div>
+      </div>
+    </div></div>
+  </section>
+  <section class="section ground-soft" aria-labelledby="n-bodegas">
+    <div class="wrap"><div class="neg" id="bodegas">
+      <div class="neg__about">
+        <div class="neg__media"><img src="assets/img/photo-f32211002-500.jpg" srcset="assets/img/photo-f32211002-500.jpg 500w, assets/img/photo-f32211002-960.jpg 960w" sizes="(max-width: 1023px) 100vw, 519px" width="960" height="696" alt="Bodega grande con estanterías altas llenas de cajas y una persona caminando por el pasillo" loading="lazy" decoding="async" data-source="stand-in" data-subject="warehouse"></div>
+        <p class="t-label">Bodegas, oficinas e industria</p>
+        <h2 id="n-bodegas">Enterarte de lo que pasa en la planta antes de que pare</h2>
+        <p>Sensores en motores, tanques y consumo, el registro de quién entra y el conteo de lo que se produce, con avisos al WhatsApp.</p>
+        <div class="btn-row"><a class="btn btn--secondary" href="https://alphateklab.com/negocio-industria-y-oficinas.html">Ver la página de bodegas</a><a class="link" href="https://dev.alphateklab.com/laboratorio/sensores/">Probar la demo</a></div>
+      </div>
+      <div class="neg__probs">
+        <div class="prob"><h3>Un motor o una bomba se daña sin aviso y para todo.</h3><p>Sensores de vibración y temperatura que avisan antes de la falla.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-sensores-en-motores.html">Sensores en motores</a><a class="chip" href="https://alphateklab.com/servicio-tablero-de-sensores.html">Tablero de sensores</a></div></div>
+        <div class="prob"><h3>Nadie sabe cuánto se produjo hasta el cierre.</h3><p>Contador de producción en línea y básculas conectadas al sistema.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-contador-de-produccion.html">Contador de producción</a><a class="chip" href="https://alphateklab.com/servicio-basculas-conectadas.html">Básculas conectadas</a></div></div>
+        <div class="prob"><h3>Entra y sale gente sin registro.</h3><p>Control de acceso con QR o tarjeta, y lectura de placas en el portón.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-control-de-acceso.html">Control de acceso</a><a class="chip" href="https://alphateklab.com/servicio-lectura-de-placas.html">Lectura de placas</a></div></div>
+        <div class="prob"><h3>Los camiones salen y no sabes dónde están.</h3><p>GPS por vehículo con historial de rutas.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-gps-de-flota.html">GPS de flota</a></div></div>
+        <div class="prob"><h3>Accidentes por no usar el equipo de seguridad.</h3><p>Cámaras que avisan cuando alguien entra sin casco o chaleco.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-deteccion-de-equipo-de-seguridad.html">Casco y chaleco</a></div></div>
+      </div>
+    </div></div>
+  </section>
+  <section class="section" aria-labelledby="n-escuelas">
+    <div class="wrap"><div class="neg" id="escuelas">
+      <div class="neg__about">
+        <div class="neg__media"><img src="assets/fotos/educacion-720.webp" srcset="assets/fotos/educacion-720.webp 720w, assets/fotos/educacion-1200.webp 1200w" sizes="(max-width: 1023px) 100vw, 519px" width="720" height="480" alt="Aula con estudiantes sentados de espaldas mientras el profesor habla frente a la pizarra" loading="lazy" decoding="async" data-source="stand-in" data-subject="Aula con estudiantes sentados de espaldas mientras el profesor habla frente a la pizarra"></div>
+        <p class="t-label">Escuelas y academias</p>
+        <h2 id="n-escuelas">Mensualidades que se pagan a tiempo y circulares que llegan a la casa</h2>
+        <p>Matrícula y mensualidades en línea, asistencia sin lista de papel y los avisos a los padres por WhatsApp.</p>
+        <div class="btn-row"><a class="btn btn--secondary" href="https://alphateklab.com/negocio-escuelas.html">Ver la página de escuelas</a></div>
+      </div>
+      <div class="neg__probs">
+        <div class="prob"><h3>Cobrar mensualidades es perseguir pagos.</h3><p>Matrícula y cobro en línea con Yappy o tarjeta, recordatorio de pago y estado de cuenta por estudiante.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-matricula-y-mensualidades.html">Matrícula y mensualidades</a></div></div>
+        <div class="prob"><h3>La asistencia se pasa en papel y se pierde.</h3><p>Asistencia con QR o tarjeta, con aviso a los padres si el estudiante no llegó.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-asistencia-con-qr.html">Asistencia con QR</a></div></div>
+        <div class="prob"><h3>Las circulares no llegan a la casa.</h3><p>Avisos y recordatorios a los padres por WhatsApp.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-avisos-a-padres.html">Avisos a padres</a></div></div>
+      </div>
+    </div></div>
+  </section>
+  <section class="section ground-soft" aria-labelledby="n-talleres">
+    <div class="wrap"><div class="neg" id="talleres">
+      <div class="neg__about">
+        <div class="neg__media"><img src="assets/fotos/servicios-720.webp" srcset="assets/fotos/servicios-720.webp 720w, assets/fotos/servicios-1200.webp 1200w" sizes="(max-width: 1023px) 100vw, 519px" width="720" height="480" alt="Persona lavando un auto azul con una pistola de agua a presión en un autolavado de noche" loading="lazy" decoding="async" data-source="stand-in" data-subject="Persona lavando un auto azul con una pistola de agua a presión en un autolavado de noche"></div>
+        <p class="t-label">Talleres, autolavados y salones</p>
+        <h2 id="n-talleres">Citas que no se cruzan y clientes que saben cuánto les falta</h2>
+        <p>Turnos en línea, un aviso por WhatsApp cuando el carro o el servicio está listo, y presupuestos aprobados por escrito.</p>
+        <div class="btn-row"><a class="btn btn--secondary" href="https://alphateklab.com/negocio-talleres-y-salones.html">Ver la página de talleres</a><a class="link" href="https://alphatend.github.io/alphateklab-reservas/">Probar la demo</a></div>
+      </div>
+      <div class="neg__probs">
+        <div class="prob"><h3>El cliente espera sin saber cuánto le falta.</h3><p>Turnos en línea con su lugar en la fila y aviso por WhatsApp cuando está listo.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-turnos-y-aviso-de-listo.html">Turnos y aviso de listo</a></div></div>
+        <div class="prob"><h3>Presupuestos aprobados de palabra que luego se discuten.</h3><p>Órdenes de trabajo con fotos del vehículo y aprobación del cliente por WhatsApp.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-ordenes-de-trabajo.html">Órdenes de trabajo</a></div></div>
+        <div class="prob"><h3>Citas que se cruzan en la barbería o el salón.</h3><p>Agenda por profesional con recordatorio y depósito en línea.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-agenda-para-salones.html">Agenda para salones</a></div></div>
+      </div>
+    </div></div>
+  </section>
+  <section class="section" aria-labelledby="n-cualquier-negocio">
+    <div class="wrap"><div class="neg" id="cualquier-negocio">
+      <div class="neg__about">
+        <div class="neg__media"><img src="assets/fotos/todos-720.webp" srcset="assets/fotos/todos-720.webp 720w, assets/fotos/todos-1200.webp 1200w" sizes="(max-width: 1023px) 100vw, 519px" width="720" height="480" alt="Dueña de un pequeño estudio trabajando en una laptop, con sus certificados en la pared" loading="lazy" decoding="async" data-source="stand-in" data-subject="Dueña de un pequeño estudio trabajando en una laptop, con sus certificados en la pared"></div>
+        <p class="t-label">Cualquier negocio</p>
+        <h2 id="n-cualquier-negocio">Que te encuentren en Google y que el trabajo repetido lo haga el sistema</h2>
+        <p>Página web, apps, sistemas a medida y automatizaciones para lo que hoy se hace en Excel, en papel o copiando y pegando.</p>
+        <div class="btn-row"><a class="btn btn--secondary" href="https://alphateklab.com/negocio-cualquier-negocio.html">Ver la página de cualquier negocio</a></div>
+      </div>
+      <div class="neg__probs">
+        <div class="prob"><h3>El negocio no aparece cuando lo buscan.</h3><p>Página web, perfil de Google con tu ubicación y reseñas, y correo con tu dominio.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-pagina-web.html">Página web</a><a class="chip" href="https://alphateklab.com/servicio-negocio-en-google.html">Google Maps y reseñas</a><a class="chip" href="https://alphateklab.com/servicio-correo-y-dominio.html">Correo y dominio</a></div></div>
+        <div class="prob"><h3>Todo vive en Excel y nadie sabe cuál es la versión buena.</h3><p>Software a medida para cómo trabaja tu negocio: inventario, clientes, cotizaciones.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-software-a-medida.html">Software a medida</a><a class="chip" href="https://alphateklab.com/servicio-inventario-y-compras.html">Inventario y compras</a><a class="chip" href="https://alphateklab.com/servicio-seguimiento-de-clientes.html">Clientes y ventas (CRM)</a><a class="chip" href="https://alphateklab.com/servicio-cotizador.html">Cotizador</a></div></div>
+        <div class="prob"><h3>Alguien copia y pega datos todo el día.</h3><p>Automatizaciones e integraciones entre tus sistemas, y lectura de facturas con IA.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-automatizaciones.html">Automatizaciones</a><a class="chip" href="https://alphateklab.com/servicio-conexion-entre-sistemas.html">Conexión entre sistemas</a><a class="chip" href="https://alphateklab.com/servicio-lectura-de-documentos-con-ia.html">Lectura de documentos con IA</a></div></div>
+        <div class="prob"><h3>Las mismas preguntas por WhatsApp a toda hora.</h3><p>Un asistente con IA que contesta con tu información y te pasa lo que no sabe.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-chatbot-de-whatsapp.html">Asistente con IA</a></div></div>
+        <div class="prob"><h3>Se cae la computadora y se pierde todo.</h3><p>Respaldo, seguridad y soporte técnico para tu oficina.</p><div class="chips"><a class="chip" href="https://alphateklab.com/servicio-respaldo-y-seguridad.html">Respaldo y seguridad</a><a class="chip" href="https://alphateklab.com/servicio-soporte-tecnico.html">Soporte técnico</a><a class="chip" href="https://alphateklab.com/servicio-red-y-wifi-del-negocio.html">Red y Wi-Fi</a></div></div>
+      </div>
+    </div></div>
+  </section>
+  <section class="section" aria-label="Siguiente página">
+    <div class="wrap"><div class="next-page"><p>¿Quieres probarlo antes?<small>Cinco demos que puedes encender ahora, con negocios de ejemplo.</small></p><a class="btn btn--secondary" href="demos.html">Ver las demos</a></div></div>
+  </section>
+</main>
+<footer class="footer closing footer--dark band-navy" id="propuesta" aria-labelledby="close-h">
+  <div class="wrap">
+    <div class="closing__cta ask">
+      <div class="ask__text">
+        <h2 id="close-h">¿Tu negocio no está en la lista?</h2>
+        <p>Cuéntanos qué necesitas y te mandamos la propuesta por escrito: qué haríamos, con qué equipo y en cuánto tiempo queda.</p>
+        <p class="mail">O escríbenos a <span class="mail__addr" data-correo>info@alphateklab.com</span> <button type="button" class="btn btn--secondary" data-copiar><svg class="i" aria-hidden="true"><use href="#i-copy"></use></svg><span>Copiar</span></button></p>
+      </div>
+      <form class="ask__form" data-pedido novalidate>
+        <label for="pedido-texto">Qué necesitas</label>
+        <textarea id="pedido-texto" name="mensaje" rows="4" maxlength="600" placeholder="Ej.: quiero que mis vendedores vean el inventario desde el teléfono" aria-describedby="pedido-error pedido-nota"></textarea>
+        <p class="field__error" id="pedido-error" data-error hidden>Escribe qué necesitas, con tus palabras.</p>
+        <div class="ask__row">
+          <button class="btn btn--primary" type="submit">Pedir mi propuesta<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></button>
+          <span class="t-small muted">Sin compromiso.</span>
+        </div>
+        <p class="ask__note" id="pedido-nota" role="status" data-nota></p>
+      </form>
+    </div>
+    <div class="closing__links">
+      <div class="grid">
+        <div class="span-4 foot-brand">
+          <a href="index.html" aria-label="alphateklab, inicio"><img src="assets/marca/logo-oscuro.svg" alt="alphateklab" width="125" height="28" loading="lazy"></a>
+          <p>Creamos el software de tu negocio en Panamá y lo conectamos con el equipo que haga falta.</p>
+          <p class="where">Panamá, trabajamos a distancia</p>
+        </div>
+        <div class="span-2 footer__col"><h3>Páginas</h3><ul><li><a href="servicios.html">Servicios</a></li><li><a href="negocios.html">Negocios</a></li><li><a href="demos.html">Demos</a></li><li><a href="como-trabajamos.html">Cómo trabajamos</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Servicios</h3><ul><li><a href="https://alphateklab.com/tipo-software.html">Software a medida</a></li><li><a href="https://alphateklab.com/tipo-web.html">Web y apps</a></li><li><a href="https://alphateklab.com/tipo-ia.html">Inteligencia artificial</a></li><li><a href="https://alphateklab.com/tipo-iot.html">Sensores</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Negocios</h3><ul><li><a href="https://alphateklab.com/negocio-restaurantes.html">Restaurantes</a></li><li><a href="https://alphateklab.com/negocio-tiendas.html">Tiendas y minisúper</a></li><li><a href="https://alphateklab.com/negocio-clinicas.html">Clínicas</a></li><li><a href="https://alphateklab.com/negocio-hospedaje.html">Hospedaje</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>alphateklab</h3><ul><li><a href="como-trabajamos.html#preguntas">Preguntas frecuentes</a></li><li><a href="https://dev.alphateklab.com/guias/">Guías</a></li><li><a href="https://dev.alphateklab.com/privacidad/">Privacidad</a></li><li><a href="https://dev.alphateklab.com/creditos/">Créditos</a></li></ul></div>
+      </div>
+      <div class="footer__legal">
+        <div class="foot-legal-lines">
+          <span>&copy; 2026 alphateklab. Las demos usan negocios de ejemplo: sus nombres, platos, pacientes y reservas son ficticios.</span>
+          <details class="credits"><summary>Fotos de Unsplash y Wikimedia Commons</summary><p>Unsplash: @negley, @che_3, @benyamin_bohlouli, @yenvu2410, @summitangel, @heyquilia, @fantasyflip y @omarlopez1 (Licencia de Unsplash). Wikimedia Commons: «Adam Hall Lager», de Adamhallgmbh (CC BY-SA 3.0 DE).</p></details>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><!-- Phosphor Icons 2.1.1 (MIT), from the source's assets/iconos.svg -->
+<symbol id="i-lock-key" viewBox="0 0 256 256"><path d="M208,88H48a8,8,0,0,0-8,8V208a8,8,0,0,0,8,8H208a8,8,0,0,0,8-8V96A8,8,0,0,0,208,88Zm-80,72a20,20,0,1,1,20-20A20,20,0,0,1,128,160Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M208,80H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208V208Zm-80-96a28,28,0,0,0-8,54.83V184a8,8,0,0,0,16,0V166.83A28,28,0,0,0,128,112Zm0,40a12,12,0,1,1,12-12A12,12,0,0,1,128,152Z"/></symbol>
+<symbol id="i-bell-ringing" viewBox="0 0 256 256"><path d="M208,192H48a8,8,0,0,1-6.88-12C47.71,168.6,56,147.81,56,112a72,72,0,0,1,144,0c0,35.82,8.3,56.6,14.9,68A8,8,0,0,1,208,192Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M224,71.1a8,8,0,0,1-10.78-3.42,94.13,94.13,0,0,0-33.46-36.91,8,8,0,1,1,8.54-13.54,111.46,111.46,0,0,1,39.12,43.09A8,8,0,0,1,224,71.1ZM35.71,72a8,8,0,0,0,7.1-4.32A94.13,94.13,0,0,1,76.27,30.77a8,8,0,1,0-8.54-13.54A111.46,111.46,0,0,0,28.61,60.32,8,8,0,0,0,35.71,72Zm186.1,103.94A16,16,0,0,1,208,200H167.2a40,40,0,0,1-78.4,0H48a16,16,0,0,1-13.79-24.06C43.22,160.39,48,138.28,48,112a80,80,0,0,1,160,0C208,138.27,212.78,160.38,221.81,175.94ZM150.62,200H105.38a24,24,0,0,0,45.24,0ZM208,184c-10.64-18.27-16-42.49-16-72a64,64,0,0,0-128,0c0,29.52-5.38,53.74-16,72Z"/></symbol>
+<symbol id="i-clipboard-text" viewBox="0 0 256 256"><path d="M208,48V216a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8V48a8,8,0,0,1,8-8H96a39.83,39.83,0,0,0-8,24v8h80V64a39.83,39.83,0,0,0-8-24h40A8,8,0,0,1,208,48Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M168,152a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,152Zm-8-40H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16Zm56-64V216a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V48A16,16,0,0,1,56,32H92.26a47.92,47.92,0,0,1,71.48,0H200A16,16,0,0,1,216,48ZM96,64h64a32,32,0,0,0-64,0ZM200,48H173.25A47.93,47.93,0,0,1,176,64v8a8,8,0,0,1-8,8H88a8,8,0,0,1-8-8V64a47.93,47.93,0,0,1,2.75-16H56V216H200Z"/></symbol>
+<symbol id="i-calendar-check" viewBox="0 0 256 256"><path d="M216,48V88H40V48a8,8,0,0,1,8-8H208A8,8,0,0,1,216,48Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-38.34-85.66a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L116,164.69l42.34-42.35A8,8,0,0,1,169.66,122.34Z"/></symbol>
+<symbol id="i-broadcast" viewBox="0 0 256 256"><path d="M160,128a32,32,0,1,1-32-32A32,32,0,0,1,160,128Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M128,88a40,40,0,1,0,40,40A40,40,0,0,0,128,88Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,152Zm73.71,7.14a80,80,0,0,1-14.08,22.2,8,8,0,0,1-11.92-10.67,63.95,63.95,0,0,0,0-85.33,8,8,0,1,1,11.92-10.67,80.08,80.08,0,0,1,14.08,84.47ZM69,103.09a64,64,0,0,0,11.26,67.58,8,8,0,0,1-11.92,10.67,79.93,79.93,0,0,1,0-106.67A8,8,0,1,1,80.29,85.34,63.77,63.77,0,0,0,69,103.09ZM248,128a119.58,119.58,0,0,1-34.29,84,8,8,0,1,1-11.42-11.2,103.9,103.9,0,0,0,0-145.56A8,8,0,1,1,213.71,44,119.58,119.58,0,0,1,248,128ZM53.71,200.78A8,8,0,1,1,42.29,212a119.87,119.87,0,0,1,0-168,8,8,0,1,1,11.42,11.2,103.9,103.9,0,0,0,0,145.56Z"/></symbol>
+<symbol id="i-chart-line-up" viewBox="0 0 256 256"><path d="M224,64V208H32V48H208A16,16,0,0,1,224,64Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M232,208a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V48a8,8,0,0,1,16,0V156.69l50.34-50.35a8,8,0,0,1,11.32,0L128,132.69,180.69,80H160a8,8,0,0,1,0-16h40a8,8,0,0,1,8,8v40a8,8,0,0,1-16,0V91.31l-58.34,58.35a8,8,0,0,1-11.32,0L96,123.31l-56,56V200H224A8,8,0,0,1,232,208Z"/></symbol>
+<symbol id="i-thermometer-simple" viewBox="0 0 256 256"><path d="M160,138V48a32,32,0,0,0-64,0v90a56,56,0,1,0,64,0Zm-32,70a24,24,0,1,1,24-24A24,24,0,0,1,128,208Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M136,153V88a8,8,0,0,0-16,0v65a32,32,0,1,0,16,0Zm-8,47a16,16,0,1,1,16-16A16,16,0,0,1,128,200Zm40-66V48a40,40,0,0,0-80,0v86a64,64,0,1,0,80,0Zm-40,98a48,48,0,0,1-27.42-87.4A8,8,0,0,0,104,138V48a24,24,0,0,1,48,0v90a8,8,0,0,0,3.42,6.56A48,48,0,0,1,128,232Z"/></symbol>
+<symbol id="i-fork-knife" viewBox="0 0 256 256"><path d="M208,40V168H152S152,64,208,40Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M72,88V40a8,8,0,0,1,16,0V88a8,8,0,0,1-16,0ZM216,40V224a8,8,0,0,1-16,0V176H152a8,8,0,0,1-8-8,268.75,268.75,0,0,1,7.22-56.88c9.78-40.49,28.32-67.63,53.63-78.47A8,8,0,0,1,216,40ZM200,53.9c-32.17,24.57-38.47,84.42-39.7,106.1H200ZM119.89,38.69a8,8,0,1,0-15.78,2.63L112,88.63a32,32,0,0,1-64,0l7.88-47.31a8,8,0,1,0-15.78-2.63l-8,48A8.17,8.17,0,0,0,32,88a48.07,48.07,0,0,0,40,47.32V224a8,8,0,0,0,16,0V135.32A48.07,48.07,0,0,0,128,88a8.17,8.17,0,0,0-.11-1.31Z"/></symbol>
+<symbol id="i-qr-code" viewBox="0 0 256 256"><path d="M112,56v48a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8h48A8,8,0,0,1,112,56Zm-8,88H56a8,8,0,0,0-8,8v48a8,8,0,0,0,8,8h48a8,8,0,0,0,8-8V152A8,8,0,0,0,104,144Zm96-96H152a8,8,0,0,0-8,8v48a8,8,0,0,0,8,8h48a8,8,0,0,0,8-8V56A8,8,0,0,0,200,48Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M104,40H56A16,16,0,0,0,40,56v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,104,40Zm0,64H56V56h48v48Zm0,32H56a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,104,136Zm0,64H56V152h48v48ZM200,40H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,64H152V56h48v48Zm-64,72V144a8,8,0,0,1,16,0v32a8,8,0,0,1-16,0Zm80-16a8,8,0,0,1-8,8H184v40a8,8,0,0,1-8,8H144a8,8,0,0,1,0-16h24V144a8,8,0,0,1,16,0v8h24A8,8,0,0,1,216,160Zm0,32v16a8,8,0,0,1-16,0V192a8,8,0,0,1,16,0Z"/></symbol>
+<symbol id="i-monitor" viewBox="0 0 256 256"><path d="M224,64V176a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V64A16,16,0,0,1,48,48H208A16,16,0,0,1,224,64Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M208,40H48A24,24,0,0,0,24,64V176a24,24,0,0,0,24,24H208a24,24,0,0,0,24-24V64A24,24,0,0,0,208,40Zm8,136a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V64a8,8,0,0,1,8-8H208a8,8,0,0,1,8,8Zm-48,48a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,224Z"/></symbol>
+<symbol id="i-copy" viewBox="0 0 256 256"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/></symbol>
+<symbol id="i-credit-card" viewBox="0 0 256 256"><path d="M232,96v96a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V96Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M224,48H32A16,16,0,0,0,16,64V192a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48Zm0,16V88H32V64Zm0,128H32V104H224v88Zm-16-24a8,8,0,0,1-8,8H168a8,8,0,0,1,0-16h32A8,8,0,0,1,208,168Zm-64,0a8,8,0,0,1-8,8H120a8,8,0,0,1,0-16h16A8,8,0,0,1,144,168Z"/></symbol>
+<symbol id="i-cube-focus" viewBox="0 0 256 256"><path d="M184,96v64l-56,32L72,160V96l56-32Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M232,48V88a8,8,0,0,1-16,0V56H184a8,8,0,0,1,0-16h40A8,8,0,0,1,232,48ZM72,200H40V168a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H72a8,8,0,0,0,0-16Zm152-40a8,8,0,0,0-8,8v32H184a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V168A8,8,0,0,0,224,160ZM32,96a8,8,0,0,0,8-8V56H72a8,8,0,0,0,0-16H32a8,8,0,0,0-8,8V88A8,8,0,0,0,32,96ZM188,167l-56,32a8,8,0,0,1-7.94,0L68,167A8,8,0,0,1,64,160V96a8,8,0,0,1,4-7l56-32a8,8,0,0,1,7.94,0l56,32a8,8,0,0,1,4,7v64A8,8,0,0,1,188,167ZM88.12,96,128,118.79,167.88,96,128,73.21ZM80,155.36l40,22.85V132.64L80,109.79Zm96,0V109.79l-40,22.85v45.57Z"/></symbol>
+<symbol id="i-robot" viewBox="0 0 256 256"><path d="M200,56H56A24,24,0,0,0,32,80V192a24,24,0,0,0,24,24H200a24,24,0,0,0,24-24V80A24,24,0,0,0,200,56ZM164,184H92a20,20,0,0,1,0-40h72a20,20,0,0,1,0,40Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M200,48H136V16a8,8,0,0,0-16,0V48H56A32,32,0,0,0,24,80V192a32,32,0,0,0,32,32H200a32,32,0,0,0,32-32V80A32,32,0,0,0,200,48Zm16,144a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V80A16,16,0,0,1,56,64H200a16,16,0,0,1,16,16ZM72,108a12,12,0,1,1,12,12A12,12,0,0,1,72,108Zm88,0a12,12,0,1,1,12,12A12,12,0,0,1,160,108Zm4,28H92a28,28,0,0,0,0,56h72a28,28,0,0,0,0-56Zm-24,16v24H116V152ZM80,164a12,12,0,0,1,12-12h8v24H92A12,12,0,0,1,80,164Zm84,12h-8V152h8a12,12,0,0,1,0,24Z"/></symbol>
+<symbol id="i-map-pin" viewBox="0 0 256 256"><path d="M128,24a80,80,0,0,0-80,80c0,72,80,128,80,128s80-56,80-128A80,80,0,0,0,128,24Zm0,112a32,32,0,1,1,32-32A32,32,0,0,1,128,136Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M128,64a40,40,0,1,0,40,40A40,40,0,0,0,128,64Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,128Zm0-112a88.1,88.1,0,0,0-88,88c0,31.4,14.51,64.68,42,96.25a254.19,254.19,0,0,0,41.45,38.3,8,8,0,0,0,9.18,0A254.19,254.19,0,0,0,174,200.25c27.45-31.57,42-64.85,42-96.25A88.1,88.1,0,0,0,128,16Zm0,206c-16.53-13-72-60.75-72-118a72,72,0,0,1,144,0C200,161.23,144.53,209,128,222Z"/></symbol>
+<symbol id="i-shield-check" viewBox="0 0 256 256"><path d="M216,56v56c0,96-88,120-88,120S40,208,40,112V56a8,8,0,0,1,8-8H208A8,8,0,0,1,216,56Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M208,40H48A16,16,0,0,0,32,56v56c0,52.72,25.52,84.67,46.93,102.19,23.06,18.86,46,25.26,47,25.53a8,8,0,0,0,4.2,0c1-.27,23.91-6.67,47-25.53C198.48,196.67,224,164.72,224,112V56A16,16,0,0,0,208,40Zm0,72c0,37.07-13.66,67.16-40.6,89.42A129.3,129.3,0,0,1,128,223.62a128.25,128.25,0,0,1-38.92-21.81C61.82,179.51,48,149.3,48,112l0-56,160,0ZM82.34,141.66a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32l-56,56a8,8,0,0,1-11.32,0Z"/></symbol>
+<symbol id="i-security-camera" viewBox="0 0 256 256"><path d="M221.66,85.66l-120,120a8,8,0,0,1-11.32,0L52.69,168,184,36.69l37.66,37.65A8,8,0,0,1,221.66,85.66Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M248,136a8,8,0,0,0-8,8v16H195.31L177,141.66l50.34-50.35a16,16,0,0,0,0-22.62l-56-56a16,16,0,0,0-22.63,0L2.92,158.94A10,10,0,0,0,10,176H49.37l35.32,35.31a16,16,0,0,0,22.62,0L165.66,153,184,171.31A15.86,15.86,0,0,0,195.31,176H240v16a8,8,0,0,0,16,0V144A8,8,0,0,0,248,136ZM160,24l12.69,12.69L49.37,160H24.46ZM96,200,64,168,184,48l32,32Z"/></symbol>
+<symbol id="i-contactless-payment" viewBox="0 0 256 256"><path d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM97.07,100.26a59.33,59.33,0,0,1,0,55.48,8,8,0,1,1-14.14-7.48,42.79,42.79,0,0,0,0-40.52,8,8,0,0,1,14.14-7.48Zm56-32a126.67,126.67,0,0,1,0,119.54A8,8,0,0,1,139,180.23a110.62,110.62,0,0,0,0-104.46,8,8,0,0,1,14.12-7.54Zm-28,16a93,93,0,0,1,0,87.52,8,8,0,1,1-14.12-7.52,77,77,0,0,0,0-72.48,8,8,0,1,1,14.12-7.52Z"/></symbol>
+<symbol id="i-lightning" viewBox="0 0 256 256"><path d="M96,240l16-80L48,136,160,16,144,96l64,24Z" class="d" style="fill:var(--ico-acento,currentColor);opacity:var(--ico-opacidad,.2)"/><path d="M215.79,118.17a8,8,0,0,0-5-5.66L153.18,90.9l14.66-73.33a8,8,0,0,0-13.69-7l-112,120a8,8,0,0,0,3,13l57.63,21.61L88.16,238.43a8,8,0,0,0,13.69,7l112-120A8,8,0,0,0,215.79,118.17ZM109.37,214l10.47-52.38a8,8,0,0,0-5-9.06L62,132.71l84.62-90.66L136.16,94.43a8,8,0,0,0,5,9.06l52.8,19.8Z"/></symbol>
+<symbol id="i-chat-circle-dots" viewBox="0 0 256 256"><path d="M140,128a12,12,0,1,1-12-12A12,12,0,0,1,140,128ZM84,116a12,12,0,1,0,12,12A12,12,0,0,0,84,116Zm88,0a12,12,0,1,0,12,12A12,12,0,0,0,172,116Zm60,12A104,104,0,0,1,79.12,219.82L45.07,231.17a16,16,0,0,1-20.24-20.24l11.35-34.05A104,104,0,1,1,232,128Zm-16,0A88,88,0,1,0,51.81,172.06a8,8,0,0,1,.66,6.54L40,216,77.4,203.53a7.85,7.85,0,0,1,2.53-.42,8,8,0,0,1,4,1.08A88,88,0,0,0,216,128Z"/></symbol>
+</svg>
+<script type="module" src="assets/system.js"></script>
+<script type="module" src="assets/motion/motion.js"></script>
+<script type="module" src="assets/layout/layout.js"></script>
+<script type="module" src="assets/p12.js"></script>
+</body>
+</html>
