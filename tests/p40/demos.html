@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es" class="sin-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demos que puedes encender | alphateklab</title>
+<meta name="description" content="Cuatro demos de alphateklab que corren en tu navegador, con negocios de ejemplo, y los equipos que conectamos.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="assets/marca/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400..800&display=swap">
+<link rel="stylesheet" href="assets/sitio.css">
+<script>document.documentElement.classList.replace('sin-js', 'js');</script>
+</head>
+<body>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+
+<header class="cab">
+  <div class="marco cab__fila">
+    <a class="cab__marca" href="index.html" aria-label="alphateklab, inicio"><img src="assets/marca/logo-claro.svg" alt="alphateklab" width="126" height="28"></a>
+    <nav class="cab__nav" aria-label="Principal"><a href="servicios.html">Servicios</a><a href="negocios.html">Negocios</a><a href="demos.html" aria-current="page">Demos</a><a href="como-trabajamos.html">Cómo trabajamos</a></nav>
+    <a class="boton boton--cielo boton--chico cab__cta" href="#propuesta">Pedir mi propuesta</a>
+    <button class="cab__abrir" type="button" aria-expanded="false" aria-controls="menu-movil" data-abrir-menu><span class="abrir__menu"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-list"/></svg>Menú</span><span class="abrir__cerrar"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-x"/></svg>Cerrar</span></button>
+    <nav class="movil" id="menu-movil" aria-label="Menú del celular"><a href="servicios.html">Servicios<svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-arrow-right"/></svg></a><a href="negocios.html">Negocios<svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-arrow-right"/></svg></a><a href="demos.html" aria-current="page">Demos<svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-arrow-right"/></svg></a><a href="como-trabajamos.html">Cómo trabajamos<svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-arrow-right"/></svg></a><a class="boton boton--cielo" href="#propuesta">Pedir mi propuesta</a></nav>
+  </div>
+</header>
+<main id="contenido">
+
+<section class="pagina">
+  <div class="marco">
+    <nav class="migas" aria-label="Ruta"><a href="index.html">Inicio</a><span aria-hidden="true">/</span><span aria-current="page">Demos</span></nav>
+    <div class="pagina__rejilla">
+      <div>
+        <h1>Cuatro demos que puedes encender</h1>
+        <p class="bajada">Corren de verdad en tu navegador, con negocios de ejemplo. Cada una dice qué parte es simulada, como un pago o un sensor.</p>
+        <nav class="anclas" aria-label="En esta página"><a href="#demos">Las cuatro demos</a><a href="#equipos">Equipos que conectamos</a></nav>
+      </div>
+      
+    </div>
+  </div>
+</section>
+<section class="seccion" id="demos" aria-labelledby="demos-titulo">
+  <div class="marco">
+    <div class="cabeza">
+      <h2 class="t2" id="demos-titulo">Elige una y préndela</h2>
+      <p class="bajada">Cada demo abre en una pestaña nueva. Para tu negocio se hace con tus datos, en tu dominio y con el equipo real.</p>
+    </div>
+    <div class="demos">
+      <div class="demos__lista" role="tablist" aria-orientation="vertical" aria-label="Demos"><button class="demo-op" type="button" role="tab" id="op-mesa" aria-controls="vista-op-mesa" aria-selected="true" tabindex="0"><span class="ico-caja"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-qr-code"/></svg></span><b>Pedir y pagar desde la mesa</b><span>La carta de un restaurante con un QR por mesa: pides desde el teléfono, la comanda llega a la cocina y la cuenta se divide.</span></button><button class="demo-op" type="button" role="tab" id="op-camara" aria-controls="vista-op-camara" aria-selected="false" tabindex="-1"><span class="ico-caja"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-security-camera"/></svg></span><b>Contador de personas</b><span>La cámara cuenta a quien cruza una línea, lleva el aforo y arma un mapa de calor. El video no sale de tu equipo.</span></button><button class="demo-op" type="button" role="tab" id="op-sensores" aria-controls="vista-op-sensores" aria-selected="false" tabindex="-1"><span class="ico-caja"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-thermometer-simple"/></svg></span><b>Tablero de sensores</b><span>Neveras, luz, tanque y puertas de un restaurante, con avisos cuando algo se sale de lo normal.</span></button><button class="demo-op" type="button" role="tab" id="op-recorrido" aria-controls="vista-op-recorrido" aria-selected="false" tabindex="-1"><span class="ico-caja"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-cube-focus"/></svg></span><b>Recorrido 360</b><span>Fotos esféricas de interiores unidas: miras alrededor y pasas de un ambiente a otro.</span></button></div>
+      <div><div class="demo-vista" role="tabpanel" id="vista-op-mesa" aria-labelledby="op-mesa">
+        <div class="ventana"><div class="ventana__barra"><span class="ventana__puntos"><i></i><i></i><i></i></span><span class="ventana__titulo">Salón de Pixbae (ejemplo)</span><span></span></div><img src="assets/producto/mesa-salon.webp" width="1600" height="1000" loading="eager" alt="Captura de la demo de la mesa: el salón del restaurante de ejemplo con las mesas que piden la cuenta, llaman al mesero o tienen un pedido por aceptar."></div>
+        <div class="demo-vista__pie"><div><h3>Pedir y pagar desde la mesa</h3><p><b>Para quién:</b> Restaurantes y cafés.</p></div><a class="boton boton--tinta" href="https://alphatend.github.io/alphateklab-mesa/" target="_blank" rel="noopener">Encender la demo<svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-arrow-up-right"/></svg></a></div>
+      </div><div class="demo-vista" role="tabpanel" id="vista-op-camara" aria-labelledby="op-camara" hidden>
+        <div class="ventana"><div class="ventana__barra"><span class="ventana__puntos"><i></i><i></i><i></i></span><span class="ventana__titulo">Contador de personas (ejemplo)</span><span></span></div><img src="assets/producto/demo-camara.webp" width="1124" height="699" loading="lazy" alt="Captura de la demo del contador: personas pixeladas en una calle con su número, la línea de entrada y la zona de fila."></div>
+        <div class="demo-vista__pie"><div><h3>Contador de personas</h3><p><b>Para quién:</b> Tiendas, minisúper y comercio.</p></div><a class="boton boton--tinta" href="https://alphateklab.com/laboratorio/camara/" target="_blank" rel="noopener">Encender la demo<svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-arrow-up-right"/></svg></a></div>
+      </div><div class="demo-vista" role="tabpanel" id="vista-op-sensores" aria-labelledby="op-sensores" hidden>
+        <div class="ventana"><div class="ventana__barra"><span class="ventana__puntos"><i></i><i></i><i></i></span><span class="ventana__titulo">Tablero de sensores (ejemplo)</span><span></span></div><img src="assets/producto/demo-sensores.webp" width="1124" height="698" loading="lazy" alt="Captura de la demo de sensores: un aviso activo por la puerta de la nevera, la curva de temperatura y los botones para provocar una falla."></div>
+        <div class="demo-vista__pie"><div><h3>Tablero de sensores</h3><p><b>Para quién:</b> Restaurantes, bodegas e industria.</p></div><a class="boton boton--tinta" href="https://alphateklab.com/laboratorio/sensores/" target="_blank" rel="noopener">Encender la demo<svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-arrow-up-right"/></svg></a></div>
+      </div><div class="demo-vista" role="tabpanel" id="vista-op-recorrido" aria-labelledby="op-recorrido" hidden>
+        <div class="ventana"><div class="ventana__barra"><span class="ventana__puntos"><i></i><i></i><i></i></span><span class="ventana__titulo">Recorrido 360 (ejemplo)</span><span></span></div><img src="assets/producto/demo-recorrido-360.webp" width="1124" height="700" loading="lazy" alt="Captura de la demo del recorrido 360: una habitación vacía con la puerta abierta y dos ventanas."></div>
+        <div class="demo-vista__pie"><div><h3>Recorrido 360</h3><p><b>Para quién:</b> Bienes raíces y hospedaje.</p></div><a class="boton boton--tinta" href="https://alphateklab.com/laboratorio/recorrido-360/" target="_blank" rel="noopener">Encender la demo<svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-arrow-up-right"/></svg></a></div>
+      </div></div>
+    </div>
+    <p style="margin-top:32px"><a class="enlace" href="https://alphateklab.com/laboratorio/" target="_blank" rel="noopener">Ver todas las demos en el laboratorio<svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-arrow-up-right"/></svg></a></p>
+  </div>
+</section>
+<section class="seccion seccion--nube" id="equipos" aria-labelledby="equipos-titulo">
+  <div class="marco">
+    <div class="cabeza">
+      <h2 class="t2" id="equipos-titulo">Equipos que conectamos</h2>
+      <p class="bajada">Además del software, nos encargamos del equipo: placas QR, pantallas, cámaras, sensores, cerraduras y GPS. Y le enseñamos a tu equipo a usarlo.</p>
+    </div>
+    <ul class="equipos"><li class="equipo-c"><a href="https://alphateklab.com/servicio-pedir-y-pagar-desde-la-mesa.html" target="_blank" rel="noopener"><span class="ico-caja"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-qr-code"/></svg></span><span><b>Placa con QR y NFC</b><small>En cada mesa</small></span></a></li><li class="equipo-c"><a href="https://alphateklab.com/servicio-pantalla-de-cocina.html" target="_blank" rel="noopener"><span class="ico-caja"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-monitor"/></svg></span><span><b>Pantalla de cocina</b><small>En la pared de la cocina</small></span></a></li><li class="equipo-c"><a href="https://alphateklab.com/servicio-pantalla-tactil-de-pedidos.html" target="_blank" rel="noopener"><span class="ico-caja"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-hand-tap"/></svg></span><span><b>Kiosco de autopedido</b><small>Junto al mostrador</small></span></a></li><li class="equipo-c"><a href="https://alphateklab.com/servicio-contador-de-personas.html" target="_blank" rel="noopener"><span class="ico-caja"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-security-camera"/></svg></span><span><b>Cámara que cuenta</b><small>Sobre la puerta</small></span></a></li><li class="equipo-c"><a href="https://alphateklab.com/servicio-temperatura-de-neveras.html" target="_blank" rel="noopener"><span class="ico-caja"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-thermometer-simple"/></svg></span><span><b>Sensor de temperatura</b><small>Dentro de la nevera</small></span></a></li><li class="equipo-c"><a href="https://alphateklab.com/servicio-cerraduras-con-codigo.html" target="_blank" rel="noopener"><span class="ico-caja"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-lock-key"/></svg></span><span><b>Cerradura con código</b><small>En cada cabaña</small></span></a></li><li class="equipo-c"><a href="https://alphateklab.com/servicio-control-de-acceso.html" target="_blank" rel="noopener"><span class="ico-caja"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-identification-card"/></svg></span><span><b>Lector de acceso</b><small>En la entrada</small></span></a></li><li class="equipo-c"><a href="https://alphateklab.com/servicio-gps-de-flota.html" target="_blank" rel="noopener"><span class="ico-caja"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-map-pin"/></svg></span><span><b>GPS del vehículo</b><small>En cada camión o moto</small></span></a></li></ul>
+    <div class="garantias">
+      <img src="assets/fotos/mesaqr-720.webp" srcset="assets/fotos/mesaqr-720.webp 720w, assets/fotos/mesaqr-1200.webp 1200w" sizes="(max-width: 1060px) 92vw, 600px" width="1200" height="800" loading="lazy" alt="Mesa de madera de un restaurante vista desde arriba, con un terminal de pago sin contacto, un tazón con palillos, la carta y una suculenta">
+      <ul><li><span class="ico-caja ico-caja--oscura"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-check-circle"/></svg></span><span>Compramos el equipo después de que apruebas la propuesta, no antes.</span></li><li><span class="ico-caja ico-caja--oscura"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-wrench"/></svg></span><span>Si ya tienes equipo que sirve (cámaras, una tableta, un televisor), lo usamos.</span></li><li><span class="ico-caja ico-caja--oscura"><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-shield-check"/></svg></span><span>El dominio y los QR quedan a nombre de tu negocio.</span></li></ul>
+    </div>
+  </div>
+</section>
+<div style="height: clamp(64px, 8vw, 104px)"></div>
+
+<section class="seccion" style="padding-block: 0 clamp(64px, 8vw, 104px)">
+  <div class="marco"><div class="siguiente"><div><small>Siguiente página</small><a href="como-trabajamos.html">Mira cómo trabajamos, paso a paso</a></div><a class="boton boton--linea" href="como-trabajamos.html" aria-hidden="true" tabindex="-1">Ir<svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-arrow-right"/></svg></a></div></div>
+</section>
+
+<section class="banda" id="propuesta" aria-labelledby="propuesta-titulo">
+  <div class="marco banda__rejilla">
+    <div>
+      <h2 class="t2" id="propuesta-titulo">¿Quieres verlo con tu negocio?</h2>
+      <p class="bajada">Cuéntanos qué necesitas y te mandamos la propuesta por escrito: qué haríamos, el equipo que hace falta y en cuánto tiempo queda.</p>
+      <ul class="banda__datos">
+        <li><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-file-text"/></svg>Te mandamos la propuesta por escrito, sin compromiso.</li>
+        <li><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-check-circle"/></svg>No compramos equipo hasta que la apruebas.</li>
+        <li><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-map-pin"/></svg>Panamá, trabajamos a distancia.</li>
+      </ul>
+    </div>
+    <form class="pregunta__form" data-pregunta method="post" action="https://formsubmit.co/3a73a4e7fca71a1aba1ccc3921334bad" data-ajax="https://formsubmit.co/ajax/3a73a4e7fca71a1aba1ccc3921334bad">
+      <input type="hidden" name="_subject" value="alphateklab: pedido de propuesta desde alphateklab.com" />
+      <input type="hidden" name="_template" value="table" />
+      <input type="hidden" name="_next" value="https://alphateklab.com/demos.html#propuesta" />
+      <input type="text" name="_honey" class="sr" tabindex="-1" autocomplete="off" aria-hidden="true" />
+      <label for="que-necesitas">Qué necesitas</label>
+      <textarea id="que-necesitas" name="mensaje" rows="5" maxlength="800" required placeholder="Por ejemplo: tengo un restaurante de 12 mesas y quiero que los clientes pidan desde la mesa."></textarea>
+      <label for="contacto">Tu correo</label>
+      <input id="contacto" name="contacto" type="email" maxlength="120" autocomplete="email" placeholder="Tu correo para responderte" required />
+      <div class="formulario__fila">
+        <button class="boton boton--cielo" type="submit">Pedir mi propuesta<svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-arrow-right"/></svg></button>
+        <small>Te respondemos por escrito.</small>
+      </div>
+      <p class="formulario__nota" data-nota role="status" aria-live="polite"></p>
+      <p class="correo">O escríbenos a <span class="correo__dir" data-correo>info@alphateklab.com</span> <button type="button" class="copiar" data-copiar><svg class="ico" aria-hidden="true" focusable="false"><use href="assets/iconos.svg#i-copy"/></svg><span>Copiar</span></button></p>
+    </form>
+  </div>
+</section>
+</main>
+<footer class="pie">
+  <div class="marco">
+    <div class="pie__fila">
+      <div class="pie__marca">
+        <img src="assets/marca/logo-oscuro.svg" alt="alphateklab" width="126" height="28">
+        <p>Creamos el sistema de tu negocio en Panamá, a la medida, y lo conectamos con los equipos de tu local: el QR de las mesas, la pantalla de la cocina, la cámara, el sensor y la caja.</p>
+      </div>
+      <div class="pie__cols">
+        <nav aria-label="Páginas"><h2>Páginas</h2><a href="index.html">Inicio</a><a href="servicios.html">Servicios</a><a href="negocios.html">Negocios</a><a href="demos.html">Demos</a><a href="como-trabajamos.html">Cómo trabajamos</a></nav>
+        <nav aria-label="Más"><h2>Más</h2><a href="como-trabajamos.html#paquetes">Paquetes</a><a href="demos.html#equipos">Equipos que conectamos</a><a href="como-trabajamos.html#preguntas">Preguntas frecuentes</a><a href="https://alphateklab.com/guias/">Guías</a><a href="https://alphateklab.com/privacidad/">Privacidad</a><a href="https://alphateklab.com/creditos/">Créditos</a></nav>
+        <div><h2>Contacto</h2><a href="mailto:info@alphateklab.com">info@alphateklab.com</a><span>Panamá, trabajamos a distancia</span><span>Empresa panameña</span></div>
+      </div>
+    </div>
+    <div class="pie__legal">
+      <p>Las demos usan negocios de ejemplo: sus nombres, platos, clientes y reservas son ficticios.</p>
+      <p>Fotos de <a href="https://unsplash.com/@negley">@negley</a>, <a href="https://unsplash.com/@che_3">@che_3</a>, <a href="https://unsplash.com/@yenvu2410">@yenvu2410</a>, <a href="https://unsplash.com/@summitangel">@summitangel</a>, <a href="https://unsplash.com/@heyquilia">@heyquilia</a>, <a href="https://unsplash.com/@fantasyflip">@fantasyflip</a>, <a href="https://unsplash.com/@omarlopez1">@omarlopez1</a> y <a href="https://unsplash.com/@claybanks">@claybanks</a> (licencia de Unsplash); <a href="https://commons.wikimedia.org/wiki/File:Shelves_stocked_with_boxes_and_carts_in_a_spacious_warehouse_environment_during_daylight_hours.jpg">Shixart1985</a> (CC BY 2.0) en Wikimedia Commons. Íconos de Phosphor (MIT). Las pantallas son capturas de las demos de alphateklab o están hechas para esta página.</p>
+    </div>
+  </div>
+</footer>
+<script src="assets/sitio.js" defer></script>
+</body>
+</html>
