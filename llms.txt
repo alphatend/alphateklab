@@ -4,12 +4,13 @@
 
 ## Páginas
 
-- [alphateklab, tecnología para tu negocio hecha e instalada](https://alphateklab.com/): alphateklab hace software a medida, páginas, apps e IA, e instala pantallas, cámaras con IA, sensores y QR por mesa. 73 servicios para negocios en Panamá.
-- [Servicios](https://alphateklab.com/servicios.html): Los 73 servicios de alphateklab en ocho tipos de solución.
+- [alphateklab: software a la medida para tu negocio, conectado a tu local](https://alphateklab.com/): Creamos el software de tu negocio en Panamá, a la medida, y lo conectamos con los equipos de tu local: el QR de las mesas, la pantalla de la cocina, el sensor de la nevera.
+- [Servicios](https://alphateklab.com/servicios.html): Los 73 servicios de alphateklab en ocho tipos: software a medida, web y apps, inteligencia artificial, cámaras, sensores, pantallas, recorridos 3D y cobros.
+- [Negocios](https://alphateklab.com/negocios.html): Ocho tipos de negocio, con sus problemas de siempre y los servicios de alphateklab que los resuelven.
 - [Soluciones por negocio](https://alphateklab.com/soluciones.html): Qué resolvemos en cada tipo de negocio.
 - [Paquetes](https://alphateklab.com/paquetes.html): Los servicios que más piden, listos para empezar.
-- [Demos](https://alphateklab.com/demos.html): Cinco demos de verdad, con negocios de ejemplo.
-- [Cómo trabajamos](https://alphateklab.com/como-trabajamos.html): De la primera conversación al soporte: cómo trabaja alphateklab.
+- [Demos](https://alphateklab.com/demos.html): Cuatro demos de alphateklab que corren de verdad en tu navegador, con negocios de ejemplo, y los equipos que conectamos.
+- [Cómo trabajamos](https://alphateklab.com/como-trabajamos.html): Los cuatro pasos de un proyecto con alphateklab, los paquetes para empezar y las preguntas frecuentes.
 - [Equipos que conectamos](https://alphateklab.com/equipos.html): El equipo que conectamos al software de tu negocio.
 - [Lo que te llega al teléfono](https://alphateklab.com/telefono.html): Paso a paso, qué hace el sistema en cada tipo de negocio y qué mensajes recibe el dueño.
 - [Demos](https://alphateklab.com/laboratorio/): Demos de alphateklab que funcionan en tu navegador: pedir y pagar desde la mesa, agente de citas, recorridos 3D y 360, contador de personas y sensores.
